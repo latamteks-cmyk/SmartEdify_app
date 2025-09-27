@@ -48,7 +48,11 @@ export class TokensService {
 
     const newToken = await this.issueRefreshToken(oldRefreshToken.user, oldRefreshToken.jkt, oldRefreshToken.family_id);
     
-    oldRefreshToken.replaced_by_id = (await this.refreshTokensRepository.findOne({where: {token_hash: crypto.createHash('sha256').update(newToken).digest('hex')}})).id;
+    const newRefreshTokenEntity = await this.refreshTokensRepository.findOne({where: {token_hash: crypto.createHash('sha256').update(newToken).digest('hex')}});
+    if (!newRefreshTokenEntity) {
+      throw new UnauthorizedException('Newly issued refresh token not found');
+    }
+    oldRefreshToken.replaced_by_id = newRefreshTokenEntity.id;
     await this.refreshTokensRepository.save(oldRefreshToken);
 
     return newToken;

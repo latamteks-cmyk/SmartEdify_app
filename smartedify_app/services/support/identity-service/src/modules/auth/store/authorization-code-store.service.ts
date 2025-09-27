@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 interface AuthorizationCode {
   code_challenge: string;
   code_challenge_method: string;
+  userId: string;
 }
 
 @Injectable()

@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, IsUUID, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, IsUUID, IsOptional, IsBoolean, Equals } from 'class-validator';
 
 export class CreateUserDto {
   @IsUUID()
@@ -20,4 +20,12 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   password?: string;
+
+  @IsBoolean()
+  @Equals(true, { message: 'Consent must be accepted' })
+  consent_granted: boolean;
+
+  @IsString()
+  @IsOptional()
+  policy_version?: string;
 }

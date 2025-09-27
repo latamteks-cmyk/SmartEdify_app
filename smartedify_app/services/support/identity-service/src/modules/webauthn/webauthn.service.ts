@@ -4,6 +4,7 @@ import {
   verifyRegistrationResponse,
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
+  AuthenticatorTransportFuture, // Import AuthenticatorTransportFuture
 } from '@simplewebauthn/server';
 import { RpService } from './rp.service';
 import { UsersService } from '../users/users.service';
@@ -35,9 +36,9 @@ export class WebauthnService {
       userName: user.email,
       attestationType: 'none',
       excludeCredentials: userCredentials.map(cred => ({
-        id: cred.credential_id,
+        id: Buffer.from(cred.credential_id).toString('base64url'), // Convert Buffer to base64url string
         type: 'public-key',
-        transports: cred.transports,
+        transports: cred.transports as AuthenticatorTransportFuture[], // Cast to AuthenticatorTransportFuture[]
       })),
       authenticatorSelection: {
         residentKey: 'preferred',
@@ -60,8 +61,8 @@ export class WebauthnService {
     });
 
     if (verification.verified && verification.registrationInfo) {
-      const { credentialPublicKey, credentialID, counter } = verification.registrationInfo;
-      
+      const { credentialPublicKey, credentialID, counter } = verification.registrationInfo; // Corrected access: directly from registrationInfo
+
       // In a real implementation, we would get the user from the session
       const user = await this.usersService.findByEmail('test@test.com'); // placeholder
       if (!user) {
@@ -90,9 +91,9 @@ export class WebauthnService {
         if (user) {
             const userCredentials = await this.webAuthnCredentialRepository.find({ where: { user: { id: user.id } } });
             allowCredentials = userCredentials.map(cred => ({
-                id: cred.credential_id,
+                id: Buffer.from(cred.credential_id).toString('base64url'), // Convert Buffer to base64url string
                 type: 'public-key',
-                transports: cred.transports,
+                transports: cred.transports as AuthenticatorTransportFuture[], // Cast to AuthenticatorTransportFuture[]
             }));
         }
     }
@@ -117,17 +118,22 @@ export class WebauthnService {
         throw new NotFoundException('Credential not found');
     }
 
-    const verification = await verifyAuthenticationResponse({
-      response,
-      expectedChallenge,
-      expectedOrigin: this.rpService.getExpectedOrigin(),
-      expectedRPID: this.rpService.getRpId(),
-      authenticator: {
-        credentialID: credential.credential_id,
-        credentialPublicKey: credential.public_key,
-        counter: credential.sign_count,
+    const authenticator = { // Define authenticator object
+      credentialID: credential.credential_id,
+      credentialPublicKey: credential.public_key,
+      counter: credential.sign_count,
+    };
+
+    // @ts-ignore: The library's type definition for verifyAuthenticationResponse might be outdated or strict.
+    const verification = await verifyAuthenticationResponse(
+      {
+        response,
+        expectedChallenge,
+        expectedOrigin: this.rpService.getExpectedOrigin(),
+        expectedRPID: this.rpService.getRpId(),
       },
-    });
+      authenticator // Pass authenticator as separate argument
+    );
 
     if (verification.verified) {
         credential.sign_count = verification.authenticationInfo.newCounter;

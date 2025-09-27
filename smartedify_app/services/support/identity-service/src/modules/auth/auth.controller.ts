@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Query, Body, BadRequestException, Headers, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ClientAuthGuard } from './guards/client-auth.guard';
-import { Request } from 'express';
-import { ParPayload } from './store/par-store.service';
+import type { Request } from 'express';
+import type { ParPayload } from './store/par-store.service';
 
 @Controller('oauth')
 export class AuthController {

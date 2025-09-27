@@ -6,8 +6,8 @@ export class WebauthnController {
   constructor(private readonly webauthnService: WebauthnService) {}
 
   @Get('registration/options')
-  async registrationOptions(@Query('username') username: string, @Query('userId') userId: string) {
-    return this.webauthnService.generateRegistrationOptions(username, userId);
+  async registrationOptions(@Query('username') username: string) {
+    return this.webauthnService.generateRegistrationOptions(username);
   }
 
   @Post('registration/verification')

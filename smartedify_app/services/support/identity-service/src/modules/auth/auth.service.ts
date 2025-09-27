@@ -144,7 +144,7 @@ export class AuthService {
     throw new BadRequestException('Device code grant type not yet implemented');
   }
 
-  async revokeToken(token: string, token_type_hint: string): Promise<void> {
+  async revokeToken(token: string, token_type_hint?: string): Promise<void> {
     // For now, we only support refresh token revocation
     if (token_type_hint === 'refresh_token') {
       const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
