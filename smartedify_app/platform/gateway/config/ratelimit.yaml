@@ -1,0 +1,35 @@
+domain: smartedify
+descriptors:
+  # Tenant-level limits
+  - key: tenant_id
+    descriptors:
+      - key: request_type
+        value: read
+        rate_limit:
+          unit: minute
+          requests_per_unit: 600
+      - key: request_type
+        value: write
+        rate_limit:
+          unit: minute
+          requests_per_unit: 60
+
+  # User-level limits
+  - key: user_id
+    descriptors:
+      - key: request_type
+        value: read
+        rate_limit:
+          unit: minute
+          requests_per_unit: 120
+      - key: request_type
+        value: write
+        rate_limit:
+          unit: minute
+          requests_per_unit: 30
+
+  # ASN-level limits (example)
+  - key: client_asn
+    rate_limit:
+      unit: minute
+      requests_per_unit: 1000 # Example limit for a specific ASN

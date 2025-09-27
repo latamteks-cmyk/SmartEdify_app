@@ -1,0 +1,1055 @@
+admin:
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 9901 }
+
+static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address: { address: 0.0.0.0, port_value: 8080 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: ["*"]
+              routes:
+              # identity-service
+              - match:
+                  prefix: "/api/v1/identity/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "identity-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/identity/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "identity-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # governance-service
+              - match:
+                  prefix: "/api/v1/governance/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "governance-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/governance/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "governance-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # user-profiles-service
+              - match:
+                  prefix: "/api/v1/user-profiles/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "user-profiles-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/user-profiles/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "user-profiles-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # tenancy-service
+              - match:
+                  prefix: "/api/v1/tenancy/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "tenancy-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/tenancy/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "tenancy-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # physical-security-service
+              - match:
+                  prefix: "/api/v1/physical-security/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "physical-security-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/physical-security/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "physical-security-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # notifications-service
+              - match:
+                  prefix: "/api/v1/notifications/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "notifications-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/notifications/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "notifications-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # documents-service
+              - match:
+                  prefix: "/api/v1/documents/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "documents-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/documents/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "documents-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # finance-service
+              - match:
+                  prefix: "/api/v1/finance/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "finance-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/finance/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "finance-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # payroll-service
+              - match:
+                  prefix: "/api/v1/payroll/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "payroll-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/payroll/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "payroll-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # hr-compliance-service
+              - match:
+                  prefix: "/api/v1/hr-compliance/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "hr-compliance-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/hr-compliance/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "hr-compliance-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # asset-management-service
+              - match:
+                  prefix: "/api/v1/asset-management/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "asset-management-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/asset-management/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "asset-management-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # compliance-service
+              - match:
+                  prefix: "/api/v1/compliance/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "compliance-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/compliance/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "compliance-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # reservation-service
+              - match:
+                  prefix: "/api/v1/reservation/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "reservation-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/reservation/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "reservation-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # streaming-service
+              - match:
+                  prefix: "/api/v1/streaming/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "streaming-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/streaming/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "streaming-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # marketplace-service
+              - match:
+                  prefix: "/api/v1/marketplace/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "marketplace-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/marketplace/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "marketplace-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+              # analytics-service
+              - match:
+                  prefix: "/api/v1/analytics/"
+                  headers:
+                  - name: ":method"
+                    exact_match: "GET"
+                route:
+                  cluster: "analytics-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "read"
+              - match:
+                  prefix: "/api/v1/analytics/"
+                  headers:
+                  - name: ":method"
+                    safe_regex_match:
+                      google_re2: {}
+                      regex: "POST|PUT|PATCH|DELETE"
+                route:
+                  cluster: "analytics-service"
+                  rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-tenant-id"
+                        descriptor_key: "tenant_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+                  - actions:
+                    - request_headers:
+                        header_name: "x-user-id"
+                        descriptor_key: "user_id"
+                    - generic_key:
+                        descriptor_key: "request_type"
+                        descriptor_value: "write"
+          http_filters:
+          # CORS filter
+          - name: envoy.filters.http.cors
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
+              allow_origin_string_match:
+                - safe_regex:
+                    google_re2: {}
+                    regex: ".*" # WARNING: This is permissive. Should be replaced with specific domains.
+              allow_methods: "GET, POST, PUT, PATCH, DELETE"
+              allow_headers: "Content-Type, Authorization, DPoP" # Added DPoP
+              expose_headers: "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Traceparent, X-Request-Id"
+              allow_credentials: true
+          # Lua filter for headers
+          - name: envoy.filters.http.lua
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+              inline_code: |
+                function envoy_on_response(h)
+                  h:headers():add("Strict-Transport-Security","max-age=63072000; includeSubDomains; preload")
+                  h:headers():add("X-Content-Type-Options","nosniff")
+                  h:headers():add("Referrer-Policy","no-referrer")
+                  h:headers():add("Permissions-Policy","camera=(), microphone=()")
+                end
+          # WASM filter for DPoP
+          - name: envoy.filters.http.wasm
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+              config:
+                name: dpop_validator
+                vm_config: { runtime: "envoy.wasm.runtime.v8", code: { local: { filename: "/etc/envoy/plugins/dpop_validator.wasm" } } }
+                configuration:
+                  "@type": type.googleapis.com/google.protobuf.StringValue
+                  value: '{"replay_cache":{"type":"redis","dsn":"redis://rate-limit:6379","ttl_seconds":300},"iat_skew_seconds":10,"require_on_upgrade":true,"ws_close_code_on_fail":4401}'
+          # JWT AuthN filter
+          - name: envoy.filters.http.jwt_authn
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+              providers:
+                smartedify:
+                  issuer: "https://auth.smartedify.global/t/{tenant_id}" # This needs dynamic tenant_id handling
+                  remote_jwks:
+                    http_uri:
+                      uri: "http://identity-service:3001/.well-known/jwks.json" # Simplified for local dev
+                      cluster: "identity-service"
+                      timeout: 3s
+                    cache_duration: 300s
+                  forward: true
+              rules: [{ match: { prefix: "/api/v1/" }, requires: { provider_name: "smartedify" } }]
+          # Rate limit filter
+          - name: envoy.filters.http.ratelimit
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+              domain: "smartedify"
+              failure_mode_deny: true
+              rate_limit_service: { grpc_service: { envoy_grpc: { cluster_name: ratelimit_cluster } } }
+          - name: envoy.filters.http.router
+            typed_config: {}
+
+  clusters:
+  - name: "identity-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "identity-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: identity-service
+                port_value: 3001
+  - name: "governance-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "governance-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: governance-service
+                port_value: 3011
+  - name: "user-profiles-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "user-profiles-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: user-profiles-service
+                port_value: 3002
+  - name: "tenancy-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "tenancy-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: tenancy-service
+                port_value: 3003
+  - name: "physical-security-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "physical-security-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: physical-security-service
+                port_value: 3004
+  - name: "notifications-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "notifications-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: notifications-service
+                port_value: 3005
+  - name: "documents-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "documents-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: documents-service
+                port_value: 3006
+  - name: "finance-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "finance-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: finance-service
+                port_value: 3007
+  - name: "payroll-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "payroll-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: payroll-service
+                port_value: 3008
+  - name: "hr-compliance-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "hr-compliance-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: hr-compliance-service
+                port_value: 3009
+  - name: "asset-management-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "asset-management-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: asset-management-service
+                port_value: 3010
+  - name: "compliance-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "compliance-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: compliance-service
+                port_value: 3012
+  - name: "reservation-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "reservation-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: reservation-service
+                port_value: 3013
+  - name: "streaming-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "streaming-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: streaming-service
+                port_value: 3014
+  - name: "marketplace-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "marketplace-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: marketplace-service
+                port_value: 3015
+  - name: "analytics-service"
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: "analytics-service"
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: analytics-service
+                port_value: 3016
+  - name: ratelimit_cluster
+    type: STRICT_DNS
+    connect_timeout: 0.25s
+    lb_policy: ROUND_ROBIN
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: ratelimit_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: ratelimit-service # Assumes a ratelimit service exists
+                port_value: 8081

@@ -1,0 +1,68 @@
+openapi: 3.0.0
+info:
+  title: Identity Service
+  version: 1.0.0
+  description: API for managing identity, authentication, and authorization.
+paths:
+  /.well-known/openid-configuration:
+    get:
+      summary: OIDC Discovery
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OIDC configuration
+  /.well-known/jwks.json:
+    get:
+      summary: JWKS Endpoint
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: JSON Web Key Set
+  /authorize:
+    get:
+      summary: OIDC Authorize
+      responses:
+        '302':
+          description: Redirect to login
+  /oauth/token:
+    post:
+      summary: OIDC Token
+      responses:
+        '200':
+          description: Access and refresh tokens
+  /identity/v2/token/refresh:
+    post:
+      summary: Refresh Token
+      responses:
+        '200':
+          description: New access and refresh tokens
+  /webauthn/attestation/options:
+    post:
+      summary: WebAuthn Attestation Options
+      responses:
+        '200':
+          description: Attestation options
+  /identity/v2/contextual-tokens:
+    post:
+      summary: Create Contextual Token
+      responses:
+        '200':
+          description: Contextual token
+  /privacy/data:
+    delete:
+      summary: Delete User Data (DSAR)
+      responses:
+        '202':
+          description: Deletion job accepted
