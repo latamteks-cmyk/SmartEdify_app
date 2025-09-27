@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Query, Body, BadRequestException, Headers, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, BadRequestException, Headers, UseGuards, Req, HttpCode, HttpStatus, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ClientAuthGuard } from './guards/client-auth.guard';
+import { ClientAuthGuard } from './guards/client-auth.guard'; // Corrected import path
 import type { Request } from 'express';
 import type { ParPayload } from './store/par-store.service';
+import type { Response } from 'express'; // Import Response as type
 
 @Controller('oauth')
 export class AuthController {
@@ -26,10 +27,20 @@ export class AuthController {
 
   @Get('authorize')
   async authorize(
+    @Res() res: Response,
+    @Query('redirect_uri') redirect_uri: string,
+    @Query('scope') scope: string,
     @Query('request_uri') request_uri?: string,
     @Query('code_challenge') code_challenge?: string,
     @Query('code_challenge_method') code_challenge_method?: string,
   ) {
+    if (!redirect_uri) {
+      throw new BadRequestException('redirect_uri is required');
+    }
+    if (!scope) {
+      throw new BadRequestException('scope is required');
+    }
+
     const mockUserId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
     const code = await this.authService.generateAuthorizationCode({
@@ -37,8 +48,14 @@ export class AuthController {
       code_challenge,
       code_challenge_method,
       userId: mockUserId,
+      scope,
     });
-    return { code };
+
+    const redirectUrl = new URL(redirect_uri);
+    redirectUrl.searchParams.append('code', code);
+    // redirectUrl.searchParams.append('state', state); // If state was implemented
+
+    res.redirect(redirectUrl.toString());
   }
 
   @Post('token')
@@ -64,6 +81,20 @@ export class AuthController {
         httpUrl,
       );
       return { access_token, refresh_token, token_type: 'DPoP' };
+    } else if (grant_type === 'refresh_token') {
+      if (!body.refresh_token) {
+        throw new BadRequestException('refresh_token is required');
+      }
+      if (!dpopProof) {
+        throw new BadRequestException('DPoP proof is required for refresh token flow');
+      }
+      const [access_token, new_refresh_token] = await this.authService.refreshTokens(
+        body.refresh_token,
+        dpopProof,
+        httpMethod,
+        httpUrl,
+      );
+      return { access_token, refresh_token: new_refresh_token, token_type: 'DPoP' };
     } else if (grant_type === 'urn:ietf:params:oauth:grant-type:device_code') {
       if (!body.device_code) {
         throw new BadRequestException('device_code is required');

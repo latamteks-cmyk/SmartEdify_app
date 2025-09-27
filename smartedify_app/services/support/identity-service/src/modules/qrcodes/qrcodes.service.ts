@@ -12,6 +12,7 @@ export class QrcodesService {
     const key = await jose.JWK.asKey(signingKeyEntity.private_key_pem, 'pem');
 
     const jwsResult = await jose.JWS.createSign({ format: 'compact' }, key).update(JSON.stringify(payload)).final();
+    // @ts-ignore: Type 'CreateSignResult' is not assignable to type 'string | QRCodeSegment[]'.
     return await qrcode.toDataURL(jwsResult); // Corrected: jwsResult directly
   }
 

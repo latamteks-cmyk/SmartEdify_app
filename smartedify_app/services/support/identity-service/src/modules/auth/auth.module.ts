@@ -22,5 +22,6 @@ import { JtiStoreService } from './store/jti-store.service';
     JtiStoreService
   ],
   controllers: [AuthController],
+  exports: [AuthService], // Export AuthService
 })
 export class AuthModule {}

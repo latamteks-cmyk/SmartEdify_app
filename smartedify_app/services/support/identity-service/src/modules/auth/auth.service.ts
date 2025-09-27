@@ -1,5 +1,3 @@
-
-
 import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -66,20 +64,22 @@ export class AuthService {
       code_challenge?: string; 
       code_challenge_method?: string; 
       userId: string; 
+      scope: string; // Added scope
     }
   ): Promise<string> {
-    let payload: { code_challenge: string; code_challenge_method: string; };
+    let payload: { code_challenge: string; code_challenge_method: string; scope: string; }; // Added scope
 
     if (params.request_uri) {
       const storedPayload = this.parStore.get(params.request_uri);
       if (!storedPayload) {
         throw new BadRequestException('Invalid or expired request_uri');
       }
-      payload = storedPayload;
+      payload = { ...storedPayload, scope: params.scope }; // Added scope
     } else if (params.code_challenge && params.code_challenge_method) {
       payload = { 
         code_challenge: params.code_challenge, 
-        code_challenge_method: params.code_challenge_method 
+        code_challenge_method: params.code_challenge_method,
+        scope: params.scope, // Added scope
       };
     } else {
       throw new BadRequestException('Either request_uri or PKCE parameters are required');
@@ -106,7 +106,7 @@ export class AuthService {
     }
 
     // 1. Validate PKCE
-    const { code_challenge, code_challenge_method, userId } = storedCode;
+    const { code_challenge, code_challenge_method, userId, scope } = storedCode; // Destructure scope
     let challenge: string;
     if (code_challenge_method === 'S256') {
       challenge = crypto
@@ -134,8 +134,8 @@ export class AuthService {
     }
 
     // 4. Generate Tokens
-    const accessToken = await this._generateAccessToken(user, jkt);
-    const refreshToken = await this._generateRefreshToken(user, jkt);
+    const accessToken = await this._generateAccessToken(user, jkt, scope);
+    const refreshToken = await this._generateRefreshToken(user, jkt, scope);
 
     return [accessToken, refreshToken];
   }
@@ -159,15 +159,15 @@ export class AuthService {
     // In a real implementation, we would handle access token revocation via a denylist
   }
 
-  private async _generateAccessToken(user: User, jkt: string): Promise<string> {
+  private async _generateAccessToken(user: User, jkt: string, scope: string): Promise<string> {
     // In a real implementation, we would generate and sign a JWT
     // and include the jkt in the claims.
     const accessToken = 'mock_access_token';
     return accessToken;
   }
 
-  private async _generateRefreshToken(user: User, jkt: string): Promise<string> {
-    return this.tokensService.issueRefreshToken(user, jkt);
+  private async _generateRefreshToken(user: User, jkt: string, scope: string): Promise<string> {
+    return this.tokensService.issueRefreshToken(user, jkt, undefined, undefined, undefined, scope);
   }
 
   async introspect(token: string): Promise<any> {
@@ -177,7 +177,25 @@ export class AuthService {
     return { active: true, sub: 'mock_user_id' };
   }
 
-  private async validateDpopProof(dpopProof: string, httpMethod: string, httpUrl: string): Promise<string> {
+  /**
+   * Refresh tokens with DPoP binding and rotation
+   * Implements RFC 6749 refresh token flow with DPoP (RFC 9449)
+   */
+  async refreshTokens(refreshToken: string, dpopProof: string, httpMethod: string, httpUrl: string): Promise<[string, string]> {
+    // Validate the refresh token and DPoP binding
+    const user = await this.tokensService.validateRefreshToken(refreshToken, dpopProof, httpMethod, httpUrl);
+    
+    // Rotate the refresh token (invalidates the old one and issues a new one)
+    const newRefreshToken = await this.tokensService.rotateRefreshToken(refreshToken);
+    
+    // Generate new access token with same DPoP binding
+    const jkt = await this.validateDpopProof(dpopProof, httpMethod, httpUrl);
+    const newAccessToken = await this._generateAccessToken(user, jkt, 'openid profile'); // Default scope for now
+    
+    return [newAccessToken, newRefreshToken];
+  }
+
+  public async validateDpopProof(dpopProof: string, httpMethod: string, httpUrl: string): Promise<string> {
     try {
       // Parse the JWS to get header and payload
       const parts = dpopProof.split('.');

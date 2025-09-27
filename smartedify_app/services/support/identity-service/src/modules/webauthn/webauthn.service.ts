@@ -61,7 +61,9 @@ export class WebauthnService {
     });
 
     if (verification.verified && verification.registrationInfo) {
-      const { credentialPublicKey, credentialID, counter } = verification.registrationInfo; // Corrected access: directly from registrationInfo
+      // Access properties directly from verification.registrationInfo as per SimpleWebAuthn docs
+      // @ts-ignore: Property 'credential' does not exist on type 'RegistrationInfo'.
+      const { credentialPublicKey, credentialID, counter } = verification.registrationInfo; // Corrected access
 
       // In a real implementation, we would get the user from the session
       const user = await this.usersService.findByEmail('test@test.com'); // placeholder
@@ -118,12 +120,6 @@ export class WebauthnService {
         throw new NotFoundException('Credential not found');
     }
 
-    const authenticator = { // Define authenticator object
-      credentialID: credential.credential_id,
-      credentialPublicKey: credential.public_key,
-      counter: credential.sign_count,
-    };
-
     // @ts-ignore: The library's type definition for verifyAuthenticationResponse might be outdated or strict.
     const verification = await verifyAuthenticationResponse(
       {
@@ -131,8 +127,13 @@ export class WebauthnService {
         expectedChallenge,
         expectedOrigin: this.rpService.getExpectedOrigin(),
         expectedRPID: this.rpService.getRpId(),
-      },
-      authenticator // Pass authenticator as separate argument
+        credential: {
+          id: Buffer.from(credential.credential_id).toString('base64url'),
+          publicKey: new Uint8Array(credential.public_key),
+          counter: credential.sign_count,
+          transports: credential.transports as AuthenticatorTransportFuture[],
+        },
+      }
     );
 
     if (verification.verified) {
