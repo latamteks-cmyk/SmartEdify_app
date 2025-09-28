@@ -31,27 +31,27 @@ static_resources:
 
               # OIDC/OAuth2 Endpoints for identity-service
               - match: { prefix: "/authorize" }
-                route: { cluster: "identity-service" }
+                route: { cluster: "identity-service", timeout: 15s }
               - match: { prefix: "/oauth/" }
-                route: { cluster: "identity-service" }
+                route: { cluster: "identity-service", timeout: 15s }
               - match: { prefix: "/logout" }
-                route: { cluster: "identity-service" }
+                route: { cluster: "identity-service", timeout: 15s }
               - match: { prefix: "/backchannel-logout" }
-                route: { cluster: "identity-service" }
+                route: { cluster: "identity-service", timeout: 15s }
               - match: { prefix: "/.well-known/" }
-                route: { cluster: "identity-service" }
+                route: { cluster: "identity-service", timeout: 15s }
 
               # Other identity-service endpoints
               - match: { prefix: "/webauthn/" }
-                route: { cluster: "identity-service" }
+                route: { cluster: "identity-service", timeout: 15s }
               - match: { prefix: "/users" }
-                route: { cluster: "identity-service" }
+                route: { cluster: "identity-service", timeout: 15s }
               - match: { prefix: "/identity/v2/" }
-                route: { cluster: "identity-service" }
+                route: { cluster: "identity-service", timeout: 15s }
               - match: { prefix: "/compliance/" }
-                route: { cluster: "identity-service" }
+                route: { cluster: "identity-service", timeout: 15s }
               - match: { prefix: "/privacy/" }
-                route: { cluster: "identity-service" }
+                route: { cluster: "identity-service", timeout: 15s }
 
               # identity-service
               - match:
@@ -112,7 +112,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "governance-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -136,7 +141,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "governance-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -159,7 +169,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "user-profiles-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -183,7 +198,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "user-profiles-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -206,7 +226,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "tenancy-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -230,7 +255,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "tenancy-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -253,7 +283,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "physical-security-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -277,7 +312,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "physical-security-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -300,7 +340,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "notifications-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -324,7 +369,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "notifications-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -347,7 +397,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "documents-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -371,7 +426,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "documents-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -394,7 +454,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "finance-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -418,7 +483,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "finance-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -441,7 +511,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "payroll-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -465,7 +540,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "payroll-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -488,7 +568,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "hr-compliance-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -512,7 +597,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "hr-compliance-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -535,7 +625,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "asset-management-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -559,7 +654,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "asset-management-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -582,7 +682,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "compliance-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -606,7 +711,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "compliance-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -629,7 +739,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "reservation-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -653,7 +768,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "reservation-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -676,7 +796,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "streaming-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -700,7 +825,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "streaming-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -723,7 +853,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "marketplace-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -747,7 +882,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "marketplace-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -770,7 +910,12 @@ static_resources:
                     exact_match: "GET"
                 route:
                   cluster: "analytics-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -794,7 +939,12 @@ static_resources:
                       regex: "POST|PUT|PATCH|DELETE"
                 route:
                   cluster: "analytics-service"
+                  timeout: 15s
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -884,6 +1034,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "identity-service"
       endpoints:
@@ -897,6 +1058,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "governance-service"
       endpoints:
@@ -910,6 +1082,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "user-profiles-service"
       endpoints:
@@ -923,6 +1106,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "tenancy-service"
       endpoints:
@@ -936,6 +1130,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "physical-security-service"
       endpoints:
@@ -949,6 +1154,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "notifications-service"
       endpoints:
@@ -962,6 +1178,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "documents-service"
       endpoints:
@@ -975,6 +1202,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "finance-service"
       endpoints:
@@ -988,6 +1226,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "payroll-service"
       endpoints:
@@ -1001,6 +1250,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "hr-compliance-service"
       endpoints:
@@ -1014,6 +1274,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "asset-management-service"
       endpoints:
@@ -1027,6 +1298,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "compliance-service"
       endpoints:
@@ -1040,6 +1322,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "reservation-service"
       endpoints:
@@ -1053,6 +1346,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "streaming-service"
       endpoints:
@@ -1066,6 +1370,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "marketplace-service"
       endpoints:
@@ -1079,6 +1394,17 @@ static_resources:
     connect_timeout: 2s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 1024
+          max_pending_requests: 1024
+          max_retries: 3
+    outlier_detection:
+      consecutive_5xx: 5
+      interval: 10s
+      base_ejection_time: 30s
+      max_ejection_percent: 10
     load_assignment:
       cluster_name: "analytics-service"
       endpoints:
