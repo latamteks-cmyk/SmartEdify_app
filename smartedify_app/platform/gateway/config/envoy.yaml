@@ -19,6 +19,40 @@ static_resources:
             - name: local_service
               domains: ["*"]
               routes:
+              # Gateway-specific endpoints
+              - match: { prefix: "/healthz" }
+                direct_response:
+                  status: 200
+                  body: { inline_string: "healthy" }
+              - match: { prefix: "/readyz" }
+                direct_response:
+                  status: 200
+                  body: { inline_string: "ready" }
+
+              # OIDC/OAuth2 Endpoints for identity-service
+              - match: { prefix: "/authorize" }
+                route: { cluster: "identity-service" }
+              - match: { prefix: "/oauth/" }
+                route: { cluster: "identity-service" }
+              - match: { prefix: "/logout" }
+                route: { cluster: "identity-service" }
+              - match: { prefix: "/backchannel-logout" }
+                route: { cluster: "identity-service" }
+              - match: { prefix: "/.well-known/" }
+                route: { cluster: "identity-service" }
+
+              # Other identity-service endpoints
+              - match: { prefix: "/webauthn/" }
+                route: { cluster: "identity-service" }
+              - match: { prefix: "/users" }
+                route: { cluster: "identity-service" }
+              - match: { prefix: "/identity/v2/" }
+                route: { cluster: "identity-service" }
+              - match: { prefix: "/compliance/" }
+                route: { cluster: "identity-service" }
+              - match: { prefix: "/privacy/" }
+                route: { cluster: "identity-service" }
+
               # identity-service
               - match:
                   prefix: "/api/v1/identity/"
@@ -28,6 +62,10 @@ static_resources:
                 route:
                   cluster: "identity-service"
                   rate_limits:
+                  - actions:
+                    - request_headers:
+                        header_name: "x-client-asn"
+                        descriptor_key: "client_asn"
                   - actions:
                     - request_headers:
                         header_name: "x-tenant-id"
@@ -806,20 +844,31 @@ static_resources:
                   "@type": type.googleapis.com/google.protobuf.StringValue
                   value: '{"replay_cache":{"type":"redis","dsn":"redis://rate-limit:6379","ttl_seconds":300},"iat_skew_seconds":10,"require_on_upgrade":true,"ws_close_code_on_fail":4401}'
           # JWT AuthN filter
+          # NOTE: Dynamic tenant handling for issuer and jwks_uri is a complex requirement.
+          # A custom filter or complex Lua script would be needed to fully implement the spec.
+          # This configuration is an interim step towards alignment.
           - name: envoy.filters.http.jwt_authn
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
               providers:
                 smartedify:
-                  issuer: "https://auth.smartedify.global/t/{tenant_id}" # This needs dynamic tenant_id handling
+                  # The spec requires this to be dynamic per tenant, which is not directly supported.
+                  issuer: "https://auth.smartedify.global/t/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11" # Using a default tenant for now
                   remote_jwks:
                     http_uri:
-                      uri: "http://identity-service:3001/.well-known/jwks.json" # Simplified for local dev
+                      # The spec requires a dynamic URI. Using a default tenant for now.
+                      uri: "http://identity-service:3001/.well-known/jwks.json?tenant_id=a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
                       cluster: "identity-service"
                       timeout: 3s
                     cache_duration: 300s
                   forward: true
-              rules: [{ match: { prefix: "/api/v1/" }, requires: { provider_name: "smartedify" } }]
+              # The rules should protect all authenticated endpoints.
+              # Public OIDC endpoints like /authorize should be excluded.
+              rules:
+                - match: { prefix: "/api/v1/" }
+                  requires: { provider_name: "smartedify" }
+                - match: { prefix: "/identity/v2/sessions/" }
+                  requires: { provider_name: "smartedify" }
           # Rate limit filter
           - name: envoy.filters.http.ratelimit
             typed_config:
