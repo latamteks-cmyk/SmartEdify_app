@@ -28,6 +28,8 @@ import { AuthService } from '../../src/modules/auth/auth.service';
 import { UsersService } from '../../src/modules/users/users.service';
 import { AuthorizationCodeStoreService } from '../../src/modules/auth/store/authorization-code-store.service';
 import { MetricsModule } from '../../src/modules/metrics/metrics.module';
+import { KafkaModule } from '../../src/modules/kafka/kafka.module';
+import { JobsModule } from '../../src/modules/jobs/jobs.module';
 
 export interface TestModuleSetup {
   app: INestApplication;
@@ -66,6 +68,8 @@ export class TestConfigurationFactory {
             MfaModule,
             OidcDiscoveryModule,
             MetricsModule,
+            KafkaModule,
+            JobsModule,
           ],
         }).compile();
 

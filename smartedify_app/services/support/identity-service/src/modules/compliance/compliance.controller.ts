@@ -1,4 +1,4 @@
-import { Controller, Post, Delete, Body, UseGuards, NotImplementedException } from '@nestjs/common';
+import { Controller, Post, Delete, Body, UseGuards, HttpCode, HttpStatus, NotImplementedException } from '@nestjs/common';
 import { ComplianceService } from './compliance.service';
 import { MfaGuard } from '../mfa/guards/mfa.guard';
 
@@ -14,6 +14,7 @@ export class ComplianceController {
   }
 
   @Delete('privacy/data')
+  @HttpCode(HttpStatus.ACCEPTED)
   @UseGuards(MfaGuard)
   async deleteData(@Body('user_id') userId: string) {
     const jobId = await this.complianceService.deleteData(userId);

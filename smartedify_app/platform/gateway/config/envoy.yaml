@@ -1028,13 +1028,25 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
               inline_code: |
                 function envoy_on_request(request_handle)
-                  -- TODO: Implement dynamic multi-tenant JWT validation
-                  -- 1. Extract tenant_id from hostname or header
-                  -- 2. Construct JWKS URI
-                  -- 3. Fetch and cache JWKS
-                  -- 4. Validate JWT signature and claims
-                  local tenant = request_handle:headers():get("x-tenant-id") or "unknown"
-                  request_handle:logInfo("JWT Validator: processing request for tenant: " .. tenant)
+                  -- 1. Extract tenant_id from a header (e.g., x-tenant-id)
+                  -- In a real scenario, this might come from the hostname or another source.
+                  local tenant_id = request_handle:headers():get("x-tenant-id")
+                  if not tenant_id then
+                    -- For now, we will not block requests, just log that the tenant is unknown.
+                    -- In a production setup, this would likely return a 400 Bad Request.
+                    request_handle:logInfo("JWT Validator: x-tenant-id header not found.")
+                    return
+                  end
+
+                  request_handle:logInfo("JWT Validator: Processing request for tenant: " .. tenant_id)
+
+                  -- TODO: 
+                  -- 2. Construct the JWKS URI based on the tenant_id.
+                  -- 3. Fetch the JWKS from the URI (with caching).
+                  -- 4. Get the JWT from the Authorization header.
+                  -- 5. Validate the JWT signature and claims using the fetched JWKS.
+                  -- 6. On failure, respond with a 401 Unauthorized error.
+                  -- 7. On success, allow the request to proceed.
                 end
 
           # Rate limit filter

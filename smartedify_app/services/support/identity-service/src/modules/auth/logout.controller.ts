@@ -1,8 +1,9 @@
-import { Controller, Post, HttpCode, HttpStatus, NotImplementedException } from '@nestjs/common';
+import { Controller, Post, HttpCode, HttpStatus, NotImplementedException, Body } from '@nestjs/common';
+import { AuthService } from './auth.service';
 
 @Controller()
 export class LogoutController {
-  constructor() {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
@@ -13,8 +14,8 @@ export class LogoutController {
 
   @Post('backchannel-logout')
   @HttpCode(HttpStatus.OK)
-  async backchannelLogout() {
-    // TODO: Implement back-channel logout logic as per OIDC spec.
-    throw new NotImplementedException('OIDC Back-Channel Logout not implemented.');
+  async backchannelLogout(@Body('logout_token') logoutToken: string) {
+    await this.authService.handleBackchannelLogout(logoutToken);
+    return {};
   }
 }

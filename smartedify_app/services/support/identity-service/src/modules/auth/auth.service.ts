@@ -13,6 +13,7 @@ import { DeviceCodeStoreService, DeviceCodeStatus } from './store/device-code-st
 import { RefreshToken } from '../tokens/entities/refresh-token.entity';
 import { JtiStoreService } from './store/jti-store.service';
 import { KeyManagementService } from '../keys/services/key-management.service';
+import { ClientStoreService } from '../clients/client-store.service';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +26,7 @@ export class AuthService {
     private readonly deviceCodeStore: DeviceCodeStoreService,
     private readonly jtiStore: JtiStoreService,
     private readonly keyManagementService: KeyManagementService,
+    private readonly clientStore: ClientStoreService,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
   ) {}
@@ -300,4 +302,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid DPoP proof');
     }
   }
-}
+
+  async handleBackchannelLogout(logoutToken: string): Promise<void> {
+    // TODO: Implement the full back-channel logout logic.
+    // 1. Decode logout_token to get kid and iss
+    // 2. Find client public key from clientStore
+    // 3. Verify token signature and claims (iss, sub, aud, iat, jti, events, sid)
+    // 4. Check for jti reuse
+    // 5. Find session by sid and iss
+    // 6. Revoke the session using sessionsService.revokeSession(sid)
+    console.log(`Handling back-channel logout for token: ${logoutToken}`);
+  }}

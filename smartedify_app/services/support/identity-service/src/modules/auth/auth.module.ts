@@ -13,9 +13,10 @@ import { DeviceCodeStoreService } from './store/device-code-store.service';
 import { RefreshToken } from '../tokens/entities/refresh-token.entity';
 import { JtiStoreService } from './store/jti-store.service';
 import { KeysModule } from '../keys/keys.module';
+import { ClientsModule } from '../clients/clients.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RefreshToken]), TokensModule, UsersModule, SessionsModule, KeysModule],
+  imports: [TypeOrmModule.forFeature([RefreshToken]), TokensModule, UsersModule, SessionsModule, KeysModule, ClientsModule],
   providers: [
     AuthService, 
     ClientAuthGuard, 
