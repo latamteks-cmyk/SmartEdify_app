@@ -1,9 +1,127 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: Identity Service
   version: 1.0.0
   description: API for managing identity, authentication, and authorization.
+
 paths:
+  /oauth/par:
+    post:
+      summary: Pushed Authorization Request (PAR)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code_challenge:
+                  type: string
+                code_challenge_method:
+                  type: string
+      responses:
+        '201':
+          description: Successfully created PAR request
+  /oauth/device_authorization:
+    post:
+      summary: Device Authorization
+      responses:
+        '200':
+          description: Successfully initiated device authorization
+  /oauth/authorize:
+    get:
+      summary: OIDC Authorize
+      parameters:
+        - name: redirect_uri
+          in: query
+          schema:
+            type: string
+        - name: scope
+          in: query
+          schema:
+            type: string
+        - name: request_uri
+          in: query
+          schema:
+            type: string
+        - name: code_challenge
+          in: query
+          schema:
+            type: string
+        - name: code_challenge_method
+          in: query
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to login
+  /oauth/token:
+    post:
+      summary: OIDC Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                code:
+                  type: string
+                code_verifier:
+                  type: string
+                refresh_token:
+                  type: string
+                device_code:
+                  type: string
+      responses:
+        '200':
+          description: Access and refresh tokens
+  /oauth/revoke:
+    post:
+      summary: Token Revocation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                token_type_hint:
+                  type: string
+      responses:
+        '200':
+          description: Token successfully revoked
+  /oauth/introspect:
+    post:
+      summary: Token Introspection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Token introspection result
+  /users:
+    post:
+      summary: Create User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserDto'
+      responses:
+        '201':
+          description: User created
   /.well-known/openid-configuration:
     get:
       summary: OIDC Discovery
@@ -30,39 +148,61 @@ paths:
       responses:
         '200':
           description: JSON Web Key Set
-  /authorize:
+  /webauthn/registration/options:
     get:
-      summary: OIDC Authorize
-      responses:
-        '302':
-          description: Redirect to login
-  /oauth/token:
-    post:
-      summary: OIDC Token
-      responses:
-        '200':
-          description: Access and refresh tokens
-  /identity/v2/token/refresh:
-    post:
-      summary: Refresh Token
+      summary: WebAuthn Registration Options
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         '200':
-          description: New access and refresh tokens
-  /webauthn/attestation/options:
+          description: Registration options
+  /webauthn/registration/verification:
     post:
-      summary: WebAuthn Attestation Options
+      summary: WebAuthn Registration Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         '200':
-          description: Attestation options
-  /identity/v2/contextual-tokens:
-    post:
-      summary: Create Contextual Token
+          description: Registration verification result
+  /webauthn/authentication/options:
+    get:
+      summary: WebAuthn Authentication Options
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         '200':
-          description: Contextual token
-  /privacy/data:
-    delete:
-      summary: Delete User Data (DSAR)
+          description: Authentication options
+  /webauthn/authentication/verification:
+    post:
+      summary: WebAuthn Authentication Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
-        '202':
-          description: Deletion job accepted
+        '200':
+          description: Authentication verification result
+
+components:
+  schemas:
+    CreateUserDto:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string

@@ -48,8 +48,8 @@ describe('WebAuthn (e2e)', () => {
   describe('Options Generation', () => {
     it('should return valid registration options', async () => {
       const response = await request(app.getHttpServer())
-        .get('/webauthn/registration/options')
-        .query({ username: testUser.email, userId: testUser.id });
+        .post('/webauthn/attestation/options')
+        .send({ username: testUser.email, userId: testUser.id });
       
       expect(response.status).toBe(200);
       expect(response.body).toBeDefined();
@@ -62,8 +62,8 @@ describe('WebAuthn (e2e)', () => {
 
     it('should return valid authentication options', async () => {
         const response = await request(app.getHttpServer())
-          .get('/webauthn/authentication/options')
-          .query({ username: testUser.email });
+          .post('/webauthn/assertion/options')
+          .send({ username: testUser.email });
         
         expect(response.status).toBe(200);
         expect(response.body).toBeDefined();

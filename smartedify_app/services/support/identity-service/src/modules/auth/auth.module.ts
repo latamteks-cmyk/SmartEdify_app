@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { LogoutController } from './logout.controller';
 import { ClientAuthGuard } from './guards/client-auth.guard';
 import { AuthorizationCodeStoreService } from './store/authorization-code-store.service';
 import { TokensModule } from '../tokens/tokens.module';
@@ -22,7 +23,7 @@ import { JtiStoreService } from './store/jti-store.service';
     DeviceCodeStoreService,
     JtiStoreService
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, LogoutController],
   exports: [AuthService], // Export AuthService
 })
 export class AuthModule {}

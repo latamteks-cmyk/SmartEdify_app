@@ -65,17 +65,19 @@ $ npm run test:cov
 
 ## API Endpoints
 
-| Endpoint                        | Method | Description                                                                 |
-| ------------------------------- | ------ | --------------------------------------------------------------------------- |
-| `/oauth/par`                    | `POST` | **Pushed Authorization Request:** Initiates an authorization flow securely.     |
-| `/oauth/device_authorization`   | `POST` | **Device Authorization:** Starts the flow for input-constrained devices.      |
-| `/oauth/authorize`              | `GET`    | Standard authorization endpoint. Processes direct requests or a `request_uri` from PAR. |
-| `/oauth/token`                  | `POST`   | Exchanges an authorization code or device code for tokens. Requires DPoP.   |
-| `/oauth/revoke`                 | `POST`   | **Token Revocation:** Invalidates a refresh token.                          |
-| `/oauth/introspect`             | `POST`   | **Token Introspection:** Checks the validity of a token (client-protected). |
-| `/.well-known/jwks.json`        | `GET`    | Exposes public keys for token signature verification, per tenant.           |
-| `/.well-known/openid-configuration` | `GET`  | Exposes OIDC discovery information.                                         |
-| `/webauthn/registration/options`| `GET`    | Generates options for registering a new Passkey/WebAuthn credential.        |
-| `/webauthn/authentication/options`| `GET`    | Generates options for authenticating with a Passkey/WebAuthn credential.    |
-| `/metrics`                      | `GET`    | Exposes application and system metrics in Prometheus format.                |
+| Endpoint                                | Method | Description                                                                 |
+| --------------------------------------- | ------ | --------------------------------------------------------------------------- |
+| `/oauth/par`                            | `POST` | **Pushed Authorization Request:** Initiates an authorization flow securely.     |
+| `/oauth/device_authorization`           | `POST` | **Device Authorization:** Starts the flow for input-constrained devices.      |
+| `/oauth/authorize`                      | `GET`    | Standard authorization endpoint. Processes direct requests or a `request_uri` from PAR. |
+| `/oauth/token`                          | `POST`   | Exchanges an authorization code or device code for tokens. Requires DPoP.   |
+| `/oauth/revoke`                         | `POST`   | **Token Revocation:** Invalidates a refresh token.                          |
+| `/oauth/introspect`                     | `POST`   | **Token Introspection:** Checks the validity of a token (client-protected). |
+| `/.well-known/jwks.json`                | `GET`    | Exposes public keys for token signature verification, per tenant.           |
+| `/.well-known/openid-configuration`     | `GET`  | Exposes OIDC discovery information.                                         |
+| `/users`                                | `POST` | **Create User:** Creates a new user.                                        |
+| `/webauthn/registration/options`        | `GET`    | Generates options for registering a new Passkey/WebAuthn credential.        |
+| `/webauthn/registration/verification`   | `POST` | Verifies the registration of a new Passkey/WebAuthn credential.             |
+| `/webauthn/authentication/options`      | `GET`    | Generates options for authenticating with a Passkey/WebAuthn credential.    |
+| `/webauthn/authentication/verification` | `POST` | Verifies the authentication of a Passkey/WebAuthn credential.               |
 

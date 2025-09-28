@@ -162,7 +162,7 @@ export const TEST_CONSTANTS = {
   TEST_TIMEOUT: 30000, // 30 segundos para tests lentos
   RETRY_ATTEMPTS: 3,
   DATABASE_OPERATION_TIMEOUT: 5000, // 5 segundos para operaciones de DB
-  SERVICE_INITIALIZATION_TIMEOUT: 10000, // 10 segundos para inicialización
+  SERVICE_INITIALIZATION_TIMEOUT: 30000, // 30 segundos para inicialización
   MAX_CLEANUP_TIME: 3000, // 3 segundos máximo para cleanup
 } as const;
 

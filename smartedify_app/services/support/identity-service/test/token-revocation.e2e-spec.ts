@@ -70,7 +70,7 @@ describe('Token Revocation (e2e)', () => {
     });
 
     const authorizeResponse = await request(app.getHttpServer())
-      .get('/oauth/authorize')
+      .get('/authorize')
       .query({ 
         redirect_uri: 'https://example.com/callback',
         scope: 'openid profile',

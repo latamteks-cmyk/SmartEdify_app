@@ -61,7 +61,7 @@ describe('DPoP Anti-Replay (e2e)', () => {
     });
 
     const authorizeResponse = await request(app.getHttpServer())
-      .get('/oauth/authorize')
+      .get('/authorize')
       .query({ 
         redirect_uri: 'https://example.com/callback',
         scope: 'openid profile',
@@ -97,9 +97,17 @@ describe('DPoP Anti-Replay (e2e)', () => {
     // 4. Replay the exact same proof (should fail)
     // We need a new auth code for the second attempt
     const secondAuthCodeResponse = await request(app.getHttpServer())
-      .get('/oauth/authorize')
-      .query({ code_challenge: pkce.challenge, code_challenge_method: 'S256' });
-    const secondAuthCode = secondAuthCodeResponse.body.code;
+      .get('/authorize')
+      .query({ 
+        redirect_uri: 'https://example.com/callback',
+        scope: 'openid profile',
+        code_challenge: pkce.challenge, 
+        code_challenge_method: 'S256' 
+      });
+    const secondLocationHeader = secondAuthCodeResponse.headers.location;
+    const secondRedirectUrl = new URL(secondLocationHeader);
+    const secondAuthCode = secondRedirectUrl.searchParams.get('code')!;
+
     const secondCodeData = authCodeStore.get(secondAuthCode);
     if (secondCodeData) {
       authCodeStore.set(secondAuthCode, { ...secondCodeData, userId: testUser.id });

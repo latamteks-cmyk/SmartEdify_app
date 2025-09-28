@@ -58,7 +58,7 @@ describe('Pushed Authorization Requests (PAR - e2e)', () => {
 
     // 2. Use the request_uri at the authorize endpoint
     const authorizeResponse = await request(app.getHttpServer())
-      .get('/oauth/authorize')
+      .get('/authorize')
       .query({ request_uri });
 
     expect(authorizeResponse.status).toBe(200);
@@ -70,7 +70,7 @@ describe('Pushed Authorization Requests (PAR - e2e)', () => {
     const invalid_request_uri = 'urn:ietf:params:oauth:request_uri:invalid-uri';
 
     const authorizeResponse = await request(app.getHttpServer())
-      .get('/oauth/authorize')
+      .get('/authorize')
       .query({ request_uri: invalid_request_uri });
 
     expect(authorizeResponse.status).toBe(400);

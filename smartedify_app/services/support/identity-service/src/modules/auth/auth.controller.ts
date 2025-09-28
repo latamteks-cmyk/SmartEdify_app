@@ -5,11 +5,11 @@ import type { Request } from 'express';
 import type { ParPayload } from './store/par-store.service';
 import type { Response } from 'express'; // Import Response as type
 
-@Controller('oauth')
+@Controller()
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('par')
+  @Post('oauth/par')
   @HttpCode(HttpStatus.CREATED)
   async pushedAuthorizationRequest(@Body() payload: ParPayload) {
     if (!payload.code_challenge || !payload.code_challenge_method) {
@@ -18,7 +18,7 @@ export class AuthController {
     return this.authService.pushedAuthorizationRequest(payload);
   }
 
-  @Post('device_authorization')
+  @Post('oauth/device_authorization')
   @HttpCode(HttpStatus.OK)
   async deviceAuthorization() {
     // In a real implementation, the client would be authenticated here
@@ -58,6 +58,11 @@ export class AuthController {
       console.log('✅ PAR Debug: Updated params:', { redirect_uri, scope, code_challenge, code_challenge_method });
     }
 
+    // Enforce PKCE for all non-PAR requests
+    if (!request_uri && (!code_challenge || !code_challenge_method)) {
+      throw new BadRequestException('PKCE parameters (code_challenge, code_challenge_method) are required');
+    }
+
     if (!redirect_uri) {
       console.log('❌ Missing redirect_uri after PAR processing');
       throw new BadRequestException('redirect_uri is required');
@@ -94,7 +99,7 @@ export class AuthController {
     res.redirect(redirectUrl.toString());
   }
 
-  @Post('token')
+  @Post('oauth/token')
   @HttpCode(HttpStatus.OK)
   async token(
     @Body('grant_type') grant_type: string,
@@ -163,7 +168,7 @@ export class AuthController {
     }
   }
 
-  @Post('revoke')
+  @Post('oauth/revoke')
   @HttpCode(HttpStatus.OK)
   async revoke(
     @Body('token') token: string,
@@ -176,7 +181,7 @@ export class AuthController {
     return {};
   }
 
-  @Post('introspect')
+  @Post('oauth/introspect')
   @UseGuards(ClientAuthGuard)
   async introspect(@Body('token') token: string) {
     return this.authService.introspect(token);
