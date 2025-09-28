@@ -5,7 +5,9 @@ import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
 import { SessionsService } from '../sessions/sessions.service';
 import * as crypto from 'crypto';
+import * as jose from 'node-jose';
 import { AuthService } from '../auth/auth.service'; // Import AuthService
+import { KeyManagementService } from '../keys/services/key-management.service';
 
 @Injectable()
 export class TokensService {
@@ -15,10 +17,42 @@ export class TokensService {
     @Inject(forwardRef(() => AuthService)) // Use forwardRef to handle circular dependency
     private readonly authService: AuthService,
     private readonly sessionsService: SessionsService,
+    private readonly keyManagementService: KeyManagementService,
   ) {}
 
   async issueRefreshToken(user: User, jkt: string, familyId?: string, clientId?: string, deviceId?: string, scope?: string): Promise<string> {
-    const token = crypto.randomBytes(32).toString('hex');
+    const now = Math.floor(Date.now() / 1000);
+    const signingKey = await this.keyManagementService.getActiveSigningKey(user.tenant_id);
+    const key = await jose.JWK.asKey(signingKey.private_key_pem, 'pem');
+    const jti = crypto.randomUUID();
+    const sessionId = crypto.randomUUID();
+
+    const payload = JSON.stringify({
+      iss: `https://auth.smartedify.global/t/${user.tenant_id}`,
+      sub: user.id,
+      aud: 'https://api.smartedify.global', // Audience should be configurable
+      exp: now + 30 * 24 * 60 * 60, // 30 days
+      iat: now,
+      nbf: now,
+      jti: jti,
+      sid: sessionId,
+      family: familyId || crypto.randomUUID(),
+      scope: scope || 'openid profile',
+      cnf: {
+        jkt: jkt,
+      },
+    });
+
+    const options = {
+      format: 'compact' as const,
+      fields: {
+        alg: 'ES256',
+        kid: signingKey.kid,
+      },
+    };
+
+    const token = await jose.JWS.createSign(options, key).update(payload).final();
+
     const token_hash = crypto.createHash('sha256').update(token).digest('hex');
 
     const newRefreshToken = this.refreshTokensRepository.create({
@@ -28,14 +62,14 @@ export class TokensService {
       family_id: familyId || crypto.randomUUID(),
       client_id: clientId || 'test-client-id',
       device_id: deviceId || 'test-device-id', 
-      session_id: crypto.randomUUID(),
+      session_id: sessionId,
       scope: scope || 'openid profile',
       expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     });
 
     await this.refreshTokensRepository.save(newRefreshToken);
 
-    return token;
+    return token as string;
   }
 
   async rotateRefreshToken(oldToken: string): Promise<string> {
@@ -86,25 +120,57 @@ export class TokensService {
     return newToken;
   }
 
-  async validateRefreshToken(token: string, dpopProof: string, httpMethod: string, httpUrl: string): Promise<User> { // Modified signature
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const refreshToken = await this.refreshTokensRepository.findOne({ where: { token_hash: tokenHash }, relations: ['user'] });
+  async validateRefreshToken(token: string, dpopProof: string, httpMethod: string, httpUrl: string): Promise<User> {
+    try {
+      // 1. Decode the JWT to get the kid from the header
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new UnauthorizedException('Invalid refresh token format');
+      }
+      const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString());
+      const { kid } = header;
 
-    if (!refreshToken || refreshToken.revoked || refreshToken.used_at) {
-      throw new UnauthorizedException('Invalid refresh token');
+      if (!kid) {
+        throw new UnauthorizedException('Refresh token missing kid');
+      }
+
+      // 2. Get the public key
+      const signingKey = await this.keyManagementService.findKeyById(kid);
+      if (!signingKey) {
+        throw new UnauthorizedException('Invalid signing key');
+      }
+      const publicKey = await jose.JWK.asKey(signingKey.public_key_jwk);
+
+      // 3. Verify the JWS
+      const verifier = jose.JWS.createVerify(publicKey);
+      const verified = await verifier.verify(token);
+      const payload = JSON.parse(verified.payload.toString());
+
+      // 4. Validate claims
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp < now) {
+        throw new UnauthorizedException('Refresh token expired');
+      }
+
+      // 5. Validate DPoP proof and binding
+      const incomingJkt = await this.authService.validateDpopProof(dpopProof, httpMethod, httpUrl);
+      if (payload.cnf?.jkt !== incomingJkt) {
+        throw new UnauthorizedException('DPoP proof does not match refresh token binding');
+      }
+
+      // 6. Check for reuse via jti
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const storedToken = await this.refreshTokensRepository.findOne({ where: { token_hash: tokenHash }, relations: ['user'] });
+
+      if (!storedToken || storedToken.revoked || storedToken.used_at) {
+        throw new UnauthorizedException('Invalid or used refresh token');
+      }
+
+      return storedToken.user;
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
+      throw new UnauthorizedException(`Invalid refresh token: ${error.message}`);
     }
-
-    // Validate DPoP binding
-    if (!dpopProof) {
-      throw new UnauthorizedException('DPoP proof is required for refresh token validation');
-    }
-    const incomingJkt = await this.authService.validateDpopProof(dpopProof, httpMethod, httpUrl);
-
-    if (incomingJkt !== refreshToken.jkt) {
-      throw new UnauthorizedException('DPoP proof does not match refresh token binding');
-    }
-
-    return refreshToken.user;
   }
 
   /**

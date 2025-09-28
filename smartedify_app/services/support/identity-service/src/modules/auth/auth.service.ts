@@ -12,6 +12,7 @@ import { ParStoreService, ParPayload } from './store/par-store.service';
 import { DeviceCodeStoreService, DeviceCodeStatus } from './store/device-code-store.service';
 import { RefreshToken } from '../tokens/entities/refresh-token.entity';
 import { JtiStoreService } from './store/jti-store.service';
+import { KeyManagementService } from '../keys/services/key-management.service';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly parStore: ParStoreService,
     private readonly deviceCodeStore: DeviceCodeStoreService,
     private readonly jtiStore: JtiStoreService,
+    private readonly keyManagementService: KeyManagementService,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
   ) {}
@@ -175,10 +177,33 @@ export class AuthService {
   }
 
   private async _generateAccessToken(user: User, jkt: string, scope: string): Promise<string> {
-    // In a real implementation, we would generate and sign a JWT
-    // and include the jkt in the claims.
-    const accessToken = 'mock_access_token';
-    return accessToken;
+    const now = Math.floor(Date.now() / 1000);
+    const signingKey = await this.keyManagementService.getActiveSigningKey(user.tenant_id);
+    const key = await jose.JWK.asKey(signingKey.private_key_pem, 'pem');
+
+    const payload = JSON.stringify({
+      iss: `https://auth.smartedify.global/t/${user.tenant_id}`,
+      sub: user.id,
+      aud: 'https://api.smartedify.global', // Audience should be configurable
+      exp: now + 10 * 60, // 10 minutes
+      iat: now,
+      nbf: now,
+      jti: crypto.randomUUID(),
+      scope: scope,
+      cnf: {
+        jkt: jkt,
+      },
+    });
+
+    const options = {
+      format: 'compact' as const,
+      fields: {
+        alg: 'ES256',
+        kid: signingKey.kid,
+      },
+    };
+
+    return jose.JWS.createSign(options, key).update(payload).final();
   }
 
   private async _generateRefreshToken(user: User, jkt: string, scope: string): Promise<string> {
