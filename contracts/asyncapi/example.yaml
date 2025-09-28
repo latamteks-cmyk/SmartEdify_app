@@ -1,0 +1,15 @@
+asyncapi: '2.6.0'
+info:
+  title: SmartEdify Events
+  version: 1.0.0
+channels:
+  user.loggedin:
+    description: Evento de login exitoso
+    subscribe:
+      message:
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            userId:
+              type: string

@@ -1,0 +1,11 @@
+openapi: 3.0.3
+info:
+  title: SmartEdify Auth API
+  version: 1.0.0
+paths:
+  /auth/login:
+    post:
+      summary: Login usuario
+      responses:
+        '200':
+          description: OK

@@ -1,0 +1,15 @@
+name: Contracts First Gate
+on:
+  pull_request:
+    branches: [main, develop]
+jobs:
+  contracts-first:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar OpenAPI
+        run: |
+          npx @redocly/cli lint contracts/openapi/*.yaml
+      - name: Validar AsyncAPI
+        run: |
+          npx @asyncapi/cli validate contracts/asyncapi/*.yaml
