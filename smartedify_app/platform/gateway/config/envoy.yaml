@@ -1023,33 +1023,50 @@ static_resources:
                   "@type": type.googleapis.com/google.protobuf.StringValue
                   value: '{"replay_cache":{"type":"redis","dsn":"redis://rate-limit:6379","ttl_seconds":300},"iat_skew_seconds":10,"require_on_upgrade":true,"ws_close_code_on_fail":4401}'
           # Dynamic JWT AuthN filter (Lua)
-          - name: envoy.lua.jwt_validator
-            typed_config:
-              "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
-              inline_code: |
-                function envoy_on_request(request_handle)
-                  -- 1. Extract tenant_id from a header (e.g., x-tenant-id)
-                  -- In a real scenario, this might come from the hostname or another source.
-                  local tenant_id = request_handle:headers():get("x-tenant-id")
-                  if not tenant_id then
-                    -- For now, we will not block requests, just log that the tenant is unknown.
-                    -- In a production setup, this would likely return a 400 Bad Request.
-                    request_handle:logInfo("JWT Validator: x-tenant-id header not found.")
-                    return
-                  end
-
-                  request_handle:logInfo("JWT Validator: Processing request for tenant: " .. tenant_id)
-
-                  -- TODO: 
-                  -- 2. Construct the JWKS URI based on the tenant_id.
-                  -- 3. Fetch the JWKS from the URI (with caching).
-                  -- 4. Get the JWT from the Authorization header.
-                  -- 5. Validate the JWT signature and claims using the fetched JWKS.
-                  -- 6. On failure, respond with a 401 Unauthorized error.
-                  -- 7. On success, allow the request to proceed.
-                end
-
-          # Rate limit filter
+                    - name: envoy.lua.jwt_validator
+                      typed_config:
+                        "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                        inline_code: |
+                          -- Placeholder for a real JWKS fetching and caching mechanism
+                          function fetch_jwks(tenant_id)
+                            -- In a real implementation, this would make an HTTP call to the identity service.
+                            -- For now, return a hardcoded JWKS for the test tenant.
+                            if tenant_id == "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11" then
+                              return '{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4\",\"y\":\"4Etl6SRW2E4qU50xG3YMXu2L31A21S_s-T3u2v3bf7I\",\"kid\":\"test-key-1\"}]}'
+                            else
+                              return nil
+                            end
+                          end
+          
+                          function envoy_on_request(request_handle)
+                            local tenant_id = request_handle:headers():get("x-tenant-id")
+                            if not tenant_id then
+                              request_handle:logInfo("JWT Validator: x-tenant-id header not found.")
+                              return
+                            end
+          
+                            request_handle:logInfo("JWT Validator: Processing request for tenant: " .. tenant_id)
+          
+                            -- L1 Cache: Check for JWKS in shared data
+                            local jwks_cache_key = "jwks_" .. tenant_id
+                            local jwks_data = request_handle:streamInfo():sharedData():get(jwks_cache_key)
+          
+                            if jwks_data then
+                              request_handle:logInfo("JWKS found in cache for tenant: " .. tenant_id)
+                            else
+                              request_handle:logInfo("JWKS not in cache. Fetching for tenant: " .. tenant_id)
+                              jwks_data = fetch_jwks(tenant_id)
+                              if jwks_data then
+                                -- Cache for 5 minutes (300 seconds)
+                                request_handle:streamInfo():sharedData():set(jwks_cache_key, jwks_data, 300)
+                              else
+                                request_handle:logWarn("Could not fetch JWKS for tenant: " .. tenant_id)
+                              end
+                            end
+          
+                            -- TODO: Implement JWT validation using the fetched JWKS.
+                          end
+                    # Rate limit filter
           - name: envoy.filters.http.ratelimit
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
