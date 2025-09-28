@@ -1,9 +1,8 @@
-
 # 📘 Especificación Técnica: `gateway-service` (Puerto 8080) — Versión 2.0 
 
 **Metodología:** `github/spec-kit`
-**Estado:** `✅ Listo para spec`
-**Última actualización:** `2025-09-23`
+**Estado:** `🟡 En Implementación`
+**Última actualización:** `2025-09-28`
 **Rol:** Punto de entrada L7 para todos los clientes (web, móvil, terceros), seguridad transversal, enrutamiento, observabilidad, anti-abuso.
 **No-Goals:** No emite ni valida identidad; no implementa lógica de dominio.
 
@@ -289,6 +288,41 @@ MTLS_SPIFFE_TRUST_DOMAIN=smartedify.global
         h:headers():add("Permissions-Policy","camera=(), microphone=()")
       end
 ```
+
+---
+
+## 15) Estado de Implementación (resumen)
+
+**Nivel de Avance Estimado:** 85%
+
+La configuración estructural y de seguridad del gateway está casi completa. Las tareas restantes se centran en la implementación de la lógica de validación final y en la configuración de aspectos de observabilidad más detallados.
+
+### Funcionalidades Completadas y Alineadas:
+
+*   **✅ Enrutamiento:** Todas las rutas para los 16 microservicios están definidas y alineadas con las especificaciones de `identity-service`.
+*   **✅ Resiliencia:** Se han aplicado a todos los servicios las políticas de `circuit breakers`, `timeouts` por ruta y `outlier detection`.
+*   **✅ Rate Limiting:** La configuración de límite de peticiones está activa y se ha añadido la dimensión de `ASN` a todas las rutas.
+*   **✅ Seguridad Perimetral (WAF):**
+    *   **Headers de Seguridad:** Se ha implementado el filtro `Lua` que añade cabeceras de seguridad.
+    *   **Filtro DPoP:** El filtro `WASM` para la validación de DPoP está configurado.
+    *   **Pre-filtro PKCE:** Se ha implementado el filtro `Lua` que rechaza peticiones a `/authorize` sin los parámetros PKCE.
+*   **✅ Health Checks:** Los endpoints `/healthz` y `/readyz` están implementados.
+*   **✅ Scaffolding para JWT Dinámico:** Se ha implementado un filtro `Lua` que extrae el `tenant_id`, simula la obtención de JWKS y lo cachea, sentando las bases para la validación final.
+
+### Funcionalidades Pendientes (Próximos Pasos):
+
+*   **🔴 Validación Criptográfica de JWT (Tarea Principal):**
+    *   **Descripción:** Es la pieza más crítica que falta. El script `Lua` actual debe ser completado con la lógica que **valide criptográficamente la firma del JWT** usando el JWKS obtenido.
+    *   **Complejidad:** **Alta.** Requiere una librería de criptografía en el entorno Lua de Envoy, lo que probablemente implique construir una imagen de Envoy personalizada.
+
+*   **🟡 Configuración de mTLS Interno:**
+    *   **Descripción:** Falta configurar el `transport_socket` en los clústeres de Envoy para asegurar la comunicación con los microservicios de backend mediante mTLS (SPIFFE).
+
+*   **🟡 Política de CORS Multi-Tenant:**
+    *   **Descripción:** La política actual de CORS es permisiva (`.*`). Se necesita una solución más dinámica para manejar una lista de orígenes permitidos por cada tenant.
+
+*   **🟡 Observabilidad Avanzada:**
+    *   **Descripción:** Falta implementar la lógica que genere las métricas específicas de Prometheus (ej. `jwt_validation_fail_total`) y enriquezca las trazas de OpenTelemetry.
 
 ---
 
