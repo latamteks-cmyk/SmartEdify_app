@@ -3,12 +3,15 @@ import request from 'supertest';
 import * as jose from 'node-jose';
 import * as crypto from 'crypto';
 import { TestConfigurationFactory, TestModuleSetup, TEST_CONSTANTS } from './utils/test-configuration.factory';
+import { Test } from '@nestjs/testing';
+import { AppModule } from '../src/app.module';
+import { KafkaService } from '../src/modules/kafka/kafka.service';
 import { ClientStoreService } from '../src/modules/clients/client-store.service';
 import { SessionsService } from '../src/modules/sessions/sessions.service';
-import { UsersService } from '../src/modules/users/users.service';
 import { Session } from '../src/modules/sessions/entities/session.entity';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { UsersService } from '../src/modules/users/users.service';
 
 describe('Back-Channel Logout (e2e)', () => {
   let setup: TestModuleSetup;
@@ -20,10 +23,18 @@ describe('Back-Channel Logout (e2e)', () => {
   const keyId = 'test-key-1';
 
   beforeAll(async () => {
-    setup = await TestConfigurationFactory.createTestModule();
-    app = setup.app;
-    sessionsService = setup.moduleFixture.get<SessionsService>(SessionsService);
-    sessionRepository = setup.moduleFixture.get<Repository<Session>>(getRepositoryToken(Session));
+    const mockKafkaService = { publish: jest.fn().mockResolvedValue(undefined) };
+
+    const moduleFixture = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+    .overrideProvider(KafkaService)
+    .useValue(mockKafkaService)
+    .compile();
+
+    app = moduleFixture.createNestApplication();
+    sessionsService = app.get<SessionsService>(SessionsService);
+    sessionRepository = app.get<Repository<Session>>(getRepositoryToken(Session));
     await app.init();
     await app.listen(0);
 
@@ -31,7 +42,7 @@ describe('Back-Channel Logout (e2e)', () => {
     clientKey = await keyStore.generate('EC', 'P-256', { alg: 'ES256', use: 'sig' });
     const publicJwk = clientKey.toJSON(false);
 
-    const clientStoreService = setup.moduleFixture.get<ClientStoreService>(ClientStoreService);
+    const clientStoreService = app.get<ClientStoreService>(ClientStoreService);
     const originalFindMethod = clientStoreService.findClientById.bind(clientStoreService);
     clientStoreService.findClientById = async (id: string) => {
       if (id === clientId) {
@@ -42,6 +53,8 @@ describe('Back-Channel Logout (e2e)', () => {
       }
       return originalFindMethod(id);
     };
+
+    setup = { app, moduleFixture } as TestModuleSetup;
   }, TEST_CONSTANTS.TEST_TIMEOUT);
 
   afterAll(async () => {
@@ -59,7 +72,7 @@ describe('Back-Channel Logout (e2e)', () => {
   }
 
   it('should revoke a session with a valid logout_token', async () => {
-    // 1. Create a session directly in the database
+    // 1. Create a user and a session directly in the database
     const usersService = setup.moduleFixture.get<UsersService>(UsersService);
     const testUser = await usersService.create({
       tenant_id: TEST_CONSTANTS.DEFAULT_TENANT_ID,
@@ -81,7 +94,7 @@ describe('Back-Channel Logout (e2e)', () => {
     // 2. Create a valid logout_token
     const logoutToken = await createLogoutToken({
       iss: clientId,
-      sub: TEST_CONSTANTS.DEFAULT_TENANT_ID,
+      sub: testUser.id,
       aud: `https://auth.smartedify.global/t/${TEST_CONSTANTS.DEFAULT_TENANT_ID}`,
       events: { 'http://schemas.openid.net/event/backchannel-logout': {} },
       sid: savedSession.id,
