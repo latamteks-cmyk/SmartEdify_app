@@ -135,14 +135,16 @@ export class TestConfigurationFactory {
       async () => {
         try {
           // Stop all scheduled tasks
-          const cronJobs = setup.schedulerRegistry.getCronJobs();
-          cronJobs.forEach(job => {
-            try {
-              job.stop();
-            } catch (error) {
-              console.warn('Warning: Could not stop cron job:', error.message);
-            }
-          });
+          if (setup.schedulerRegistry) {
+            const cronJobs = setup.schedulerRegistry.getCronJobs();
+            cronJobs.forEach(job => {
+              try {
+                job.stop();
+              } catch (error) {
+                console.warn('Warning: Could not stop cron job:', error.message);
+              }
+            });
+          }
 
           // Clear any remaining timeouts
           TestTimeoutManager.clearAllTimeouts();

@@ -304,12 +304,62 @@ export class AuthService {
   }
 
   async handleBackchannelLogout(logoutToken: string): Promise<void> {
-    // TODO: Implement the full back-channel logout logic.
-    // 1. Decode logout_token to get kid and iss
-    // 2. Find client public key from clientStore
-    // 3. Verify token signature and claims (iss, sub, aud, iat, jti, events, sid)
-    // 4. Check for jti reuse
-    // 5. Find session by sid and iss
-    // 6. Revoke the session using sessionsService.revokeSession(sid)
-    console.log(`Handling back-channel logout for token: ${logoutToken}`);
+    try {
+      // 1. Decode header to get kid and client_id (iss)
+      const parts = logoutToken.split('.');
+      if (parts.length !== 3) throw new Error('Invalid JWT format');
+      
+      const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString());
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+      const { kid } = header;
+      const clientId = payload.iss;
+
+      if (!kid || !clientId) {
+        throw new UnauthorizedException('Missing kid or iss in logout token');
+      }
+
+      // 2. Find client and their public key
+      const client = await this.clientStore.findClientById(clientId);
+      if (!client) {
+        // As per spec, we must not return an error to the client.
+        this.logger.warn(`Back-channel logout attempt for unknown client: ${clientId}`);
+        return;
+      }
+
+      const jwk = client.jwks.keys.find(k => k.kid === kid);
+      if (!jwk) {
+        this.logger.warn(`Back-channel logout with unknown kid: ${kid} for client: ${clientId}`);
+        return;
+      }
+
+      const key = await jose.JWK.asKey(jwk);
+
+      // 3. Verify the JWT signature
+      const verifier = jose.JWS.createVerify(key);
+      const verified = await verifier.verify(logoutToken);
+      const verifiedPayload = JSON.parse(verified.payload.toString());
+
+      // 4. Verify claims
+      if (!verifiedPayload.events || !verifiedPayload.events['http://schemas.openid.net/event/backchannel-logout']) {
+          throw new BadRequestException('Missing backchannel-logout event claim');
+      }
+      if (!verifiedPayload.sid) {
+          throw new BadRequestException('Missing sid claim');
+      }
+
+      // 5. Check for jti reuse
+      if (this.jtiStore.has(verifiedPayload.jti)) {
+        this.logger.warn(`Replay detected for back-channel logout JTI: ${verifiedPayload.jti}`);
+        return; // Do not process, but do not return an error
+      }
+      this.jtiStore.set(verifiedPayload.jti);
+
+      // 6. Revoke the session
+      await this.sessionsService.revokeSession(verifiedPayload.sid);
+
+    } catch (error) {
+      // Per OIDC spec, the RP must not receive an error response.
+      // We log the error and return a 200 OK.
+      this.logger.error(`Back-channel logout failed: ${error.message}`);
+    }
   }}
