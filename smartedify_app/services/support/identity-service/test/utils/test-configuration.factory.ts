@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule, SchedulerRegistry } from '@nestjs/schedule';
 import { KeysModule } from '../../src/modules/keys/keys.module';
-import { getDatabaseConfig } from '../../src/config/database.config';
+import { getDatabaseConfig, getTestDatabaseConfig } from '../../src/config/database.config';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { SigningKey } from '../../src/modules/keys/entities/signing-key.entity';
@@ -53,7 +53,7 @@ export class TestConfigurationFactory {
         const moduleFixture: TestingModule = await Test.createTestingModule({
           imports: [
             ScheduleModule.forRoot(),
-            TypeOrmModule.forRoot(getDatabaseConfig(true)),
+            TypeOrmModule.forRoot(getTestDatabaseConfig()),
             KeysModule,
             UsersModule,
             AuthModule,

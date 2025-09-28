@@ -43,7 +43,19 @@ describe('Token Revocation (e2e)', () => {
   }, TEST_CONSTANTS.TEST_TIMEOUT);
 
   beforeEach(async () => {
-    // --- Full flow to get a valid refresh token for each test ---
+    await TestConfigurationFactory.cleanDatabase(setup);
+  });
+
+  afterAll(async () => {
+    await TestTimeoutManager.withTimeout(
+      () => TestConfigurationFactory.closeTestModule(setup),
+      TEST_CONSTANTS.MAX_CLEANUP_TIME,
+      'Token Revocation test module cleanup'
+    );
+  });
+
+  it('should successfully revoke a valid refresh token', async () => {
+    // --- Full flow to get a valid refresh token for this test ---
     await TestConfigurationFactory.cleanDatabase(setup);
     const pkce = generatePkce();
     const dpopKey = await jose.JWK.createKey('EC', 'P-256', { alg: 'ES256', use: 'sig' });
@@ -53,13 +65,22 @@ describe('Token Revocation (e2e)', () => {
       tenant_id: TEST_CONSTANTS.DEFAULT_TENANT_ID,
       username: 'revoke-user', 
       email: 'revoke@test.com', 
-      password: 'password' 
+      password: 'password',
+      consent_granted: true
     });
 
     const authorizeResponse = await request(app.getHttpServer())
       .get('/oauth/authorize')
-      .query({ code_challenge: pkce.challenge, code_challenge_method: 'S256' });
-    const authCode = authorizeResponse.body.code;
+      .query({ 
+        redirect_uri: 'https://example.com/callback',
+        scope: 'openid profile',
+        code_challenge: pkce.challenge, 
+        code_challenge_method: 'S256' 
+      });
+    // Extract code from redirect Location header
+    const locationHeader = authorizeResponse.headers.location;
+    const redirectUrl = new URL(locationHeader);
+    const authCode = redirectUrl.searchParams.get('code')!;
 
     const authCodeStore = setup.moduleFixture.get<AuthorizationCodeStoreService>(AuthorizationCodeStoreService);
     const codeData = authCodeStore.get(authCode);
@@ -73,21 +94,12 @@ describe('Token Revocation (e2e)', () => {
 
     const tokenResponse = await request(app.getHttpServer())
       .post(tokenEndpoint)
-      .set('DPoP', proof)
+      .set('DPoP', String(proof))
       .send({ grant_type: 'authorization_code', code: authCode, code_verifier: pkce.verifier });
       
-    refreshTokenToRevoke = tokenResponse.body.refresh_token;
-  });
+    const refreshTokenToRevoke = tokenResponse.body.refresh_token;
+    expect(refreshTokenToRevoke).toBeDefined();
 
-  afterAll(async () => {
-    await TestTimeoutManager.withTimeout(
-      () => TestConfigurationFactory.closeTestModule(setup),
-      TEST_CONSTANTS.MAX_CLEANUP_TIME,
-      'Token Revocation test module cleanup'
-    );
-  });
-
-  it('should successfully revoke a valid refresh token', async () => {
     // Verify the token exists before revocation
     const hashedToken = crypto.createHash('sha256').update(refreshTokenToRevoke).digest('hex');
     const tokenInDbBefore = await refreshTokenRepository.findOne({ where: { token_hash: hashedToken } });

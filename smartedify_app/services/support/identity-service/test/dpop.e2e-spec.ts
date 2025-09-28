@@ -61,16 +61,23 @@ describe('DPoP Validation (e2e)', () => {
       tenant_id: TEST_CONSTANTS.DEFAULT_TENANT_ID,
       username: 'dpop-user', 
       email: 'dpop@test.com', 
-      password: 'password' 
+      password: 'password',
+      consent_granted: true
     });
 
     const authorizeResponse = await request(app.getHttpServer())
       .get('/oauth/authorize')
       .query({ 
+        redirect_uri: 'https://example.com/callback',
+        scope: 'openid profile',
         code_challenge: pkce.challenge, 
         code_challenge_method: 'S256',
       });
-    authCode = authorizeResponse.body.code;
+    
+    // Extract code from redirect Location header
+    const locationHeader = authorizeResponse.headers.location;
+    const redirectUrl = new URL(locationHeader);
+    authCode = redirectUrl.searchParams.get('code')!;
 
     const authCodeStore = setup.moduleFixture.get<AuthorizationCodeStoreService>(AuthorizationCodeStoreService);
     const codeData = authCodeStore.get(authCode);

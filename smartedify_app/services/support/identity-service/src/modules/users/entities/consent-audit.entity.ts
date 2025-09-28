@@ -13,7 +13,7 @@ export class ConsentAudit {
   @Column()
   consent_type: string;
 
-  @Column()
+  @Column({ default: false })
   consent_granted: boolean;
 
   @CreateDateColumn({ type: 'timestamptz' })

@@ -56,13 +56,22 @@ describe('DPoP Anti-Replay (e2e)', () => {
       tenant_id: TEST_CONSTANTS.DEFAULT_TENANT_ID,
       username: 'replay-user', 
       email: 'replay@test.com', 
-      password: 'password' 
+      password: 'password',
+      consent_granted: true
     });
 
     const authorizeResponse = await request(app.getHttpServer())
       .get('/oauth/authorize')
-      .query({ code_challenge: pkce.challenge, code_challenge_method: 'S256' });
-    const authCode = authorizeResponse.body.code;
+      .query({ 
+        redirect_uri: 'https://example.com/callback',
+        scope: 'openid profile',
+        code_challenge: pkce.challenge, 
+        code_challenge_method: 'S256' 
+      });
+    // Extract code from redirect Location header
+    const locationHeader = authorizeResponse.headers.location;
+    const redirectUrl = new URL(locationHeader);
+    const authCode = redirectUrl.searchParams.get('code')!;
 
     const authCodeStore = setup.moduleFixture.get<AuthorizationCodeStoreService>(AuthorizationCodeStoreService);
     const codeData = authCodeStore.get(authCode);
@@ -79,7 +88,7 @@ describe('DPoP Anti-Replay (e2e)', () => {
     // 3. Use the proof for the first time (should succeed)
     const firstResponse = await request(app.getHttpServer())
       .post(tokenEndpoint)
-      .set('DPoP', proof)
+      .set('DPoP', String(proof))
       .send({ grant_type: 'authorization_code', code: authCode, code_verifier: pkce.verifier });
     
     expect(firstResponse.status).toBe(200);
@@ -98,7 +107,7 @@ describe('DPoP Anti-Replay (e2e)', () => {
 
     const secondResponse = await request(app.getHttpServer())
       .post(tokenEndpoint)
-      .set('DPoP', proof) // Re-using the same proof
+      .set('DPoP', String(proof)) // Re-using the same proof
       .send({ grant_type: 'authorization_code', code: secondAuthCode, code_verifier: pkce.verifier });
 
     expect(secondResponse.status).toBe(401);

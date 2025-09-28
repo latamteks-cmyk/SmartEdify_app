@@ -35,6 +35,10 @@ export class AuthService {
     return { request_uri: requestUri, expires_in: 60 };
   }
 
+  async getStoredPARRequest(requestUri: string): Promise<ParPayload | null> {
+    return this.parStore.get(requestUri) || null;
+  }
+
   async deviceAuthorizationRequest(): Promise<{ 
     device_code: string; 
     user_code: string; 
@@ -62,36 +66,33 @@ export class AuthService {
 
   async generateAuthorizationCode(
     params: { 
-      request_uri?: string;
-      code_challenge?: string; 
-      code_challenge_method?: string; 
+      code_challenge: string; 
+      code_challenge_method: string; 
       userId: string; 
-      scope: string; // Added scope
+      scope: string;
     }
   ): Promise<string> {
-    let payload: { code_challenge: string; code_challenge_method: string; scope: string; }; // Added scope
+    console.log('🔐 Generating auth code with params:', params);
 
-    if (params.request_uri) {
-      const storedPayload = this.parStore.get(params.request_uri);
-      if (!storedPayload) {
-        throw new BadRequestException('Invalid or expired request_uri');
-      }
-      payload = { ...storedPayload, scope: params.scope }; // Added scope
-    } else if (params.code_challenge && params.code_challenge_method) {
-      payload = { 
-        code_challenge: params.code_challenge, 
-        code_challenge_method: params.code_challenge_method,
-        scope: params.scope, // Added scope
-      };
-    } else {
-      throw new BadRequestException('Either request_uri or PKCE parameters are required');
-    }
+    const payload = { 
+      code_challenge: params.code_challenge, 
+      code_challenge_method: params.code_challenge_method,
+      scope: params.scope,
+    };
+    console.log('🔧 Using direct payload:', payload);
 
     const code = crypto.randomBytes(32).toString('hex');
-    this.authorizationCodeStore.set(code, {
+    const codeData = {
       ...payload,
       userId: params.userId,
+    };
+    
+    console.log('💾 Storing code:', { 
+      code: code.substring(0, 10) + '...', 
+      data: codeData 
     });
+    
+    this.authorizationCodeStore.set(code, codeData);
     return code;
   }
 
@@ -102,12 +103,30 @@ export class AuthService {
     httpMethod: string,
     httpUrl: string,
   ): Promise<[string, string]> {
+    // 1. Validate DPoP FIRST (according to OAuth 2.0 + DPoP spec)
+    if (!dpopProof) {
+      throw new UnauthorizedException('DPoP proof is required');
+    }
+    
+    console.log('🔍 Validating DPoP proof first...');
+    const jkt = await this.validateDpopProof(dpopProof, httpMethod, httpUrl);
+    console.log('✅ DPoP validation passed');
+
+    // 2. Validate required parameters (after DPoP passes)
+    if (!code || !code_verifier) {
+      throw new BadRequestException('Code and code_verifier are required');
+    }
+
+    // 3. Validate authorization code
+    console.log('🔍 Looking up authorization code:', { code: code?.substring(0, 10) + '...' });
     const storedCode = this.authorizationCodeStore.get(code);
+    console.log('📋 Retrieved code data:', storedCode ? 'found' : 'NOT FOUND', storedCode);
+    
     if (!storedCode) {
       throw new BadRequestException('Invalid authorization code');
     }
 
-    // 1. Validate PKCE
+    // 4. Validate PKCE
     const { code_challenge, code_challenge_method, userId, scope } = storedCode; // Destructure scope
     let challenge: string;
     if (code_challenge_method === 'S256') {
@@ -123,19 +142,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid code verifier');
     }
 
-    // 2. Validate DPoP
-    if (!dpopProof) {
-      throw new UnauthorizedException('DPoP proof is required');
-    }
-    const jkt = await this.validateDpopProof(dpopProof, httpMethod, httpUrl);
-
-    // 3. Get User
+    // 5. Get User
     const user = await this.usersService.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // 4. Generate Tokens
+    // 6. Generate Tokens
     const accessToken = await this._generateAccessToken(user, jkt, scope);
     const refreshToken = await this._generateRefreshToken(user, jkt, scope);
 

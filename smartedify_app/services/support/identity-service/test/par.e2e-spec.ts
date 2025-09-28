@@ -45,7 +45,8 @@ describe('Pushed Authorization Requests (PAR - e2e)', () => {
       .send({
         code_challenge: pkce.challenge,
         code_challenge_method: 'S256',
-        // Other params like client_id, scope, etc. would go here
+        redirect_uri: 'http://localhost:3000/callback',
+        scope: 'openid profile',
       });
 
     expect(parResponse.status).toBe(201);
