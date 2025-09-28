@@ -6,6 +6,6 @@ export declare class QrcodesController {
         qrCodeDataUrl: string;
     }>;
     validate(token: string): Promise<{
-        isValid: boolean;
+        isValid: any;
     }>;
 }

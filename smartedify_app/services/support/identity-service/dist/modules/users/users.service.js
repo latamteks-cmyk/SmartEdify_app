@@ -50,23 +50,38 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const user_entity_1 = require("./entities/user.entity");
+const consent_audit_entity_1 = require("./entities/consent-audit.entity");
 const argon2 = __importStar(require("argon2"));
 let UsersService = class UsersService {
     usersRepository;
-    constructor(usersRepository) {
+    consentAuditRepository;
+    dataSource;
+    constructor(usersRepository, consentAuditRepository, dataSource) {
         this.usersRepository = usersRepository;
+        this.consentAuditRepository = consentAuditRepository;
+        this.dataSource = dataSource;
     }
     async create(createUserDto) {
-        const { password, ...rest } = createUserDto;
-        let hashedPassword;
-        if (password) {
-            hashedPassword = await argon2.hash(password);
-        }
-        const user = this.usersRepository.create({
-            ...rest,
-            password: hashedPassword,
+        const { password, consent_granted, policy_version, ...rest } = createUserDto;
+        return this.dataSource.transaction(async (transactionalEntityManager) => {
+            let hashedPassword;
+            if (password) {
+                hashedPassword = await argon2.hash(password);
+            }
+            const user = transactionalEntityManager.create(user_entity_1.User, {
+                ...rest,
+                password: hashedPassword,
+            });
+            const savedUser = await transactionalEntityManager.save(user);
+            const consentAudit = transactionalEntityManager.create(consent_audit_entity_1.ConsentAudit, {
+                user: savedUser,
+                consent_type: 'terms_of_service',
+                consent_granted: consent_granted,
+                policy_version: policy_version,
+            });
+            await transactionalEntityManager.save(consentAudit);
+            return savedUser;
         });
-        return this.usersRepository.save(user);
     }
     async findByEmail(email) {
         return this.usersRepository.findOne({ where: { email } });
@@ -79,6 +94,9 @@ exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(consent_audit_entity_1.ConsentAudit)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.DataSource])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

@@ -17,6 +17,8 @@ class CreateUserDto {
     email;
     phone;
     password;
+    consent_granted;
+    policy_version;
 }
 exports.CreateUserDto = CreateUserDto;
 __decorate([
@@ -44,4 +46,14 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.Equals)(true, { message: 'Consent must be accepted' }),
+    __metadata("design:type", Boolean)
+], CreateUserDto.prototype, "consent_granted", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateUserDto.prototype, "policy_version", void 0);
 //# sourceMappingURL=create-user.dto.js.map

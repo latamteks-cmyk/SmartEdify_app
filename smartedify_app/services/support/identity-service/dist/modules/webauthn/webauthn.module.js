@@ -14,13 +14,14 @@ const webauthn_service_1 = require("./webauthn.service");
 const webauthn_controller_1 = require("./webauthn.controller");
 const rp_service_1 = require("./rp.service");
 const users_module_1 = require("../users/users.module");
+const challenge_store_service_1 = require("./store/challenge-store.service");
 let WebauthnModule = class WebauthnModule {
 };
 exports.WebauthnModule = WebauthnModule;
 exports.WebauthnModule = WebauthnModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([webauthn_credential_entity_1.WebAuthnCredential]), users_module_1.UsersModule],
-        providers: [webauthn_service_1.WebauthnService, rp_service_1.RpService],
+        providers: [webauthn_service_1.WebauthnService, rp_service_1.RpService, challenge_store_service_1.ChallengeStoreService],
         controllers: [webauthn_controller_1.WebauthnController],
     })
 ], WebauthnModule);

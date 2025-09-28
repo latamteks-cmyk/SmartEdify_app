@@ -6,6 +6,7 @@ import * as crypto from 'crypto';
 import * as jose from 'node-jose';
 import { TokensService } from '../tokens/tokens.service';
 import { UsersService } from '../users/users.service';
+import { SessionsService } from '../sessions/sessions.service';
 import { User } from '../users/entities/user.entity';
 import { ParStoreService, ParPayload } from './store/par-store.service';
 import { DeviceCodeStoreService, DeviceCodeStatus } from './store/device-code-store.service';
@@ -18,6 +19,7 @@ export class AuthService {
     private readonly authorizationCodeStore: AuthorizationCodeStoreService,
     private readonly tokensService: TokensService,
     private readonly usersService: UsersService,
+    private readonly sessionsService: SessionsService,
     private readonly parStore: ParStoreService,
     private readonly deviceCodeStore: DeviceCodeStoreService,
     private readonly jtiStore: JtiStoreService,
@@ -180,10 +182,11 @@ export class AuthService {
   /**
    * Refresh tokens with DPoP binding and rotation
    * Implements RFC 6749 refresh token flow with DPoP (RFC 9449)
+   * Now includes not_before validation to check for user logout events
    */
   async refreshTokens(refreshToken: string, dpopProof: string, httpMethod: string, httpUrl: string): Promise<[string, string]> {
-    // Validate the refresh token and DPoP binding
-    const user = await this.tokensService.validateRefreshToken(refreshToken, dpopProof, httpMethod, httpUrl);
+    // Validate the refresh token with DPoP binding AND not_before check
+    const user = await this.tokensService.validateRefreshTokenWithNotBefore(refreshToken, dpopProof, httpMethod, httpUrl);
     
     // Rotate the refresh token (invalidates the old one and issues a new one)
     const newRefreshToken = await this.tokensService.rotateRefreshToken(refreshToken);
@@ -193,6 +196,14 @@ export class AuthService {
     const newAccessToken = await this._generateAccessToken(user, jkt, 'openid profile'); // Default scope for now
     
     return [newAccessToken, newRefreshToken];
+  }
+
+  /**
+   * Validates an access token including not_before verification
+   * This method should be used by resource servers to validate access tokens
+   */
+  async validateAccessToken(accessToken: string, userId: string, tenantId: string, issuedAt: Date): Promise<boolean> {
+    return this.tokensService.validateAccessToken(accessToken, userId, tenantId, issuedAt);
   }
 
   public async validateDpopProof(dpopProof: string, httpMethod: string, httpUrl: string): Promise<string> {

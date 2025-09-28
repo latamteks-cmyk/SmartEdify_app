@@ -11,7 +11,7 @@ export class SessionGuard implements CanActivate {
       return false;
     }
 
-    const notBeforeTime = await this.sessionsService.getNotBeforeTime(user.id);
+    const notBeforeTime = await this.sessionsService.getNotBeforeTime(user.id, user.tenant_id);
     if (notBeforeTime) {
       const tokenIat = user.iat; // Assuming iat is available in the user object from the JWT
       if (tokenIat * 1000 < notBeforeTime.getTime()) {

@@ -5,6 +5,7 @@ export declare class SessionsService {
     private sessionsRepository;
     private revocationEventsRepository;
     constructor(sessionsRepository: Repository<Session>, revocationEventsRepository: Repository<RevocationEvent>);
-    revokeUserSessions(userId: string): Promise<void>;
-    getNotBeforeTime(userId: string): Promise<Date | null>;
+    revokeUserSessions(userId: string, tenantId: string): Promise<void>;
+    revokeSession(sessionId: string): Promise<void>;
+    getNotBeforeTime(userId: string, tenantId: string): Promise<Date | null>;
 }

@@ -22,7 +22,7 @@ let SessionGuard = class SessionGuard {
         if (!user) {
             return false;
         }
-        const notBeforeTime = await this.sessionsService.getNotBeforeTime(user.id);
+        const notBeforeTime = await this.sessionsService.getNotBeforeTime(user.id, user.tenant_id);
         if (notBeforeTime) {
             const tokenIat = user.iat;
             if (tokenIat * 1000 < notBeforeTime.getTime()) {

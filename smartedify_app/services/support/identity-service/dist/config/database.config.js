@@ -27,26 +27,20 @@ const getDatabaseConfig = (isTest = false) => {
             revocation_event_entity_1.RevocationEvent,
             signing_key_entity_1.SigningKey,
         ],
-        synchronize: process.env.NODE_ENV !== 'production',
+        synchronize: false,
         logging: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-        ...(isTest && {
-            dropSchema: false,
-            retryAttempts: 3,
-            retryDelay: 1000,
-        }),
     };
     return config;
 };
 exports.getDatabaseConfig = getDatabaseConfig;
 const getProductionDatabaseConfig = () => ({
     ...(0, exports.getDatabaseConfig)(false),
-    synchronize: false,
-    logging: ['error'],
 });
 exports.getProductionDatabaseConfig = getProductionDatabaseConfig;
 const getTestDatabaseConfig = () => ({
     ...(0, exports.getDatabaseConfig)(true),
     synchronize: true,
+    dropSchema: true,
     logging: false,
 });
 exports.getTestDatabaseConfig = getTestDatabaseConfig;

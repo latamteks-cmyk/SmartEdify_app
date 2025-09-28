@@ -101,25 +101,17 @@ let KeyManagementService = KeyManagementService_1 = class KeyManagementService {
                 status: (0, typeorm_2.In)([signing_key_entity_1.KeyStatus.ACTIVE, signing_key_entity_1.KeyStatus.ROLLED_OVER]),
             },
         });
-        console.log(`🔍 KeyManagementService: Keys found by getJwksForTenant: ${validKeys.length} keys`);
-        validKeys.forEach(key => {
-            console.log(`  - ${key.kid}: ${key.status} (has public_key_jwk: ${!!key.public_key_jwk})`);
-        });
         const jwksKeys = [];
         for (const key of validKeys) {
             try {
-                console.log(`🔄 KeyManagementService: Processing key ${key.kid}...`);
                 const jwk = await jose.JWK.asKey(key.public_key_jwk);
-                console.log(`  - JWK kid: ${jwk.kid}`);
                 const publicJwk = jwk.toJSON();
                 jwksKeys.push(publicJwk);
-                console.log(`✅ KeyManagementService: Successfully processed key ${key.kid}`);
             }
             catch (error) {
-                console.log(`❌ KeyManagementService: Failed to process key ${key.kid}:`, error.message);
+                this.logger.error(`Failed to process key ${key.kid} for JWKS:`, error.message);
             }
         }
-        console.log(`🔍 KeyManagementService: Final JWKS contains ${jwksKeys.length} keys`);
         return { keys: jwksKeys };
     }
 };

@@ -23,6 +23,8 @@ const authorization_module_1 = require("./modules/authorization/authorization.mo
 const compliance_module_1 = require("./modules/compliance/compliance.module");
 const qrcodes_module_1 = require("./modules/qrcodes/qrcodes.module");
 const mfa_module_1 = require("./modules/mfa/mfa.module");
+const oidc_discovery_module_1 = require("./modules/oidc-discovery/oidc-discovery.module");
+const metrics_module_1 = require("./modules/metrics/metrics.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -41,6 +43,8 @@ exports.AppModule = AppModule = __decorate([
             compliance_module_1.ComplianceModule,
             qrcodes_module_1.QrcodesModule,
             mfa_module_1.MfaModule,
+            oidc_discovery_module_1.OidcDiscoveryModule,
+            metrics_module_1.MetricsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

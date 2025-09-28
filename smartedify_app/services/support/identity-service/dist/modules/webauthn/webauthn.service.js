@@ -38,11 +38,11 @@ let WebauthnService = class WebauthnService {
         const options = await (0, server_1.generateRegistrationOptions)({
             rpName: this.rpService.getRpName(),
             rpID: this.rpService.getRpId(),
-            userID: user.id,
+            userID: Buffer.from(user.id),
             userName: user.email,
             attestationType: 'none',
             excludeCredentials: userCredentials.map(cred => ({
-                id: cred.credential_id,
+                id: Buffer.from(cred.credential_id).toString('base64url'),
                 type: 'public-key',
                 transports: cred.transports,
             })),
@@ -85,7 +85,7 @@ let WebauthnService = class WebauthnService {
             if (user) {
                 const userCredentials = await this.webAuthnCredentialRepository.find({ where: { user: { id: user.id } } });
                 allowCredentials = userCredentials.map(cred => ({
-                    id: cred.credential_id,
+                    id: Buffer.from(cred.credential_id).toString('base64url'),
                     type: 'public-key',
                     transports: cred.transports,
                 }));
@@ -109,10 +109,11 @@ let WebauthnService = class WebauthnService {
             expectedChallenge,
             expectedOrigin: this.rpService.getExpectedOrigin(),
             expectedRPID: this.rpService.getRpId(),
-            authenticator: {
-                credentialID: credential.credential_id,
-                credentialPublicKey: credential.public_key,
+            credential: {
+                id: Buffer.from(credential.credential_id).toString('base64url'),
+                publicKey: new Uint8Array(credential.public_key),
                 counter: credential.sign_count,
+                transports: credential.transports,
             },
         });
         if (verification.verified) {

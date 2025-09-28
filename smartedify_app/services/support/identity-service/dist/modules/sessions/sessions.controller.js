@@ -20,8 +20,11 @@ let SessionsController = class SessionsController {
     constructor(sessionsService) {
         this.sessionsService = sessionsService;
     }
-    async logout(userId) {
-        await this.sessionsService.revokeUserSessions(userId);
+    async logout(userId, tenantId) {
+        if (!tenantId) {
+            tenantId = 'mock-tenant-id';
+        }
+        await this.sessionsService.revokeUserSessions(userId, tenantId);
         return { message: 'All sessions have been logged out.' };
     }
 };
@@ -29,8 +32,9 @@ exports.SessionsController = SessionsController;
 __decorate([
     (0, common_1.Post)('logout'),
     __param(0, (0, common_1.Body)('user_id')),
+    __param(1, (0, common_1.Body)('tenant_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], SessionsController.prototype, "logout", null);
 exports.SessionsController = SessionsController = __decorate([

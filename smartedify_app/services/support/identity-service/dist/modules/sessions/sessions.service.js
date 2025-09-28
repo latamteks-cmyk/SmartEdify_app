@@ -25,17 +25,26 @@ let SessionsService = class SessionsService {
         this.sessionsRepository = sessionsRepository;
         this.revocationEventsRepository = revocationEventsRepository;
     }
-    async revokeUserSessions(userId) {
+    async revokeUserSessions(userId, tenantId) {
+        await this.sessionsRepository.update({
+            user: { id: userId },
+            tenant_id: tenantId,
+            revoked_at: (0, typeorm_2.IsNull)()
+        }, { revoked_at: new Date() });
         const revocationEvent = this.revocationEventsRepository.create({
             type: 'USER_LOGOUT',
             subject: userId,
+            tenant_id: tenantId,
             not_before: new Date(),
         });
         await this.revocationEventsRepository.save(revocationEvent);
     }
-    async getNotBeforeTime(userId) {
+    async revokeSession(sessionId) {
+        await this.sessionsRepository.update({ id: sessionId }, { revoked_at: new Date() });
+    }
+    async getNotBeforeTime(userId, tenantId) {
         const lastLogoutEvent = await this.revocationEventsRepository.findOne({
-            where: { subject: userId, type: 'USER_LOGOUT' },
+            where: { subject: userId, tenant_id: tenantId, type: 'USER_LOGOUT' },
             order: { created_at: 'DESC' },
         });
         return lastLogoutEvent ? lastLogoutEvent.not_before : null;

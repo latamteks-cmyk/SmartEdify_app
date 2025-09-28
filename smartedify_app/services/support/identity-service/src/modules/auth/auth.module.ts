@@ -6,13 +6,14 @@ import { ClientAuthGuard } from './guards/client-auth.guard';
 import { AuthorizationCodeStoreService } from './store/authorization-code-store.service';
 import { TokensModule } from '../tokens/tokens.module';
 import { UsersModule } from '../users/users.module';
+import { SessionsModule } from '../sessions/sessions.module';
 import { ParStoreService } from './store/par-store.service';
 import { DeviceCodeStoreService } from './store/device-code-store.service';
 import { RefreshToken } from '../tokens/entities/refresh-token.entity';
 import { JtiStoreService } from './store/jti-store.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RefreshToken]), TokensModule, UsersModule],
+  imports: [TypeOrmModule.forFeature([RefreshToken]), TokensModule, UsersModule, SessionsModule],
   providers: [
     AuthService, 
     ClientAuthGuard, 

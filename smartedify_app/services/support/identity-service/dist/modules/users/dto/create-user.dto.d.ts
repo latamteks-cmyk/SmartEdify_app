@@ -4,4 +4,6 @@ export declare class CreateUserDto {
     email: string;
     phone?: string;
     password?: string;
+    consent_granted: boolean;
+    policy_version?: string;
 }

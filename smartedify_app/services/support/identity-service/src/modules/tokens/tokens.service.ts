@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
+import { SessionsService } from '../sessions/sessions.service';
 import * as crypto from 'crypto';
 import { AuthService } from '../auth/auth.service'; // Import AuthService
 
@@ -13,6 +14,7 @@ export class TokensService {
     private refreshTokensRepository: Repository<RefreshToken>,
     @Inject(forwardRef(() => AuthService)) // Use forwardRef to handle circular dependency
     private readonly authService: AuthService,
+    private readonly sessionsService: SessionsService,
   ) {}
 
   async issueRefreshToken(user: User, jkt: string, familyId?: string, clientId?: string, deviceId?: string, scope?: string): Promise<string> {
@@ -131,5 +133,59 @@ export class TokensService {
         revoked_reason: reason,
       }
     );
+  }
+
+  /**
+   * Validates an access token and checks the not_before time
+   * This method should be called to validate access tokens before allowing access to resources
+   */
+  async validateAccessToken(accessToken: string, userId: string, tenantId: string, issuedAt: Date): Promise<boolean> {
+    try {
+      // In a real implementation, you would decode and validate the JWT token here
+      // For this implementation, we focus on the not_before validation
+      
+      // Get the not_before time from sessions (last logout event)
+      const notBeforeTime = await this.sessionsService.getNotBeforeTime(userId, tenantId);
+      
+      if (notBeforeTime && issuedAt < notBeforeTime) {
+        console.warn(`Access token rejected: issued before last logout. UserId: ${userId}, TenantId: ${tenantId}, IssuedAt: ${issuedAt}, NotBefore: ${notBeforeTime}`);
+        return false;
+      }
+      
+      // Additional token validations would go here (signature, expiration, etc.)
+      // For now, we return true if not_before validation passes
+      return true;
+    } catch (error) {
+      console.error(`Error validating access token for user ${userId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Validates a refresh token including not_before check
+   * Enhanced version that also verifies the user hasn't been logged out globally
+   */
+  async validateRefreshTokenWithNotBefore(token: string, dpopProof: string, httpMethod: string, httpUrl: string): Promise<User> {
+    // First, do the standard refresh token validation
+    const user = await this.validateRefreshToken(token, dpopProof, httpMethod, httpUrl);
+    
+    // Get the refresh token to check its creation time
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const refreshToken = await this.refreshTokensRepository.findOne({ 
+      where: { token_hash: tokenHash }, 
+      relations: ['user'] 
+    });
+
+    if (refreshToken) {
+      // Check if the refresh token was created before the user's last logout
+      const notBeforeTime = await this.sessionsService.getNotBeforeTime(user.id, user.tenant_id);
+      
+      if (notBeforeTime && refreshToken.created_at < notBeforeTime) {
+        console.warn(`Refresh token rejected: created before last logout. UserId: ${user.id}, TenantId: ${user.tenant_id}, TokenCreatedAt: ${refreshToken.created_at}, NotBefore: ${notBeforeTime}`);
+        throw new UnauthorizedException('Refresh token invalidated due to user logout');
+      }
+    }
+
+    return user;
   }
 }

@@ -1,3 +1,4 @@
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -6,11 +7,13 @@ import { TokensService } from './tokens.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
 import { AuthService } from '../auth/auth.service';
+import { SessionsService } from '../sessions/sessions.service';
 
 describe('TokensService', () => {
   let service: TokensService;
   let mockRefreshTokenRepository: Partial<Repository<RefreshToken>>;
   let mockAuthService: Partial<AuthService>;
+  let mockSessionsService: Partial<SessionsService>;
 
   const mockUser: User = {
     id: 'user-123',
@@ -33,9 +36,9 @@ describe('TokensService', () => {
     user: mockUser,
     jkt: 'jkt-thumbprint-123',
     family_id: 'family-123',
-    parent_id: undefined,
-    replaced_by_id: undefined,
-    used_at: undefined,
+    parent_id: null as any,
+    replaced_by_id: null as any,
+    used_at: null as any,
     client_id: 'client-1',
     device_id: 'device-1',
     session_id: 'session-1',
@@ -44,7 +47,7 @@ describe('TokensService', () => {
     created_ip: '127.0.0.1',
     created_ua: 'test-agent',
     revoked: false,
-    revoked_reason: undefined,
+    revoked_reason: null as any,
     created_at: new Date(),
   };
 
@@ -60,6 +63,10 @@ describe('TokensService', () => {
       validateDpopProof: jest.fn().mockResolvedValue('jkt-thumbprint-123'),
     };
 
+    mockSessionsService = {
+      getNotBeforeTime: jest.fn().mockResolvedValue(null), // Default to no logout events
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TokensService,
@@ -70,6 +77,10 @@ describe('TokensService', () => {
         {
           provide: AuthService,
           useValue: mockAuthService,
+        },
+        {
+          provide: SessionsService,
+          useValue: mockSessionsService,
         },
       ],
     }).compile();
@@ -184,6 +195,66 @@ describe('TokensService', () => {
 
       await expect(service.validateRefreshToken(token, dpopProof, 'POST', 'https://example.com/token'))
         .rejects.toThrow('DPoP proof does not match refresh token binding');
+    });
+  });
+
+  describe('Not Before Validation', () => {
+    it('should validate access token with not_before check', async () => {
+      const userId = 'user-123';
+      const tenantId = 'tenant-1';
+      const issuedAt = new Date();
+      const accessToken = 'mock-access-token';
+
+      // Mock no logout events (not_before is null)
+      mockSessionsService.getNotBeforeTime = jest.fn().mockResolvedValue(null);
+
+      const result = await service.validateAccessToken(accessToken, userId, tenantId, issuedAt);
+
+      expect(result).toBe(true);
+      expect(mockSessionsService.getNotBeforeTime).toHaveBeenCalledWith(userId, tenantId);
+    });
+
+    it('should reject access token issued before user logout', async () => {
+      const userId = 'user-123';
+      const tenantId = 'tenant-1';
+      const issuedAt = new Date('2023-01-01T10:00:00Z');
+      const notBeforeTime = new Date('2023-01-01T12:00:00Z'); // Logout after token issue
+      const accessToken = 'mock-access-token';
+
+      // Mock a logout event that happened after token was issued
+      mockSessionsService.getNotBeforeTime = jest.fn().mockResolvedValue(notBeforeTime);
+
+      const result = await service.validateAccessToken(accessToken, userId, tenantId, issuedAt);
+
+      expect(result).toBe(false);
+      expect(mockSessionsService.getNotBeforeTime).toHaveBeenCalledWith(userId, tenantId);
+    });
+
+    it('should validate refresh token with not_before check', async () => {
+      const token = 'valid-refresh-token';
+      const tokenHash = require('crypto').createHash('sha256').update(token).digest('hex');
+      const dpopProof = 'valid-dpop-proof';
+      
+      const validToken = { 
+        ...mockRefreshToken, 
+        token_hash: tokenHash,
+        used_at: null as any,
+        revoked: false,
+        created_at: new Date('2023-01-01T12:00:00Z') // Token created after logout
+      };
+      
+      // Mock no logout events (not_before is null)
+      mockRefreshTokenRepository.findOne = jest.fn()
+        .mockResolvedValueOnce(validToken) // First call in validateRefreshToken
+        .mockResolvedValueOnce(validToken); // Second call in validateRefreshTokenWithNotBefore
+        
+      mockAuthService.validateDpopProof = jest.fn().mockResolvedValue('jkt-thumbprint-123');
+      mockSessionsService.getNotBeforeTime = jest.fn().mockResolvedValue(null);
+
+      const result = await service.validateRefreshTokenWithNotBefore(token, dpopProof, 'POST', 'https://example.com/token');
+
+      expect(result).toBe(mockUser);
+      expect(mockSessionsService.getNotBeforeTime).toHaveBeenCalledWith(mockUser.id, mockUser.tenant_id);
     });
   });
 

@@ -45,36 +45,45 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.QrcodesService = void 0;
 const common_1 = require("@nestjs/common");
 const qrcode = __importStar(require("qrcode"));
-const key_management_service_1 = require("../keys/services/key-management.service");
 const jose = __importStar(require("node-jose"));
+const key_management_service_1 = require("../keys/services/key-management.service");
 let QrcodesService = class QrcodesService {
-    keysService;
-    constructor(keysService) {
-        this.keysService = keysService;
+    keyManagementService;
+    constructor(keyManagementService) {
+        this.keyManagementService = keyManagementService;
     }
     async generateQrCode(payload) {
-        const signingKey = await this.keysService.getActiveSigningKey('default');
-        const key = await jose.JWK.asKey(signingKey.private_key_pem, 'pem');
-        const jws = await jose.JWS.createSign({ format: 'compact', fields: { kid: signingKey.kid } }, key)
-            .update(JSON.stringify(payload))
-            .final();
-        return qrcode.toDataURL(jws);
+        const signingKeyEntity = await this.keyManagementService.getActiveSigningKey('default');
+        const key = await jose.JWK.asKey(signingKeyEntity.private_key_pem, 'pem');
+        const jwsResult = await jose.JWS.createSign({ format: 'compact' }, key).update(JSON.stringify(payload)).final();
+        return await qrcode.toDataURL(jwsResult);
     }
     async validateQrCode(token) {
         try {
-            const { header } = jose.JWS.split(token);
-            const kid = header.kid;
-            const signingKey = await this.keysService.findKeyById(kid);
-            if (!signingKey) {
-                return false;
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                throw new Error('Invalid JWS format');
             }
-            const key = await jose.JWK.asKey(signingKey.public_key_jwk);
-            const verifier = jose.JWS.createVerify(key);
-            await verifier.verify(token);
-            return true;
+            const headerBase64 = parts[0];
+            const header = JSON.parse(Buffer.from(headerBase64, 'base64url').toString());
+            const kid = header.kid;
+            if (!kid) {
+                throw new Error('Missing kid in JWS header');
+            }
+            const signingKeyEntity = await this.keyManagementService.findKeyById(kid);
+            if (!signingKeyEntity) {
+                throw new Error(`Signing key with kid ${kid} not found`);
+            }
+            const publicKey = await jose.JWK.asKey(signingKeyEntity.public_key_jwk);
+            const verifier = jose.JWS.createVerify(publicKey);
+            const verified = await verifier.verify(token);
+            if (verified.protected.kid !== kid) {
+                throw new Error('JWS header kid mismatch');
+            }
+            return JSON.parse(verified.payload.toString());
         }
         catch (error) {
-            return false;
+            throw new Error(`Invalid QR Code: ${error.message}`);
         }
     }
 };

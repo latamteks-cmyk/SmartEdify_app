@@ -50,13 +50,19 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const refresh_token_entity_1 = require("./entities/refresh-token.entity");
+const sessions_service_1 = require("../sessions/sessions.service");
 const crypto = __importStar(require("crypto"));
+const auth_service_1 = require("../auth/auth.service");
 let TokensService = class TokensService {
     refreshTokensRepository;
-    constructor(refreshTokensRepository) {
+    authService;
+    sessionsService;
+    constructor(refreshTokensRepository, authService, sessionsService) {
         this.refreshTokensRepository = refreshTokensRepository;
+        this.authService = authService;
+        this.sessionsService = sessionsService;
     }
-    async issueRefreshToken(user, jkt, familyId) {
+    async issueRefreshToken(user, jkt, familyId, clientId, deviceId, scope) {
         const token = crypto.randomBytes(32).toString('hex');
         const token_hash = crypto.createHash('sha256').update(token).digest('hex');
         const newRefreshToken = this.refreshTokensRepository.create({
@@ -64,6 +70,10 @@ let TokensService = class TokensService {
             token_hash,
             jkt,
             family_id: familyId || crypto.randomUUID(),
+            client_id: clientId || 'test-client-id',
+            device_id: deviceId || 'test-device-id',
+            session_id: crypto.randomUUID(),
+            scope: scope || 'openid profile',
             expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         });
         await this.refreshTokensRepository.save(newRefreshToken);
@@ -72,29 +82,96 @@ let TokensService = class TokensService {
     async rotateRefreshToken(oldToken) {
         const oldTokenHash = crypto.createHash('sha256').update(oldToken).digest('hex');
         const oldRefreshToken = await this.refreshTokensRepository.findOne({ where: { token_hash: oldTokenHash }, relations: ['user'] });
-        if (!oldRefreshToken || oldRefreshToken.revoked || oldRefreshToken.used_at) {
+        if (!oldRefreshToken || oldRefreshToken.revoked) {
             throw new common_1.UnauthorizedException('Invalid refresh token');
+        }
+        if (oldRefreshToken.used_at) {
+            console.warn(`Refresh token reuse detected for family: ${oldRefreshToken.family_id}`);
+            await this.revokeTokenFamily(oldRefreshToken.family_id, 'reuse_detected');
+            throw new common_1.UnauthorizedException('Refresh token reuse detected - token family revoked');
+        }
+        if (oldRefreshToken.expires_at < new Date()) {
+            throw new common_1.UnauthorizedException('Refresh token has expired');
         }
         oldRefreshToken.used_at = new Date();
         await this.refreshTokensRepository.save(oldRefreshToken);
-        const newToken = await this.issueRefreshToken(oldRefreshToken.user, oldRefreshToken.jkt, oldRefreshToken.family_id);
-        oldRefreshToken.replaced_by_id = (await this.refreshTokensRepository.findOne({ where: { token_hash: crypto.createHash('sha256').update(newToken).digest('hex') } })).id;
-        await this.refreshTokensRepository.save(oldRefreshToken);
+        const newToken = await this.issueRefreshToken(oldRefreshToken.user, oldRefreshToken.jkt, oldRefreshToken.family_id, oldRefreshToken.client_id, oldRefreshToken.device_id, oldRefreshToken.scope);
+        const newRefreshTokenEntity = await this.refreshTokensRepository.findOne({
+            where: { token_hash: crypto.createHash('sha256').update(newToken).digest('hex') }
+        });
+        if (newRefreshTokenEntity) {
+            oldRefreshToken.replaced_by_id = newRefreshTokenEntity.id;
+            newRefreshTokenEntity.parent_id = oldRefreshToken.id;
+            await this.refreshTokensRepository.save([oldRefreshToken, newRefreshTokenEntity]);
+        }
         return newToken;
     }
-    async validateRefreshToken(token) {
+    async validateRefreshToken(token, dpopProof, httpMethod, httpUrl) {
         const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
         const refreshToken = await this.refreshTokensRepository.findOne({ where: { token_hash: tokenHash }, relations: ['user'] });
         if (!refreshToken || refreshToken.revoked || refreshToken.used_at) {
             throw new common_1.UnauthorizedException('Invalid refresh token');
         }
+        if (!dpopProof) {
+            throw new common_1.UnauthorizedException('DPoP proof is required for refresh token validation');
+        }
+        const incomingJkt = await this.authService.validateDpopProof(dpopProof, httpMethod, httpUrl);
+        if (incomingJkt !== refreshToken.jkt) {
+            throw new common_1.UnauthorizedException('DPoP proof does not match refresh token binding');
+        }
         return refreshToken.user;
+    }
+    async revokeTokenFamily(familyId, reason) {
+        await this.refreshTokensRepository.update({ family_id: familyId }, {
+            revoked: true,
+            revoked_reason: reason,
+        });
+        console.log(`Revoked token family: ${familyId} due to: ${reason}`);
+    }
+    async revokeRefreshToken(tokenHash, reason) {
+        await this.refreshTokensRepository.update({ token_hash: tokenHash }, {
+            revoked: true,
+            revoked_reason: reason,
+        });
+    }
+    async validateAccessToken(accessToken, userId, tenantId, issuedAt) {
+        try {
+            const notBeforeTime = await this.sessionsService.getNotBeforeTime(userId, tenantId);
+            if (notBeforeTime && issuedAt < notBeforeTime) {
+                console.warn(`Access token rejected: issued before last logout. UserId: ${userId}, TenantId: ${tenantId}, IssuedAt: ${issuedAt}, NotBefore: ${notBeforeTime}`);
+                return false;
+            }
+            return true;
+        }
+        catch (error) {
+            console.error(`Error validating access token for user ${userId}:`, error);
+            return false;
+        }
+    }
+    async validateRefreshTokenWithNotBefore(token, dpopProof, httpMethod, httpUrl) {
+        const user = await this.validateRefreshToken(token, dpopProof, httpMethod, httpUrl);
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        const refreshToken = await this.refreshTokensRepository.findOne({
+            where: { token_hash: tokenHash },
+            relations: ['user']
+        });
+        if (refreshToken) {
+            const notBeforeTime = await this.sessionsService.getNotBeforeTime(user.id, user.tenant_id);
+            if (notBeforeTime && refreshToken.created_at < notBeforeTime) {
+                console.warn(`Refresh token rejected: created before last logout. UserId: ${user.id}, TenantId: ${user.tenant_id}, TokenCreatedAt: ${refreshToken.created_at}, NotBefore: ${notBeforeTime}`);
+                throw new common_1.UnauthorizedException('Refresh token invalidated due to user logout');
+            }
+        }
+        return user;
     }
 };
 exports.TokensService = TokensService;
 exports.TokensService = TokensService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(refresh_token_entity_1.RefreshToken)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => auth_service_1.AuthService))),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        auth_service_1.AuthService,
+        sessions_service_1.SessionsService])
 ], TokensService);
 //# sourceMappingURL=tokens.service.js.map
