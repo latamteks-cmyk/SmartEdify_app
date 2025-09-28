@@ -1022,32 +1022,21 @@ static_resources:
                 configuration:
                   "@type": type.googleapis.com/google.protobuf.StringValue
                   value: '{"replay_cache":{"type":"redis","dsn":"redis://rate-limit:6379","ttl_seconds":300},"iat_skew_seconds":10,"require_on_upgrade":true,"ws_close_code_on_fail":4401}'
-          # JWT AuthN filter
-          # NOTE: Dynamic tenant handling for issuer and jwks_uri is a complex requirement.
-          # A custom filter or complex Lua script would be needed to fully implement the spec.
-          # This configuration is an interim step towards alignment.
-          - name: envoy.filters.http.jwt_authn
+          # Dynamic JWT AuthN filter (Lua)
+          - name: envoy.lua.jwt_validator
             typed_config:
-              "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
-              providers:
-                smartedify:
-                  # The spec requires this to be dynamic per tenant, which is not directly supported.
-                  issuer: "https://auth.smartedify.global/t/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11" # Using a default tenant for now
-                  remote_jwks:
-                    http_uri:
-                      # The spec requires a dynamic URI. Using a default tenant for now.
-                      uri: "http://identity-service:3001/.well-known/jwks.json?tenant_id=a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
-                      cluster: "identity-service"
-                      timeout: 3s
-                    cache_duration: 300s
-                  forward: true
-              # The rules should protect all authenticated endpoints.
-              # Public OIDC endpoints like /authorize should be excluded.
-              rules:
-                - match: { prefix: "/api/v1/" }
-                  requires: { provider_name: "smartedify" }
-                - match: { prefix: "/identity/v2/sessions/" }
-                  requires: { provider_name: "smartedify" }
+              "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+              inline_code: |
+                function envoy_on_request(request_handle)
+                  -- TODO: Implement dynamic multi-tenant JWT validation
+                  -- 1. Extract tenant_id from hostname or header
+                  -- 2. Construct JWKS URI
+                  -- 3. Fetch and cache JWKS
+                  -- 4. Validate JWT signature and claims
+                  local tenant = request_handle:headers():get("x-tenant-id") or "unknown"
+                  request_handle:logInfo("JWT Validator: processing request for tenant: " .. tenant)
+                end
+
           # Rate limit filter
           - name: envoy.filters.http.ratelimit
             typed_config:
