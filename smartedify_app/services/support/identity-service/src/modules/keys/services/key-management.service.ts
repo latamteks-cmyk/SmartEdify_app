@@ -73,7 +73,12 @@ export class KeyManagementService {
       try {
         const jwk = await jose.JWK.asKey(key.public_key_jwk);
         const publicJwk = jwk.toJSON();
-        jwksKeys.push(publicJwk);
+        jwksKeys.push({
+          ...publicJwk,
+          kid: key.kid,
+          use: 'sig',
+          alg: key.algorithm,
+        });
       } catch (error) {
         this.logger.error(`Failed to process key ${key.kid} for JWKS:`, error.message);
       }

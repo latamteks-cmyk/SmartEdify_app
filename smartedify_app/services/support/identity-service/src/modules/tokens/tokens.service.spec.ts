@@ -8,12 +8,17 @@ import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
 import { AuthService } from '../auth/auth.service';
 import { SessionsService } from '../sessions/sessions.service';
+import { KeyManagementService } from '../keys/services/key-management.service';
+import { exportJWK, exportPKCS8, generateKeyPair, jwtVerify, KeyLike } from 'jose';
 
 describe('TokensService', () => {
   let service: TokensService;
   let mockRefreshTokenRepository: Partial<Repository<RefreshToken>>;
   let mockAuthService: Partial<AuthService>;
   let mockSessionsService: Partial<SessionsService>;
+  let mockKeyManagementService: { getActiveSigningKey: jest.Mock };
+  let publicKey: KeyLike;
+  let signingKey: any;
 
   const mockUser: User = {
     id: 'user-123',
@@ -35,6 +40,8 @@ describe('TokensService', () => {
     token_hash: 'abc123hash',
     user: mockUser,
     jkt: 'jkt-thumbprint-123',
+    kid: 'test-key',
+    jti: 'jti-123',
     family_id: 'family-123',
     parent_id: null as any,
     replaced_by_id: null as any,
@@ -51,10 +58,24 @@ describe('TokensService', () => {
     created_at: new Date(),
   };
 
+  beforeAll(async () => {
+    const { privateKey, publicKey: generatedPublicKey } = await generateKeyPair('ES256');
+    publicKey = generatedPublicKey;
+    const privateKeyPem = await exportPKCS8(privateKey);
+    const publicJwk = await exportJWK(generatedPublicKey);
+    signingKey = {
+      kid: 'test-key',
+      tenant_id: mockUser.tenant_id,
+      private_key_pem: privateKeyPem,
+      algorithm: 'ES256',
+      public_key_jwk: { ...publicJwk, kid: 'test-key', use: 'sig', alg: 'ES256' },
+    };
+  });
+
   beforeEach(async () => {
     mockRefreshTokenRepository = {
-      create: jest.fn(),
-      save: jest.fn(),
+      create: jest.fn((entity) => entity),
+      save: jest.fn(async (entity) => entity),
       findOne: jest.fn(),
       update: jest.fn(),
     };
@@ -65,6 +86,10 @@ describe('TokensService', () => {
 
     mockSessionsService = {
       getNotBeforeTime: jest.fn().mockResolvedValue(null), // Default to no logout events
+    };
+
+    mockKeyManagementService = {
+      getActiveSigningKey: jest.fn().mockResolvedValue(signingKey),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -82,10 +107,64 @@ describe('TokensService', () => {
           provide: SessionsService,
           useValue: mockSessionsService,
         },
+        {
+          provide: KeyManagementService,
+          useValue: mockKeyManagementService,
+        },
       ],
     }).compile();
 
     service = module.get<TokensService>(TokensService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('issueRefreshToken', () => {
+    it('should issue an ES256 JWT with binding and persist kid/jti', async () => {
+      const persisted: RefreshToken[] = [];
+      mockRefreshTokenRepository.save = jest.fn(async (entity) => {
+        if (Array.isArray(entity)) {
+          entity.forEach((item) => persisted.push(item as RefreshToken));
+        } else {
+          persisted.push(entity as RefreshToken);
+        }
+        return entity;
+      });
+
+      const token = await service.issueRefreshToken(
+        mockUser,
+        'jkt-thumbprint-123',
+        'family-xyz',
+        'client-1',
+        'device-1',
+        'openid profile',
+      );
+
+      expect(token).toEqual(expect.any(String));
+      expect(mockKeyManagementService.getActiveSigningKey).toHaveBeenCalledWith(mockUser.tenant_id);
+      expect(mockRefreshTokenRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        kid: 'test-key',
+        jti: expect.any(String),
+      }));
+
+      const verification = await jwtVerify(token, publicKey, {
+        issuer: `https://auth.smartedify.global/t/${mockUser.tenant_id}`,
+        audience: `https://auth.smartedify.global/t/${mockUser.tenant_id}`,
+      });
+
+      expect(verification.protectedHeader.alg).toBe('ES256');
+      expect(verification.protectedHeader.kid).toBe('test-key');
+      expect(verification.payload.cnf).toEqual({ jkt: 'jkt-thumbprint-123' });
+      expect(verification.payload.family_id).toBe('family-xyz');
+      expect(verification.payload.session_id).toBeDefined();
+      expect(verification.payload.jti).toBeDefined();
+
+      const savedToken = persisted[0];
+      expect(savedToken.kid).toBe('test-key');
+      expect(savedToken.jti).toBe(verification.payload.jti);
+    });
   });
 
   describe('Refresh Token Rotation', () => {
@@ -115,7 +194,8 @@ describe('TokensService', () => {
         'family-123',
         'client-1',
         'device-1',
-        'openid profile'
+        'openid profile',
+        'session-1'
       );
     });
 
