@@ -5,8 +5,9 @@ import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
 import { SessionsService } from '../sessions/sessions.service';
 import * as crypto from 'crypto';
-import { AuthService } from '../auth/auth.service'; // Import AuthService
+import { AuthService, ValidatedDpopProof } from '../auth/auth.service'; // Import AuthService
 import { KeyManagementService } from '../keys/services/key-management.service';
+import { JtiStoreService } from '../auth/store/jti-store.service';
 import { importPKCS8, SignJWT } from 'jose';
 
 @Injectable()
@@ -18,6 +19,8 @@ export class TokensService {
     private readonly authService: AuthService,
     private readonly sessionsService: SessionsService,
     private readonly keyManagementService: KeyManagementService,
+    @Inject(forwardRef(() => JtiStoreService))
+    private readonly jtiStore: JtiStoreService,
   ) {}
 
   async issueRefreshToken(
@@ -132,7 +135,12 @@ export class TokensService {
     return newToken;
   }
 
-  async validateRefreshToken(token: string, dpopProof: string, httpMethod: string, httpUrl: string): Promise<User> { // Modified signature
+  async validateRefreshToken(
+    token: string,
+    dpopProof: string,
+    httpMethod: string,
+    httpUrl: string,
+  ): Promise<{ user: User; dpop: ValidatedDpopProof }> {
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const refreshToken = await this.refreshTokensRepository.findOne({ where: { token_hash: tokenHash }, relations: ['user'] });
 
@@ -140,17 +148,31 @@ export class TokensService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
+    if (!refreshToken.jkt) {
+      throw new UnauthorizedException('Refresh token is missing cnf.jkt binding');
+    }
+
     // Validate DPoP binding
     if (!dpopProof) {
       throw new UnauthorizedException('DPoP proof is required for refresh token validation');
     }
-    const incomingJkt = await this.authService.validateDpopProof(dpopProof, httpMethod, httpUrl);
+    const dpop = await this.authService.validateDpopProof(dpopProof, httpMethod, httpUrl, {
+      boundJkt: refreshToken.jkt,
+      requireBinding: true,
+    });
 
-    if (incomingJkt !== refreshToken.jkt) {
+    if (dpop.jkt !== refreshToken.jkt) {
       throw new UnauthorizedException('DPoP proof does not match refresh token binding');
     }
 
-    return refreshToken.user;
+    await this.jtiStore.register({
+      tenantId: refreshToken.user.tenant_id,
+      jkt: refreshToken.jkt,
+      jti: dpop.jti,
+      iat: dpop.iat,
+    });
+
+    return { user: refreshToken.user, dpop };
   }
 
   /**
@@ -211,9 +233,14 @@ export class TokensService {
    * Validates a refresh token including not_before check
    * Enhanced version that also verifies the user hasn't been logged out globally
    */
-  async validateRefreshTokenWithNotBefore(token: string, dpopProof: string, httpMethod: string, httpUrl: string): Promise<User> {
+  async validateRefreshTokenWithNotBefore(
+    token: string,
+    dpopProof: string,
+    httpMethod: string,
+    httpUrl: string,
+  ): Promise<{ user: User; dpop: ValidatedDpopProof }> {
     // First, do the standard refresh token validation
-    const user = await this.validateRefreshToken(token, dpopProof, httpMethod, httpUrl);
+    const { user, dpop } = await this.validateRefreshToken(token, dpopProof, httpMethod, httpUrl);
     
     // Get the refresh token to check its creation time
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
@@ -232,6 +259,6 @@ export class TokensService {
       }
     }
 
-    return user;
+    return { user, dpop };
   }
 }

@@ -14,6 +14,18 @@ import { DeviceCodeStoreService, DeviceCodeStatus } from './store/device-code-st
 import { RefreshToken } from '../tokens/entities/refresh-token.entity';
 import { KeyManagementService } from '../keys/services/key-management.service';
 import { JtiStoreService } from './store/jti-store.service';
+import { getDpopConfig } from '../../config/dpop.config';
+
+export interface ValidateDpopProofOptions {
+  boundJkt?: string;
+  requireBinding?: boolean;
+}
+
+export interface ValidatedDpopProof {
+  jkt: string;
+  jti: string;
+  iat: number;
+}
 
 @Injectable()
 export class AuthService {
@@ -112,7 +124,7 @@ export class AuthService {
     }
     
     console.log('🔍 Validating DPoP proof first...');
-    const jkt = await this.validateDpopProof(dpopProof, httpMethod, httpUrl);
+    const proof = await this.validateDpopProof(dpopProof, httpMethod, httpUrl);
     console.log('✅ DPoP validation passed');
 
     // 2. Validate required parameters (after DPoP passes)
@@ -152,8 +164,15 @@ export class AuthService {
     }
 
     // 6. Generate Tokens
-    const accessToken = await this._generateAccessToken(user, jkt, scope);
-    const refreshToken = await this._generateRefreshToken(user, jkt, scope);
+    await this.jtiStore.register({
+      tenantId: user.tenant_id,
+      jkt: proof.jkt,
+      jti: proof.jti,
+      iat: proof.iat,
+    });
+
+    const accessToken = await this._generateAccessToken(user, proof.jkt, scope);
+    const refreshToken = await this._generateRefreshToken(user, proof.jkt, scope);
 
     return [accessToken, refreshToken];
   }
@@ -221,15 +240,18 @@ export class AuthService {
    */
   async refreshTokens(refreshToken: string, dpopProof: string, httpMethod: string, httpUrl: string): Promise<[string, string]> {
     // Validate the refresh token with DPoP binding AND not_before check
-    const user = await this.tokensService.validateRefreshTokenWithNotBefore(refreshToken, dpopProof, httpMethod, httpUrl);
-    
+    const { dpop, user } = await this.tokensService.validateRefreshTokenWithNotBefore(
+      refreshToken,
+      dpopProof,
+      httpMethod,
+      httpUrl,
+    );
+
     // Rotate the refresh token (invalidates the old one and issues a new one)
     const newRefreshToken = await this.tokensService.rotateRefreshToken(refreshToken);
-    
+
     // Generate new access token with same DPoP binding
-    const jkt = await this.validateDpopProof(dpopProof, httpMethod, httpUrl);
-    const newAccessToken = await this._generateAccessToken(user, jkt, 'openid profile'); // Default scope for now
-    
+    const newAccessToken = await this._generateAccessToken(user, dpop.jkt, 'openid profile'); // Default scope for now
     return [newAccessToken, newRefreshToken];
   }
 
@@ -241,7 +263,12 @@ export class AuthService {
     return this.tokensService.validateAccessToken(accessToken, userId, tenantId, issuedAt);
   }
 
-  public async validateDpopProof(dpopProof: string, httpMethod: string, httpUrl: string): Promise<string> {
+  public async validateDpopProof(
+    dpopProof: string,
+    httpMethod: string,
+    httpUrl: string,
+    options?: ValidateDpopProofOptions,
+  ): Promise<ValidatedDpopProof> {
     try {
       // Parse the JWS to get header and payload
       const parts = dpopProof.split('.');
@@ -278,15 +305,33 @@ export class AuthService {
         throw new UnauthorizedException('Invalid or missing jti in DPoP proof');
       }
 
-      if (this.jtiStore.has(decodedPayload.jti)) {
-        throw new UnauthorizedException('DPoP proof replay detected');
+      if (typeof decodedPayload.iat !== 'number') {
+        throw new UnauthorizedException('Invalid or missing iat in DPoP proof');
       }
 
-      this.jtiStore.set(decodedPayload.jti);
+      const { proof: { maxIatSkewSeconds } } = getDpopConfig();
+      const now = Math.floor(Date.now() / 1000);
+      if (Math.abs(now - decodedPayload.iat) > maxIatSkewSeconds) {
+        throw new UnauthorizedException('DPoP proof expired');
+      }
+
+      if (options?.requireBinding && !options.boundJkt) {
+        throw new UnauthorizedException('Token is missing cnf.jkt binding');
+      }
 
       // Create thumbprint as a hex string instead of buffer
       const thumbprintBuffer = await key.thumbprint('SHA-256');
-      return Buffer.from(thumbprintBuffer).toString('hex');
+      const computedThumbprint = Buffer.from(thumbprintBuffer).toString('hex');
+
+      if (options?.boundJkt && options.boundJkt !== computedThumbprint) {
+        throw new UnauthorizedException('DPoP proof does not match provided binding');
+      }
+
+      return {
+        jkt: computedThumbprint,
+        jti: decodedPayload.jti,
+        iat: decodedPayload.iat,
+      };
 
     } catch (error) {
       // Re-throw specific UnauthorizedException errors (htm, htu validation)
