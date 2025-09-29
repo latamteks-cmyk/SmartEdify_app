@@ -1,6 +1,6 @@
-# 📘 Especificación Técnica Final — `tenancy-service`
+# 📘 Especificación Técnica  — `tenancy-service`
 
-**Versión:** 1.0 • **Puerto sugerido:** 3003 • **Estado:** ✅ Listo para desarrollo/producción
+**Versión:** 1.0 • **Puerto sugerido:** 3003 • **Estado:** ✅ Listo para spec
 **Rol:** Fuente canónica de tenants, condominios, edificios y unidades. Mantiene la **estructura física y organizativa** de cada comunidad.
 **No-Goals:** No gestiona personas (eso es de `user-profiles-service`). No maneja OTs ni métricas (eso es de `asset-management-service`).
 
