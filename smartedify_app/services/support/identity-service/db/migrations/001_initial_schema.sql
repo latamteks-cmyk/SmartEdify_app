@@ -97,3 +97,14 @@ CREATE TABLE revocation_events (
     not_before TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Tabla: dpop_replay_proofs (NUEVA)
+CREATE TABLE dpop_replay_proofs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL,
+    jkt TEXT NOT NULL,
+    jti TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(tenant_id, jkt, jti)
+);
