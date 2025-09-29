@@ -61,29 +61,56 @@ export class WebauthnService {
     });
 
     if (verification.verified && verification.registrationInfo) {
-      // Access properties directly from verification.registrationInfo as per SimpleWebAuthn docs
-      // @ts-ignore: Property 'credential' does not exist on type 'RegistrationInfo'.
-      const { credentialPublicKey, credentialID, counter } = verification.registrationInfo; // Corrected access
-
-      // In a real implementation, we would get the user from the session
+      // In a real implementation, we would get the user from la sesión
       const user = await this.usersService.findByEmail('test@test.com'); // placeholder
       if (!user) {
         throw new NotFoundException('User not found');
       }
-
-      const newCredential = this.webAuthnCredentialRepository.create({
-        user,
-        credential_id: credentialID,
-        public_key: credentialPublicKey,
-        sign_count: counter,
-        rp_id: this.rpService.getRpId(),
-        origin: this.rpService.getExpectedOrigin(),
-        // transports: response.response.transports, // This needs to be handled correctly
-      });
-      await this.webAuthnCredentialRepository.save(newCredential);
+      await this.persistCredential(verification.registrationInfo, response, user);
     }
 
     return verification;
+  }
+
+  private async persistCredential(registrationInfo: any, response: any, user: any) {
+    const {
+      credential: {
+        id: credentialID,
+        publicKey: credentialPublicKey,
+        counter,
+        transports,
+      },
+      aaguid,
+      fmt,
+      credentialDeviceType,
+      credentialBackedUp,
+      authenticatorExtensionResults,
+    } = registrationInfo;
+
+    // Determinar cred_protect si está presente en las extensiones
+    let credProtect: string | undefined = undefined;
+    if (
+      authenticatorExtensionResults &&
+      authenticatorExtensionResults.credProtect
+    ) {
+      credProtect = String(authenticatorExtensionResults.credProtect);
+    }
+
+    const newCredential = this.webAuthnCredentialRepository.create({
+      user,
+      credential_id: Buffer.from(credentialID, 'base64url'),
+      public_key: Buffer.from(credentialPublicKey),
+      sign_count: counter,
+      rp_id: this.rpService.getRpId(),
+      origin: this.rpService.getExpectedOrigin(),
+      aaguid: aaguid ? Buffer.from(aaguid.replace(/-/g, ''), 'hex') : undefined,
+      attestation_fmt: fmt,
+      transports: transports || (response.response.transports as string[]),
+      backup_eligible: credentialDeviceType === 'multiDevice',
+      backup_state: credentialBackedUp ? 'backed_up' : 'not_backed_up',
+      cred_protect: credProtect,
+    });
+    await this.webAuthnCredentialRepository.save(newCredential);
   }
 
   async generateAuthenticationOptions(username?: string) {

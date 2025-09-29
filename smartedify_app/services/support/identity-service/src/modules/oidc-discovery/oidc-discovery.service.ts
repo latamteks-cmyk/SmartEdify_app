@@ -8,7 +8,7 @@ export class OidcDiscoveryService {
       issuer,
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
-      jwks_uri: `${issuer}/.well-known/jwks.json`,
+      jwks_uri: `https://auth.smartedify.global/.well-known/jwks.json?tenant_id=${tenantId}`,
       response_types_supported: ['code'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
       subject_types_supported: ['public'],
