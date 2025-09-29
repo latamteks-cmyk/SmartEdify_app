@@ -1,47 +1,61 @@
-# Plan de Desarrollo Colaborativo SmartEdify_app
+
+# Plan de Implementación OIDC Avanzado — SmartEdify_app (PRIORIDAD CTO)
 
 ## Objetivo
-Establecer la hoja de ruta, entregables y criterios de aceptación para el desarrollo seguro y escalable del nuevo repositorio SmartEdify_app, alineado a las mejores prácticas y requisitos enterprise definidos en entorno.md.
+Cerrar todas las brechas OIDC avanzado y cumplimiento identificadas en la especificación y el contrato, garantizando interoperabilidad, seguridad y auditabilidad a nivel enterprise.
 
 ---
 
 ## Fases y Entregables
 
-### Fase 1: Base y Seguridad
-- [x] Estructura inicial del repositorio (carpetas, archivos, CI/CD)
-- [x] Identity-service con JWK ES256/EdDSA, JWKS endpoint y rotación doble kid
-- [x] Eliminación de JWT_SECRET en .env y CI
-- [x] Pruebas unitarias y E2E completas
-- [x] Métricas y health-checks expuestos
-- [x] Instrumentación OTel básica para login y token
+### Fase 1: Discovery y JWKS Rollover
+- [ ] Endpoint `/.well-known/openid-configuration?tenant_id={id}` con `jwks_uri` correcto por tenant
+- [ ] Endpoint `/.well-known/jwks.json?tenant_id={id}` con soporte de doble `kid` durante rollover
+- [ ] Pruebas unitarias y E2E para discovery y JWKS rollover
 
 **Criterios de aceptación:**
-- Todos los tests unitarios y E2E pasan
-- JWKS endpoint público y rotación validada
-- No existe JWT_SECRET en variables ni CI
-- Métricas y health accesibles
-- Trazas OTel visibles en login/token
+- Discovery y JWKS cumplen OpenID Core y exponen claves activas según SLA de rotación
+- Pruebas E2E validan rollover y selección de clave por `kid`
 
 ---
 
-### Fase 2: Contracts-first y Gateway
-- [x] Validación OpenAPI/AsyncAPI como gate obligatorio en CI
-- [x] Gateway-service con rutas /auth/*, validación JWT/DPoP y rate-limits
+### Fase 2: Endpoints OIDC Obligatorios
+- [ ] `/authorize` (PKCE obligatorio, scopes y claims configurables)
+- [ ] `/oauth/par` (Pushed Authorization Request)
+- [ ] `/oauth/token` (DPoP, rotación y reuse detection de refresh token)
+- [ ] `/oauth/introspect` (client auth fuerte)
+- [ ] `/oauth/revoke` (revocación de refresh y access token)
+- [ ] `/oauth/device_authorization` (Device Flow)
+- [ ] `/logout` y `/backchannel-logout` (logout global y notificaciones)
+- [ ] Pruebas E2E y unitarias para todos los flujos
 
 **Criterios de aceptación:**
-- Pipeline CI falla si no hay contrato actualizado
-- Gateway funcional y protegido con rate-limits
-- Validación JWT/DPoP activa en gateway
+- Todos los endpoints cumplen OpenID/OAuth2 y el contrato OpenAPI
+- Pruebas E2E cubren flujos exitosos y de error
 
 ---
 
-### Fase 3: Portal Auth-only y Pruebas
-- [x] Portal configurado en modo auth-only (PKCE y OIDC)
-- [x] Infra de pruebas con docker-compose.test.yml y scripts de arranque
+### Fase 3: Claims, Scopes y Consentimiento
+- [ ] Claims y scopes personalizables por tenant
+- [ ] Consentimiento granular (consent screen) y registro en `consent_audits`
+- [ ] Endpoints y lógica de auditoría de consentimientos
+- [ ] Pruebas E2E y unitarias de consentimiento y claims
 
 **Criterios de aceptación:**
-- Portal permite login seguro vía PKCE/OIDC
-- Sandbox de pruebas operativo con scripts reutilizables
+- Consentimiento y claims auditables y configurables por cliente
+- Pruebas E2E validan consentimiento y claims personalizados
+
+---
+
+### Fase 4: Pruebas Contractuales y Certificación
+- [ ] Pruebas contractuales OIDC (OpenID Certification/conformance suite)
+- [ ] Validación de interoperabilidad con clientes externos
+- [ ] Documentación OpenAPI y ejemplos de integración actualizados
+
+**Criterios de aceptación:**
+- Todos los endpoints OIDC cumplen con el contrato y los perfiles estándar
+- Pruebas contractuales y de interoperabilidad pasan
+- Documentación y ejemplos de integración actualizados
 
 ---
 
@@ -59,8 +73,6 @@ Establecer la hoja de ruta, entregables y criterios de aceptación para el desar
 - La estructura permite escalar y añadir servicios sin refactorizaciones mayores
 
 ---
-
-## Próximos pasos
 1. Validar estructura y CI en el nuevo repositorio
 2. Iniciar desarrollo incremental por fases
 3. Mantener comunicación continua y revisión colaborativa

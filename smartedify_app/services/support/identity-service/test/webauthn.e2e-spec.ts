@@ -56,6 +56,7 @@ describe('WebAuthn (e2e)', () => {
       username: 'webauthn-user',
       email: 'webauthn@test.com',
       password: 'password',
+      consent_granted: true,
     });
   });
 
@@ -95,36 +96,33 @@ describe('WebAuthn (e2e)', () => {
     });
 
     it('should return valid authentication options', async () => {
-        const expectedChallenge = 'authentication-challenge';
-        (generateRegistrationOptions as jest.Mock).mockResolvedValue({
-          challenge: 'registration-challenge',
-          rp: { name: 'SmartEdify', id: 'smartedify.local' },
-          user: {
-            id: Buffer.from(testUser.id).toString('base64url'),
-            name: testUser.email,
-            displayName: testUser.email,
-          },
-          pubKeyCredParams: [],
-        });
-
-        (generateAuthenticationOptions as jest.Mock).mockResolvedValue({
-          challenge: expectedChallenge,
-          allowCredentials: [],
-        });
-
-        await request(app.getHttpServer())
-          .get('/webauthn/registration/options')
-          .query({ username: testUser.email, userId: testUser.id });
-
-        const response = await request(app.getHttpServer())
-          .get('/webauthn/authentication/options')
-          .query({ username: testUser.email });
-
-        expect(response.status).toBe(200);
-        expect(response.body).toBeDefined();
-        expect(response.body.challenge).toBeDefined();
-        expect(response.body.challenge).toBe(expectedChallenge);
+      (generateRegistrationOptions as jest.Mock).mockResolvedValue({
+        challenge: 'registration-challenge',
+        rp: { name: 'SmartEdify', id: 'smartedify.local' },
+        user: {
+          id: Buffer.from(testUser.id).toString('base64url'),
+          name: testUser.email,
+          displayName: testUser.email,
+        },
+        pubKeyCredParams: [],
       });
+      const expectedChallenge = 'authentication-challenge';
+      (generateAuthenticationOptions as jest.Mock).mockResolvedValue({
+        challenge: expectedChallenge,
+        allowCredentials: [],
+      });
+
+      await request(app.getHttpServer())
+        .get('/webauthn/registration/options')
+        .query({ username: testUser.email, userId: testUser.id });
+
+      const response = await request(app.getHttpServer())
+        .get('/webauthn/authentication/options')
+        .query({ username: testUser.email });
+
+      expect(response.status).toBe(200);
+      expect(response.body.challenge).toBe(expectedChallenge);
+    });
   });
 
   describe('Verification', () => {
@@ -274,9 +272,7 @@ describe('WebAuthn (e2e)', () => {
 
       (verifyAuthenticationResponse as jest.Mock).mockResolvedValue({
         verified: true,
-        authenticationInfo: {
-          newCounter: 2,
-        },
+        authenticationInfo: { newCounter: 2 },
       });
 
       await request(app.getHttpServer())
@@ -314,12 +310,12 @@ describe('WebAuthn (e2e)', () => {
         expect.objectContaining({ expectedChallenge: authenticationChallenge })
       );
 
-      const storedCredential: WebAuthnCredential = await credentialsRepository.findOne({
+      const storedCredential = await credentialsRepository.findOne({
         where: { user: { id: testUser.id } },
         relations: ['user'],
       });
-      expect(storedCredential.sign_count).toBe(2);
-      expect(storedCredential.last_used_at).toBeInstanceOf(Date);
+      expect(storedCredential?.sign_count).toBe(2);
+      expect(storedCredential?.last_used_at).toBeInstanceOf(Date);
     });
 
     it('should reject authentication when challenge is reused', async () => {
@@ -349,19 +345,12 @@ describe('WebAuthn (e2e)', () => {
 
       (generateAuthenticationOptions as jest.Mock).mockResolvedValue({
         challenge: authenticationChallenge,
-        allowCredentials: [
-          {
-            id: credentialId.toString('base64url'),
-            type: 'public-key',
-          },
-        ],
+        allowCredentials: [{ id: credentialId.toString('base64url'), type: 'public-key' }],
       });
 
       (verifyAuthenticationResponse as jest.Mock).mockResolvedValue({
         verified: true,
-        authenticationInfo: {
-          newCounter: 2,
-        },
+        authenticationInfo: { newCounter: 2 },
       });
 
       await request(app.getHttpServer())
@@ -406,6 +395,41 @@ describe('WebAuthn (e2e)', () => {
 
       expect(secondAttempt.status).toBe(400);
       expect(verifyAuthenticationResponse).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('WebAuthn L3 Advanced Fields', () => {
+    it('should persist advanced fields on registration', async () => {
+      // usar método privado para persistir directamente
+      const { WebauthnService } = require('../src/modules/webauthn/webauthn.service');
+      const webAuthnService = setup.moduleFixture.get(WebauthnService);
+
+      const registrationInfo = {
+        credentialID: Buffer.from('test-cred-id'),
+        credentialPublicKey: Buffer.from('mock-key'),
+        counter: 1,
+        transports: ['usb', 'nfc'],
+        aaguid: '00000000-0000-0000-0000-000000000000',
+        fmt: 'packed',
+        credentialDeviceType: 'multiDevice',
+        credentialBackedUp: true,
+        authenticatorExtensionResults: { credProtect: 2 },
+      };
+      const response = { response: { transports: ['usb', 'nfc'] } };
+
+      // @ts-ignore acceso intencional
+      await webAuthnService['persistCredential'](registrationInfo, response, testUser);
+
+      const creds = await credentialsRepository.find();
+      expect(creds.length).toBe(1);
+      const cred = creds[0];
+      expect(cred.transports).toContain('usb');
+      expect(cred.transports).toContain('nfc');
+      expect(cred.cred_protect).toBe('2');
+      expect(cred.backup_eligible).toBe(true);
+      expect(cred.backup_state).toBe('backed_up');
+      expect(cred.aaguid?.toString('hex')).toBe('00000000000000000000000000000000');
+      expect(cred.attestation_fmt).toBe('packed');
     });
   });
 });
