@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Post, Query } from '@nestjs/common';
 import { WebauthnService } from './webauthn.service';
 
 @Controller('webauthn')
@@ -13,9 +13,10 @@ export class WebauthnController {
   @Post('registration/verification')
   async registrationVerification(
     @Body() body: any,
-    @Body('userId') userId: string
+    @Body('userId') userId: string,
+    @Headers('webauthn-challenge') challenge?: string,
   ) {
-    return this.webauthnService.verifyRegistration(body, userId);
+    return this.webauthnService.verifyRegistration(body, userId, challenge);
   }
 
   @Get('authentication/options')
@@ -26,8 +27,8 @@ export class WebauthnController {
   @Post('authentication/verification')
   async authenticationVerification(
     @Body() body: any,
-    @Body('username') username: string
+    @Headers('webauthn-challenge') challenge?: string,
   ) {
-    return this.webauthnService.verifyAuthentication(body, username);
+    return this.webauthnService.verifyAuthentication(body, challenge);
   }
 }
