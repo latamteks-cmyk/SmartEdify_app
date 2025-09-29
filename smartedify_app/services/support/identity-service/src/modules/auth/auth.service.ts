@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { AuthorizationCodeStoreService } from './store/authorization-code-store.service';
 import * as crypto from 'crypto';
 import * as jose from 'node-jose';
+import { importPKCS8, SignJWT } from 'jose';
 import { TokensService } from '../tokens/tokens.service';
 import { UsersService } from '../users/users.service';
 import { SessionsService } from '../sessions/sessions.service';
@@ -11,6 +12,7 @@ import { User } from '../users/entities/user.entity';
 import { ParStoreService, ParPayload } from './store/par-store.service';
 import { DeviceCodeStoreService, DeviceCodeStatus } from './store/device-code-store.service';
 import { RefreshToken } from '../tokens/entities/refresh-token.entity';
+import { KeyManagementService } from '../keys/services/key-management.service';
 import { JtiStoreService } from './store/jti-store.service';
 
 @Injectable()
@@ -23,6 +25,7 @@ export class AuthService {
     private readonly parStore: ParStoreService,
     private readonly deviceCodeStore: DeviceCodeStoreService,
     private readonly jtiStore: JtiStoreService,
+    private readonly keyManagementService: KeyManagementService,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
   ) {}
@@ -175,14 +178,33 @@ export class AuthService {
   }
 
   private async _generateAccessToken(user: User, jkt: string, scope: string): Promise<string> {
-    // In a real implementation, we would generate and sign a JWT
-    // and include the jkt in the claims.
-    const accessToken = 'mock_access_token';
-    return accessToken;
+    const signingKey = await this.keyManagementService.getActiveSigningKey(user.tenant_id);
+    const privateKey = await importPKCS8(signingKey.private_key_pem, 'ES256');
+
+    const now = Math.floor(Date.now() / 1000);
+    const jti = crypto.randomUUID();
+    const issuer = `https://auth.smartedify.global/t/${user.tenant_id}`;
+
+    const token = await new SignJWT({
+      sub: user.id,
+      scope,
+      tenant_id: user.tenant_id,
+      cnf: { jkt },
+    })
+      .setProtectedHeader({ alg: 'ES256', kid: signingKey.kid, typ: 'JWT' })
+      .setIssuer(issuer)
+      .setAudience(issuer)
+      .setIssuedAt(now)
+      .setNotBefore(now)
+      .setExpirationTime(now + 900)
+      .setJti(jti)
+      .sign(privateKey);
+
+    return token;
   }
 
   private async _generateRefreshToken(user: User, jkt: string, scope: string): Promise<string> {
-    return this.tokensService.issueRefreshToken(user, jkt, undefined, undefined, undefined, scope);
+    return this.tokensService.issueRefreshToken(user, jkt, undefined, undefined, undefined, scope, undefined);
   }
 
   async introspect(token: string): Promise<any> {

@@ -113,9 +113,9 @@ describe('KeyManagementService', () => {
     it('should return a JWKS for active and rolled-over keys', async () => {
       const tenantId = 'tenant-1';
       const keys = [
-        { kid: 'active-key', status: KeyStatus.ACTIVE, public_key_jwk: { kty: 'EC', kid: 'active-key' } },
-        { kid: 'rolled-key', status: KeyStatus.ROLLED_OVER, public_key_jwk: { kty: 'EC', kid: 'rolled-key' } },
-        { kid: 'expired-key', status: KeyStatus.EXPIRED, public_key_jwk: { kty: 'EC', kid: 'expired-key' } },
+        { kid: 'active-key', status: KeyStatus.ACTIVE, algorithm: 'ES256', public_key_jwk: { kty: 'EC', kid: 'active-key' } },
+        { kid: 'rolled-key', status: KeyStatus.ROLLED_OVER, algorithm: 'ES256', public_key_jwk: { kty: 'EC', kid: 'rolled-key' } },
+        { kid: 'expired-key', status: KeyStatus.EXPIRED, algorithm: 'ES256', public_key_jwk: { kty: 'EC', kid: 'expired-key' } },
       ] as SigningKey[];
 
       repository.find.mockResolvedValue(keys.slice(0, 2)); // Return only active and rolled-over
@@ -130,6 +130,8 @@ describe('KeyManagementService', () => {
       });
 
       expect(result.keys).toHaveLength(2);
+      expect(result.keys.every(k => k['use'] === 'sig')).toBe(true);
+      expect(result.keys.every(k => k['alg'] === 'ES256')).toBe(true);
       expect(result.keys.some(k => k['kid'] === 'active-key')).toBe(true);
       expect(result.keys.some(k => k['kid'] === 'rolled-key')).toBe(true);
       expect(result.keys.some(k => k['kid'] === 'expired-key')).toBe(false);

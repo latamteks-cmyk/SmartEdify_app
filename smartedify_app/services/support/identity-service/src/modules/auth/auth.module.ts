@@ -7,13 +7,14 @@ import { AuthorizationCodeStoreService } from './store/authorization-code-store.
 import { TokensModule } from '../tokens/tokens.module';
 import { UsersModule } from '../users/users.module';
 import { SessionsModule } from '../sessions/sessions.module';
+import { KeysModule } from '../keys/keys.module';
 import { ParStoreService } from './store/par-store.service';
 import { DeviceCodeStoreService } from './store/device-code-store.service';
 import { RefreshToken } from '../tokens/entities/refresh-token.entity';
 import { JtiStoreService } from './store/jti-store.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RefreshToken]), TokensModule, UsersModule, SessionsModule],
+  imports: [TypeOrmModule.forFeature([RefreshToken]), TokensModule, UsersModule, SessionsModule, KeysModule],
   providers: [
     AuthService, 
     ClientAuthGuard, 

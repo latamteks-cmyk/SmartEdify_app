@@ -35,9 +35,9 @@ describe('JwksController', () => {
   });
 
   describe('getJwksForTenant', () => {
-    it('should throw BadRequestException if tenant_id is missing', async () => {
-      await expect(controller.getJwksForTenant(undefined)).rejects.toThrow(
-        new BadRequestException('tenant_id is a required query parameter.'),
+    it('should throw BadRequestException if tenant identifier is missing', async () => {
+      await expect(controller.getJwksForTenant(undefined, undefined)).rejects.toThrow(
+        new BadRequestException('tenant identifier is required.'),
       );
     });
 
@@ -46,7 +46,7 @@ describe('JwksController', () => {
       const jwks = { keys: [{ kty: 'EC', kid: '123' }] };
       mockKeyManagementService.getJwksForTenant.mockResolvedValue(jwks);
 
-      const result = await controller.getJwksForTenant(tenantId);
+      const result = await controller.getJwksForTenant(tenantId, undefined);
 
       expect(mockKeyManagementService.getJwksForTenant).toHaveBeenCalledWith(tenantId);
       expect(result).toEqual(jwks);
@@ -57,9 +57,20 @@ describe('JwksController', () => {
       const expectedJwks = { keys: [{ kty: 'EC', kid: '456' }] };
       mockKeyManagementService.getJwksForTenant.mockResolvedValue(expectedJwks);
 
-      const result = await controller.getJwksForTenant(tenantId);
+      const result = await controller.getJwksForTenant(tenantId, undefined);
 
       expect(result).toEqual(expectedJwks);
+    });
+
+    it('should accept tenant id from path parameters', async () => {
+      const tenantId = 'path-tenant';
+      const jwks = { keys: [] };
+      mockKeyManagementService.getJwksForTenant.mockResolvedValue(jwks);
+
+      const result = await controller.getJwksForTenant(undefined, tenantId);
+
+      expect(mockKeyManagementService.getJwksForTenant).toHaveBeenCalledWith(tenantId);
+      expect(result).toEqual(jwks);
     });
   });
 });
