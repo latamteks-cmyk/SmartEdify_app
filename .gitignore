@@ -103,4 +103,9 @@ tmp/
 temp/
 
 # Problematic submodules
+<<<<<<< HEAD
 my-gemini-app/
+spec-kit-main/
+=======
+my-gemini-app/
+>>>>>>> feature/gateway-service
