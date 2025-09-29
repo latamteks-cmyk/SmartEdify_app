@@ -29,6 +29,8 @@ import { UsersService } from '../../src/modules/users/users.service';
 import { AuthorizationCodeStoreService } from '../../src/modules/auth/store/authorization-code-store.service';
 import { DpopReplayProof } from '../../src/modules/auth/entities/dpop-replay-proof.entity';
 import { MetricsModule } from '../../src/modules/metrics/metrics.module';
+import { ComplianceJob } from '../../src/modules/compliance/entities/compliance-job.entity';
+import { ComplianceJobService as ComplianceJobServiceEntity } from '../../src/modules/compliance/entities/compliance-job-service.entity';
 
 export interface TestModuleSetup {
   app: INestApplication;
@@ -40,6 +42,8 @@ export interface TestModuleSetup {
   webAuthnCredentialsRepository: Repository<WebAuthnCredential>;
   refreshTokensRepository: Repository<RefreshToken>;
   dpopReplayRepository: Repository<DpopReplayProof>;
+  complianceJobsRepository: Repository<ComplianceJob>;
+  complianceJobServicesRepository: Repository<ComplianceJobServiceEntity>;
   keyRotationService: KeyRotationService;
   keyManagementService: KeyManagementService;
   authService: AuthService;
@@ -88,6 +92,8 @@ export class TestConfigurationFactory {
         const webAuthnCredentialsRepository = moduleFixture.get<Repository<WebAuthnCredential>>(getRepositoryToken(WebAuthnCredential));
         const refreshTokensRepository = moduleFixture.get<Repository<RefreshToken>>(getRepositoryToken(RefreshToken));
         const dpopReplayRepository = moduleFixture.get<Repository<DpopReplayProof>>(getRepositoryToken(DpopReplayProof));
+        const complianceJobsRepository = moduleFixture.get<Repository<ComplianceJob>>(getRepositoryToken(ComplianceJob));
+        const complianceJobServicesRepository = moduleFixture.get<Repository<ComplianceJobServiceEntity>>(getRepositoryToken(ComplianceJobServiceEntity));
         const schedulerRegistry = moduleFixture.get<SchedulerRegistry>(SchedulerRegistry);
 
         return {
@@ -106,6 +112,8 @@ export class TestConfigurationFactory {
           authorizationCodeStoreService,
           schedulerRegistry,
           dpopReplayRepository,
+          complianceJobsRepository,
+          complianceJobServicesRepository,
         };
       },
       TEST_CONSTANTS.SERVICE_INITIALIZATION_TIMEOUT,
@@ -118,6 +126,8 @@ export class TestConfigurationFactory {
       async () => {
         console.log('--- Cleaning database ---');
         await setup.consentAuditsRepository.createQueryBuilder().delete().from(ConsentAudit).execute();
+        await setup.complianceJobServicesRepository.createQueryBuilder().delete().from(ComplianceJobServiceEntity).execute();
+        await setup.complianceJobsRepository.createQueryBuilder().delete().from(ComplianceJob).execute();
         await setup.sessionsRepository.createQueryBuilder().delete().from(Session).execute();
         await setup.webAuthnCredentialsRepository.createQueryBuilder().delete().from(WebAuthnCredential).execute();
         await setup.refreshTokensRepository.createQueryBuilder().delete().from(RefreshToken).execute();
