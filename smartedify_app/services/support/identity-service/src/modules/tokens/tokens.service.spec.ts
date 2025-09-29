@@ -10,6 +10,7 @@ import { AuthService } from '../auth/auth.service';
 import { SessionsService } from '../sessions/sessions.service';
 import { KeyManagementService } from '../keys/services/key-management.service';
 import { exportJWK, exportPKCS8, generateKeyPair, jwtVerify, KeyLike } from 'jose';
+import { JtiStoreService } from '../auth/store/jti-store.service';
 
 describe('TokensService', () => {
   let service: TokensService;
@@ -17,6 +18,7 @@ describe('TokensService', () => {
   let mockAuthService: Partial<AuthService>;
   let mockSessionsService: Partial<SessionsService>;
   let mockKeyManagementService: { getActiveSigningKey: jest.Mock };
+  let mockJtiStore: { register: jest.Mock };
   let publicKey: KeyLike;
   let signingKey: any;
 
@@ -81,7 +83,11 @@ describe('TokensService', () => {
     };
 
     mockAuthService = {
-      validateDpopProof: jest.fn().mockResolvedValue('jkt-thumbprint-123'),
+      validateDpopProof: jest.fn().mockResolvedValue({
+        jkt: 'jkt-thumbprint-123',
+        jti: 'proof-jti-1',
+        iat: Math.floor(Date.now() / 1000),
+      }),
     };
 
     mockSessionsService = {
@@ -90,6 +96,10 @@ describe('TokensService', () => {
 
     mockKeyManagementService = {
       getActiveSigningKey: jest.fn().mockResolvedValue(signingKey),
+    };
+
+    mockJtiStore = {
+      register: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -110,6 +120,10 @@ describe('TokensService', () => {
         {
           provide: KeyManagementService,
           useValue: mockKeyManagementService,
+        },
+        {
+          provide: JtiStoreService,
+          useValue: mockJtiStore,
         },
       ],
     }).compile();
@@ -249,12 +263,25 @@ describe('TokensService', () => {
       
       // Reset and setup the mock for this specific test
       mockRefreshTokenRepository.findOne = jest.fn().mockResolvedValue(validToken);
-      mockAuthService.validateDpopProof = jest.fn().mockResolvedValue('jkt-thumbprint-123');
+      mockAuthService.validateDpopProof = jest.fn().mockResolvedValue({
+        jkt: 'jkt-thumbprint-123',
+        jti: 'proof-jti-42',
+        iat: Math.floor(Date.now() / 1000),
+      });
 
       const result = await service.validateRefreshToken(token, dpopProof, 'POST', 'https://example.com/token');
 
-      expect(result).toBe(mockUser);
-      expect(mockAuthService.validateDpopProof).toHaveBeenCalledWith(dpopProof, 'POST', 'https://example.com/token');
+      expect(result.user).toBe(mockUser);
+      expect(result.dpop.jkt).toBe('jkt-thumbprint-123');
+      expect(mockAuthService.validateDpopProof).toHaveBeenCalledWith(
+        dpopProof,
+        'POST',
+        'https://example.com/token',
+        expect.objectContaining({ boundJkt: 'jkt-thumbprint-123', requireBinding: true }),
+      );
+      expect(mockJtiStore.register).toHaveBeenCalledWith(
+        expect.objectContaining({ tenantId: mockUser.tenant_id, jkt: 'jkt-thumbprint-123', jti: 'proof-jti-42' }),
+      );
     });
 
     it('should reject mismatched DPoP binding', async () => {
@@ -271,7 +298,11 @@ describe('TokensService', () => {
       
       // Reset and setup the mock for this specific test
       mockRefreshTokenRepository.findOne = jest.fn().mockResolvedValue(validToken);
-      mockAuthService.validateDpopProof = jest.fn().mockResolvedValue('wrong-jkt-thumbprint');
+      mockAuthService.validateDpopProof = jest.fn().mockResolvedValue({
+        jkt: 'wrong-jkt-thumbprint',
+        jti: 'proof-jti-43',
+        iat: Math.floor(Date.now() / 1000),
+      });
 
       await expect(service.validateRefreshToken(token, dpopProof, 'POST', 'https://example.com/token'))
         .rejects.toThrow('DPoP proof does not match refresh token binding');
@@ -328,12 +359,17 @@ describe('TokensService', () => {
         .mockResolvedValueOnce(validToken) // First call in validateRefreshToken
         .mockResolvedValueOnce(validToken); // Second call in validateRefreshTokenWithNotBefore
         
-      mockAuthService.validateDpopProof = jest.fn().mockResolvedValue('jkt-thumbprint-123');
+      mockAuthService.validateDpopProof = jest.fn().mockResolvedValue({
+        jkt: 'jkt-thumbprint-123',
+        jti: 'proof-jti-99',
+        iat: Math.floor(Date.now() / 1000),
+      });
       mockSessionsService.getNotBeforeTime = jest.fn().mockResolvedValue(null);
 
       const result = await service.validateRefreshTokenWithNotBefore(token, dpopProof, 'POST', 'https://example.com/token');
 
-      expect(result).toBe(mockUser);
+      expect(result.user).toBe(mockUser);
+      expect(result.dpop.jkt).toBe('jkt-thumbprint-123');
       expect(mockSessionsService.getNotBeforeTime).toHaveBeenCalledWith(mockUser.id, mockUser.tenant_id);
     });
   });

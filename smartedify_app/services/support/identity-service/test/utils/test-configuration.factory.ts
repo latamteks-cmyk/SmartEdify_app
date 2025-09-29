@@ -27,6 +27,7 @@ import { RefreshToken } from '../../src/modules/tokens/entities/refresh-token.en
 import { AuthService } from '../../src/modules/auth/auth.service';
 import { UsersService } from '../../src/modules/users/users.service';
 import { AuthorizationCodeStoreService } from '../../src/modules/auth/store/authorization-code-store.service';
+import { DpopReplayProof } from '../../src/modules/auth/entities/dpop-replay-proof.entity';
 import { MetricsModule } from '../../src/modules/metrics/metrics.module';
 
 export interface TestModuleSetup {
@@ -38,6 +39,7 @@ export interface TestModuleSetup {
   sessionsRepository: Repository<Session>;
   webAuthnCredentialsRepository: Repository<WebAuthnCredential>;
   refreshTokensRepository: Repository<RefreshToken>;
+  dpopReplayRepository: Repository<DpopReplayProof>;
   keyRotationService: KeyRotationService;
   keyManagementService: KeyManagementService;
   authService: AuthService;
@@ -85,6 +87,7 @@ export class TestConfigurationFactory {
         const sessionsRepository = moduleFixture.get<Repository<Session>>(getRepositoryToken(Session));
         const webAuthnCredentialsRepository = moduleFixture.get<Repository<WebAuthnCredential>>(getRepositoryToken(WebAuthnCredential));
         const refreshTokensRepository = moduleFixture.get<Repository<RefreshToken>>(getRepositoryToken(RefreshToken));
+        const dpopReplayRepository = moduleFixture.get<Repository<DpopReplayProof>>(getRepositoryToken(DpopReplayProof));
         const schedulerRegistry = moduleFixture.get<SchedulerRegistry>(SchedulerRegistry);
 
         return {
@@ -102,6 +105,7 @@ export class TestConfigurationFactory {
           usersService,
           authorizationCodeStoreService,
           schedulerRegistry,
+          dpopReplayRepository,
         };
       },
       TEST_CONSTANTS.SERVICE_INITIALIZATION_TIMEOUT,
@@ -117,6 +121,7 @@ export class TestConfigurationFactory {
         await setup.sessionsRepository.createQueryBuilder().delete().from(Session).execute();
         await setup.webAuthnCredentialsRepository.createQueryBuilder().delete().from(WebAuthnCredential).execute();
         await setup.refreshTokensRepository.createQueryBuilder().delete().from(RefreshToken).execute();
+        await setup.dpopReplayRepository.createQueryBuilder().delete().from(DpopReplayProof).execute();
         await setup.signingKeyRepository.createQueryBuilder().delete().from(SigningKey).execute();
         await setup.usersRepository.createQueryBuilder().delete().from(User).execute();
         console.log('--- Database cleaned ---');

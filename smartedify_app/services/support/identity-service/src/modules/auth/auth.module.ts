@@ -12,9 +12,10 @@ import { ParStoreService } from './store/par-store.service';
 import { DeviceCodeStoreService } from './store/device-code-store.service';
 import { RefreshToken } from '../tokens/entities/refresh-token.entity';
 import { JtiStoreService } from './store/jti-store.service';
+import { DpopReplayProof } from './entities/dpop-replay-proof.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RefreshToken]), TokensModule, UsersModule, SessionsModule, KeysModule],
+  imports: [TypeOrmModule.forFeature([RefreshToken, DpopReplayProof]), TokensModule, UsersModule, SessionsModule, KeysModule],
   providers: [
     AuthService, 
     ClientAuthGuard, 
@@ -24,6 +25,6 @@ import { JtiStoreService } from './store/jti-store.service';
     JtiStoreService
   ],
   controllers: [AuthController],
-  exports: [AuthService], // Export AuthService
+  exports: [AuthService, JtiStoreService], // Export AuthService and replay protection store
 })
 export class AuthModule {}
