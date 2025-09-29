@@ -772,29 +772,278 @@ static_resources:
                         descriptor_key: "request_type"
                         descriptor_value: "write"
           http_filters:
-          # CORS filter
-          - name: envoy.filters.http.cors
-            typed_config:
-              "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
-              allow_origin_string_match:
-                - safe_regex:
-                    google_re2: {}
-                    regex: ".*" # WARNING: This is permissive. Should be replaced with specific domains.
-              allow_methods: "GET, POST, PUT, PATCH, DELETE"
-              allow_headers: "Content-Type, Authorization, DPoP" # Added DPoP
-              expose_headers: "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Traceparent, X-Request-Id"
-              allow_credentials: true
-          # Lua filter for headers
+          # Lua filter for tenant aware authN bootstrap + CORS enforcement + hardening headers
           - name: envoy.filters.http.lua
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
               inline_code: |
-                function envoy_on_response(h)
-                  h:headers():add("Strict-Transport-Security","max-age=63072000; includeSubDomains; preload")
-                  h:headers():add("X-Content-Type-Options","nosniff")
-                  h:headers():add("Referrer-Policy","no-referrer")
-                  h:headers():add("Permissions-Policy","camera=(), microphone=()")
+                local ok, cjson = pcall(require, "cjson.safe")
+                if not ok then
+                  cjson = require("cjson")
                 end
+
+                local cors_config
+                local cors_path = os.getenv("CORS_CONFIG") or "/etc/gateway/cors-tenants.json"
+                local default_cors = {
+                  allow_headers = "Content-Type, Authorization, DPoP",
+                  allow_methods = "GET, POST, PUT, PATCH, DELETE",
+                  expose_headers = "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Traceparent, X-Request-Id",
+                  allow_credentials = true
+                }
+
+                local function load_cors(handle)
+                  if cors_config ~= nil then
+                    return
+                  end
+
+                  local fh, err = io.open(cors_path, "r")
+                  if not fh then
+                    handle:logWarn("CORS config " .. cors_path .. " not readable: " .. tostring(err))
+                    cors_config = {}
+                    return
+                  end
+
+                  local content = fh:read("*a")
+                  fh:close()
+
+                  local parsed = decode_json(content)
+                  if type(parsed) ~= "table" then
+                    handle:logWarn("Invalid CORS config payload")
+                    cors_config = {}
+                    return
+                  end
+
+                  if type(parsed.tenants) == "table" then
+                    cors_config = parsed.tenants
+                  else
+                    cors_config = parsed
+                  end
+                end
+
+                local b = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+                local function base64url_decode(data)
+                  if not data then
+                    return nil
+                  end
+
+                  data = data:gsub('-', '+'):gsub('_', '/')
+                  local padding = #data % 4
+                  if padding == 2 then
+                    data = data .. "=="
+                  elseif padding == 3 then
+                    data = data .. "="
+                  elseif padding ~= 0 then
+                    data = data .. string.rep('=', 4 - padding)
+                  end
+
+                  return (data:gsub('.', function(x)
+                    if x == '=' then return '' end
+                    local r, f = '', (b:find(x) - 1)
+                    for i = 6, 1, -1 do
+                      r = r .. ((f % 2^i - f % 2^(i-1) > 0) and '1' or '0')
+                    end
+                    return r
+                  end):gsub('%d%d%d%d%d%d%d%d', function(x)
+                    return string.char(tonumber(x, 2))
+                  end))
+                end
+
+                local function decode_json(content)
+                  if not content then
+                    return nil
+                  end
+
+                  local success, value = pcall(cjson.decode, content)
+                  if success then
+                    return value
+                  end
+
+                  return nil
+                end
+
+                local function decode_jwt(token)
+                  if not token then
+                    return nil, nil
+                  end
+
+                  local header_b64, payload_b64 = token:match("([^.]+)%.([^.]+)%.([^.]+)")
+                  if not header_b64 or not payload_b64 then
+                    return nil, nil
+                  end
+
+                  local header_json = base64url_decode(header_b64)
+                  local payload_json = base64url_decode(payload_b64)
+                  if not header_json or not payload_json then
+                    return nil, nil
+                  end
+
+                  local header_tbl = decode_json(header_json)
+                  local payload_tbl = decode_json(payload_json)
+                  return header_tbl, payload_tbl
+                end
+
+                local function find_tenant(payload)
+                  if type(payload) ~= "table" then
+                    return nil
+                  end
+
+                  return payload.tenant_id or payload["tenantId"] or payload["https://smartedify.global/tenant_id"]
+                end
+
+                local function normalize_origins(origins)
+                  if type(origins) ~= "table" then
+                    return {}
+                  end
+
+                  local normalized = {}
+                  for _, origin in ipairs(origins) do
+                    if type(origin) == "string" and origin ~= "" then
+                      table.insert(normalized, origin)
+                    end
+                  end
+                  return normalized
+                end
+
+                local function origin_allowed(tenant_cfg, origin)
+                  if not origin or origin == "" then
+                    return false
+                  end
+
+                  if type(tenant_cfg) ~= "table" then
+                    return false
+                  end
+
+                  local origins = normalize_origins(tenant_cfg.origins)
+                  for _, rule in ipairs(origins) do
+                    if rule:match("^[%^].*[$]$") then
+                      if origin:match(rule) then
+                        return true
+                      end
+                    elseif rule == origin then
+                      return true
+                    end
+                  end
+
+                  return false
+                end
+
+                function envoy_on_request(handle)
+                  load_cors(handle)
+
+                  local headers = handle:headers()
+                  local auth = headers:get("authorization")
+                  if auth and auth:match("^[Bb]earer ") then
+                    local token = auth:sub(8)
+                    local header_tbl, payload_tbl = decode_jwt(token)
+
+                    local stream_meta = handle:streamInfo():dynamicMetadata()
+                    if type(header_tbl) == "table" and type(header_tbl.kid) == "string" then
+                      headers:replace("x-jwt-kid", header_tbl.kid)
+                      stream_meta:set("smartedify.auth", "kid", header_tbl.kid)
+                    end
+
+                    local issuer = type(payload_tbl) == "table" and payload_tbl.iss or nil
+                    if type(issuer) == "string" then
+                      headers:replace("x-jwt-issuer", issuer)
+                      stream_meta:set("smartedify.auth", "issuer", issuer)
+                    end
+
+                    local tenant_id = find_tenant(payload_tbl)
+                    if type(tenant_id) == "string" and tenant_id ~= "" then
+                      headers:replace("x-tenant-id", tenant_id)
+                      stream_meta:set("smartedify.auth", "tenant_id", tenant_id)
+                    end
+                  end
+
+                  local tenant_id = headers:get("x-tenant-id")
+                  if tenant_id and tenant_id ~= "" then
+                    handle:streamInfo():dynamicMetadata():set("smartedify.cors", "tenant_id", tenant_id)
+                  end
+
+                  local origin = headers:get("origin")
+                  local tenant_cfg = (tenant_id and cors_config and cors_config[tenant_id]) or (cors_config and cors_config["*"])
+                  if origin and origin ~= "" then
+                    if not tenant_cfg then
+                      handle:respond({[":status"] = "403", ["content-type"] = "application/json"}, cjson.encode({
+                        error = "forbidden_origin",
+                        message = "Origin not allowed for tenant"
+                      }))
+                      return
+                    end
+
+                    local allowed = origin_allowed(tenant_cfg, origin)
+                    if not allowed then
+                      handle:respond({[":status"] = "403", ["content-type"] = "application/json"}, cjson.encode({
+                        error = "forbidden_origin",
+                        message = "Origin not allowed for tenant"
+                      }))
+                      return
+                    end
+
+                    local stream_meta = handle:streamInfo():dynamicMetadata()
+                    stream_meta:set("smartedify.cors", "allow_origin", origin)
+                    stream_meta:set("smartedify.cors", "allow_credentials", tenant_cfg.allow_credentials)
+                    stream_meta:set("smartedify.cors", "allow_headers", tenant_cfg.allow_headers or default_cors.allow_headers)
+                    stream_meta:set("smartedify.cors", "allow_methods", tenant_cfg.allow_methods or default_cors.allow_methods)
+                    stream_meta:set("smartedify.cors", "expose_headers", tenant_cfg.expose_headers or default_cors.expose_headers)
+
+                    if headers:get(":method") == "OPTIONS" then
+                      handle:respond({
+                        [":status"] = "204",
+                        ["access-control-allow-origin"] = origin,
+                        ["access-control-allow-methods"] = tenant_cfg.allow_methods or default_cors.allow_methods,
+                        ["access-control-allow-headers"] = tenant_cfg.allow_headers or default_cors.allow_headers,
+                        ["access-control-allow-credentials"] = (tenant_cfg.allow_credentials == false) and "false" or "true",
+                        ["vary"] = "Origin"
+                      }, "")
+                      return
+                    end
+                  elseif headers:get(":method") == "OPTIONS" and origin and origin ~= "" then
+                    handle:respond({[":status"] = "403"}, "")
+                    return
+                  end
+                end
+
+                function envoy_on_response(handle)
+                  local stream_meta = handle:streamInfo():dynamicMetadata():get("smartedify.cors") or {}
+                  if stream_meta.allow_origin then
+                    handle:headers():replace("Access-Control-Allow-Origin", stream_meta.allow_origin)
+                    handle:headers():replace("Vary", "Origin")
+                    local allow_credentials = stream_meta.allow_credentials
+                    if allow_credentials == false then
+                      handle:headers():replace("Access-Control-Allow-Credentials", "false")
+                    else
+                      handle:headers():replace("Access-Control-Allow-Credentials", "true")
+                    end
+                    handle:headers():replace("Access-Control-Allow-Methods", stream_meta.allow_methods or default_cors.allow_methods)
+                    handle:headers():replace("Access-Control-Allow-Headers", stream_meta.allow_headers or default_cors.allow_headers)
+                    handle:headers():replace("Access-Control-Expose-Headers", stream_meta.expose_headers or default_cors.expose_headers)
+                  end
+
+                  handle:headers():replace("Strict-Transport-Security","max-age=63072000; includeSubDomains; preload")
+                  handle:headers():replace("X-Content-Type-Options","nosniff")
+                  handle:headers():replace("Referrer-Policy","no-referrer")
+                  handle:headers():replace("Permissions-Policy","camera=(), microphone=()")
+                end
+          # Header to metadata filter to expose tenant for dynamic JWKS resolution
+          - name: envoy.filters.http.header_to_metadata
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.header_to_metadata.v3.Config
+              request_rules:
+              - header: "x-tenant-id"
+                on_header_present:
+                  metadata_namespace: "smartedify.auth"
+                  key: "tenant_id"
+                remove: false
+          # CORS filter (methods/headers defined in Lua guard)
+          - name: envoy.filters.http.cors
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
+              allow_methods: "GET, POST, PUT, PATCH, DELETE"
+              allow_headers: "Content-Type, Authorization, DPoP"
+              expose_headers: "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Traceparent, X-Request-Id"
+              allow_credentials: true
           # WASM filter for DPoP
           - name: envoy.filters.http.wasm
             typed_config:
@@ -811,10 +1060,18 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
               providers:
                 smartedify:
-                  issuer: "https://auth.smartedify.global/t/{tenant_id}" # This needs dynamic tenant_id handling
+                  issuer: "%DYNAMIC_METADATA(smartedify.auth:issuer)%"
+                  payload_in_metadata: "smartedify.jwt_payload"
+                  claim_to_headers:
+                  - header_name: "x-tenant-id"
+                    claim_name: "tenant_id"
+                    keep_value: true
+                  - header_name: "x-jwt-issuer"
+                    claim_name: "iss"
+                    keep_value: true
                   remote_jwks:
                     http_uri:
-                      uri: "http://identity-service:3001/.well-known/jwks.json" # Simplified for local dev
+                      uri: "http://identity-service:3001/.well-known/jwks.json?tenant_id=%DYNAMIC_METADATA(smartedify.auth:tenant_id)%"
                       cluster: "identity-service"
                       timeout: 3s
                     cache_duration: 300s
