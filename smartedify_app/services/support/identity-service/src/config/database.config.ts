@@ -7,6 +7,8 @@ import { ConsentAudit } from '../modules/users/entities/consent-audit.entity';
 import { RevocationEvent } from '../modules/sessions/entities/revocation-event.entity';
 import { SigningKey } from '../modules/keys/entities/signing-key.entity';
 import { DpopReplayProof } from '../modules/auth/entities/dpop-replay-proof.entity';
+import { ComplianceJob } from '../modules/compliance/entities/compliance-job.entity';
+import { ComplianceJobService } from '../modules/compliance/entities/compliance-job-service.entity';
 
 export const getDatabaseConfig = (isTest = false): TypeOrmModuleOptions => {
   const config: TypeOrmModuleOptions = {
@@ -27,6 +29,8 @@ export const getDatabaseConfig = (isTest = false): TypeOrmModuleOptions => {
       RevocationEvent,
       SigningKey,
       DpopReplayProof,
+      ComplianceJob,
+      ComplianceJobService,
     ],
     synchronize: false, // synchronize: true is not recommended for production
     logging: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
