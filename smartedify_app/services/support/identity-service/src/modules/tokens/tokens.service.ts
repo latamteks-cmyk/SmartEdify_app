@@ -6,6 +6,8 @@ import { User } from '../users/entities/user.entity';
 import { SessionsService } from '../sessions/sessions.service';
 import * as crypto from 'crypto';
 import { AuthService } from '../auth/auth.service'; // Import AuthService
+import { KeyManagementService } from '../keys/services/key-management.service';
+import { importPKCS8, SignJWT } from 'jose';
 
 @Injectable()
 export class TokensService {
@@ -15,22 +17,65 @@ export class TokensService {
     @Inject(forwardRef(() => AuthService)) // Use forwardRef to handle circular dependency
     private readonly authService: AuthService,
     private readonly sessionsService: SessionsService,
+    private readonly keyManagementService: KeyManagementService,
   ) {}
 
-  async issueRefreshToken(user: User, jkt: string, familyId?: string, clientId?: string, deviceId?: string, scope?: string): Promise<string> {
-    const token = crypto.randomBytes(32).toString('hex');
+  async issueRefreshToken(
+    user: User,
+    jkt: string,
+    familyId?: string,
+    clientId?: string,
+    deviceId?: string,
+    scope?: string,
+    sessionId?: string,
+  ): Promise<string> {
+    const signingKey = await this.keyManagementService.getActiveSigningKey(user.tenant_id);
+    const privateKey = await importPKCS8(signingKey.private_key_pem, 'ES256');
+
+    const resolvedFamilyId = familyId || crypto.randomUUID();
+    const resolvedSessionId = sessionId || crypto.randomUUID();
+    const resolvedClientId = clientId || 'test-client-id';
+    const resolvedDeviceId = deviceId || 'test-device-id';
+    const resolvedScope = scope || 'openid profile';
+
+    const issuer = `https://auth.smartedify.global/t/${user.tenant_id}`;
+    const now = Math.floor(Date.now() / 1000);
+    const expiresInSeconds = 30 * 24 * 60 * 60; // 30 days
+    const jti = crypto.randomUUID();
+
+    const token = await new SignJWT({
+      sub: user.id,
+      tenant_id: user.tenant_id,
+      scope: resolvedScope,
+      cnf: { jkt },
+      family_id: resolvedFamilyId,
+      session_id: resolvedSessionId,
+      client_id: resolvedClientId,
+      device_id: resolvedDeviceId,
+    })
+      .setProtectedHeader({ alg: 'ES256', kid: signingKey.kid, typ: 'JWT' })
+      .setIssuer(issuer)
+      .setAudience(issuer)
+      .setIssuedAt(now)
+      .setNotBefore(now)
+      .setExpirationTime(now + expiresInSeconds)
+      .setJti(jti)
+      .sign(privateKey);
+
     const token_hash = crypto.createHash('sha256').update(token).digest('hex');
 
     const newRefreshToken = this.refreshTokensRepository.create({
       user,
       token_hash,
       jkt,
-      family_id: familyId || crypto.randomUUID(),
-      client_id: clientId || 'test-client-id',
-      device_id: deviceId || 'test-device-id', 
-      session_id: crypto.randomUUID(),
-      scope: scope || 'openid profile',
-      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      kid: signingKey.kid,
+      jti,
+      family_id: resolvedFamilyId,
+      client_id: resolvedClientId,
+      device_id: resolvedDeviceId,
+      session_id: resolvedSessionId,
+      scope: resolvedScope,
+      expires_at: new Date((now + expiresInSeconds) * 1000),
     });
 
     await this.refreshTokensRepository.save(newRefreshToken);
@@ -65,12 +110,13 @@ export class TokensService {
 
     // Issue new token with same family_id
     const newToken = await this.issueRefreshToken(
-      oldRefreshToken.user, 
-      oldRefreshToken.jkt, 
+      oldRefreshToken.user,
+      oldRefreshToken.jkt,
       oldRefreshToken.family_id,  // Keep same family
       oldRefreshToken.client_id,
       oldRefreshToken.device_id,
-      oldRefreshToken.scope
+      oldRefreshToken.scope,
+      oldRefreshToken.session_id,
     );
     
     // Link old token to new token

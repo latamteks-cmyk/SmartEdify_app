@@ -17,6 +17,12 @@ export class RefreshToken {
   @Column()
   jkt: string;
 
+  @Column()
+  kid: string;
+
+  @Column('uuid')
+  jti: string;
+
   @Column('uuid')
   family_id: string;
 
