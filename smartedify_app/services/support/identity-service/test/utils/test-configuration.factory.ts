@@ -9,7 +9,6 @@ import {
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { SigningKey } from '../../src/modules/keys/entities/signing-key.entity';
-import { KeyRotationService } from '../../src/modules/keys/services/key-rotation.service';
 import { KeyManagementService } from '../../src/modules/keys/services/key-management.service';
 import { INestApplication } from '@nestjs/common';
 import { UsersModule } from '../../src/modules/users/users.module';
@@ -49,7 +48,6 @@ export interface TestModuleSetup {
   dpopReplayRepository: Repository<DpopReplayProof>;
   complianceJobsRepository: Repository<ComplianceJob>;
   complianceJobServicesRepository: Repository<ComplianceJobServiceEntity>;
-  keyRotationService: KeyRotationService;
   keyManagementService: KeyManagementService;
   authService: AuthService;
   usersService: UsersService;
@@ -85,8 +83,6 @@ export class TestConfigurationFactory {
         const app = moduleFixture.createNestApplication();
         await app.init();
 
-        const keyRotationService =
-          moduleFixture.get<KeyRotationService>(KeyRotationService);
         const keyManagementService =
           moduleFixture.get<KeyManagementService>(KeyManagementService);
         const authService = moduleFixture.get<AuthService>(AuthService);
@@ -134,7 +130,6 @@ export class TestConfigurationFactory {
           sessionsRepository,
           webAuthnCredentialsRepository,
           refreshTokensRepository,
-          keyRotationService,
           keyManagementService,
           authService,
           usersService,

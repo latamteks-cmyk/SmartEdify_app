@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
 import { OidcDiscoveryService } from './oidc-discovery.service';
+import { KeyManagementService } from '../keys/services/key-management.service';
 import { of } from 'rxjs';
 
 describe('OidcDiscoveryService', () => {
@@ -15,6 +16,12 @@ describe('OidcDiscoveryService', () => {
           provide: HttpService,
           useValue: {
             get: jest.fn(),
+          },
+        },
+        {
+          provide: KeyManagementService,
+          useValue: {
+            getJwksForTenant: jest.fn().mockResolvedValue([]),
           },
         },
       ],
