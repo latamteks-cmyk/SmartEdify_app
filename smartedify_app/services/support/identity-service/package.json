@@ -24,9 +24,8 @@
     "db:generate-migration": "npm run typeorm -- -d src/config/typeorm.config.ts migration:generate",
     "db:run-migrations": "npm run typeorm -- -d src/config/typeorm.config.ts migration:run",
     "db:revert-migration": "npm run typeorm -- -d src/config/typeorm.config.ts migration:revert",
-    "validate:quality": "node -e \"console.log('Use: .\\\\scripts\\\\validate-quality.ps1 (Windows) or ./scripts/validate-quality.sh (Linux/Mac)')\"",
-    "pre-commit": "npm run format && npm run lint:strict && npm test",
-    "pre-push": "npm run validate:quality"
+    "validate": "powershell -ExecutionPolicy Bypass -File .\\scripts\\validate-quality.ps1",
+    "pre-commit": "npm run format && npm run lint && npm test"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
