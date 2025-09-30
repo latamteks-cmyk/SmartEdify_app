@@ -1,9 +1,10 @@
 import { WebauthnService } from './webauthn.service';
+import type { RegistrationResponseJSON, AuthenticationResponseJSON } from '@simplewebauthn/types';
 export declare class WebauthnController {
     private readonly webauthnService;
     constructor(webauthnService: WebauthnService);
     registrationOptions(username: string): Promise<import("@simplewebauthn/server").PublicKeyCredentialCreationOptionsJSON>;
-    registrationVerification(body: any, userId: string, challenge?: string): Promise<import("@simplewebauthn/server").VerifiedRegistrationResponse>;
+    registrationVerification(body: RegistrationResponseJSON, userId: string, challenge?: string): Promise<import("@simplewebauthn/server").VerifiedRegistrationResponse>;
     authenticationOptions(username: string): Promise<import("@simplewebauthn/server").PublicKeyCredentialRequestOptionsJSON>;
-    authenticationVerification(body: any, challenge?: string): Promise<import("@simplewebauthn/server").VerifiedAuthenticationResponse>;
+    authenticationVerification(body: AuthenticationResponseJSON, challenge?: string): Promise<import("@simplewebauthn/server").VerifiedAuthenticationResponse>;
 }

@@ -18,7 +18,8 @@ let SessionGuard = class SessionGuard {
         this.sessionsService = sessionsService;
     }
     async canActivate(context) {
-        const { user } = context.switchToHttp().getRequest();
+        const request = context.switchToHttp().getRequest();
+        const { user } = request;
         if (!user) {
             return false;
         }

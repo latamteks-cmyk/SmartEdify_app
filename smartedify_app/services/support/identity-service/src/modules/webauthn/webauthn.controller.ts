@@ -10,6 +10,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { WebauthnService } from './webauthn.service';
+import type {
+  RegistrationResponseJSON,
+  AuthenticationResponseJSON,
+} from '@simplewebauthn/types';
 
 @Controller('webauthn')
 export class WebauthnController {
@@ -23,7 +27,7 @@ export class WebauthnController {
 
   @Post('registration/verification')
   async registrationVerification(
-    @Body() body: Record<string, unknown>,
+    @Body() body: RegistrationResponseJSON,
     @Body('userId') userId: string,
     @Headers('webauthn-challenge') challenge?: string,
   ) {
@@ -41,7 +45,7 @@ export class WebauthnController {
 
   @Post('assertion/result')
   async authenticationVerification(
-    @Body() body: Record<string, unknown>,
+    @Body() body: AuthenticationResponseJSON,
     @Headers('webauthn-challenge') challenge?: string,
   ) {
     if (!challenge) {

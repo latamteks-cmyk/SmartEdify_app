@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1759206677365" clover="3.2.0">
-  <project timestamp="1759206677365" name="All files">
-    <metrics statements="1482" coveredstatements="519" conditionals="921" coveredconditionals="330" methods="207" coveredmethods="53" elements="2610" coveredelements="902" complexity="0" loc="1482" ncloc="1482" packages="40" files="78" classes="78"/>
+<coverage generated="1759210669877" clover="3.2.0">
+  <project timestamp="1759210669877" name="All files">
+    <metrics statements="1460" coveredstatements="471" conditionals="922" coveredconditionals="320" methods="217" coveredmethods="51" elements="2599" coveredelements="842" complexity="0" loc="1460" ncloc="1460" packages="37" files="73" classes="73"/>
     <package name="src">
-      <metrics statements="35" coveredstatements="9" conditionals="6" coveredconditionals="3" methods="5" coveredmethods="3"/>
+      <metrics statements="29" coveredstatements="9" conditionals="4" coveredconditionals="3" methods="3" coveredmethods="3"/>
       <file name="app.controller.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\app.controller.ts">
         <metrics statements="6" coveredstatements="6" conditionals="4" coveredconditionals="3" methods="2" coveredmethods="2"/>
         <line num="1" count="1" type="stmt"/>
@@ -14,7 +14,7 @@
         <line num="10" count="1" type="stmt"/>
       </file>
       <file name="app.module.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\app.module.ts">
-        <metrics statements="19" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <metrics statements="20" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="0" type="stmt"/>
         <line num="2" count="0" type="stmt"/>
         <line num="3" count="0" type="stmt"/>
@@ -33,126 +33,14 @@
         <line num="16" count="0" type="stmt"/>
         <line num="17" count="0" type="stmt"/>
         <line num="18" count="0" type="stmt"/>
-        <line num="40" count="0" type="stmt"/>
+        <line num="19" count="0" type="stmt"/>
+        <line num="42" count="0" type="stmt"/>
       </file>
       <file name="app.service.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\app.service.ts">
         <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
         <line num="1" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
         <line num="6" count="1" type="stmt"/>
-      </file>
-      <file name="main.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\main.ts">
-        <metrics statements="7" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
-        <line num="1" count="0" type="stmt"/>
-        <line num="2" count="0" type="stmt"/>
-        <line num="5" count="0" type="stmt"/>
-        <line num="6" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="10" count="0" type="stmt"/>
-        <line num="11" count="0" type="stmt"/>
-        <line num="12" count="0" type="stmt"/>
-      </file>
-    </package>
-    <package name="src.config">
-      <metrics statements="40" coveredstatements="6" conditionals="45" coveredconditionals="0" methods="5" coveredmethods="0"/>
-      <file name="database.config.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\config\database.config.ts">
-        <metrics statements="16" coveredstatements="0" conditionals="29" coveredconditionals="0" methods="3" coveredmethods="0"/>
-        <line num="2" count="0" type="stmt"/>
-        <line num="3" count="0" type="stmt"/>
-        <line num="4" count="0" type="stmt"/>
-        <line num="5" count="0" type="stmt"/>
-        <line num="6" count="0" type="stmt"/>
-        <line num="7" count="0" type="stmt"/>
-        <line num="8" count="0" type="stmt"/>
-        <line num="9" count="0" type="stmt"/>
-        <line num="10" count="0" type="stmt"/>
-        <line num="11" count="0" type="stmt"/>
-        <line num="13" count="0" type="cond" truecount="0" falsecount="1"/>
-        <line num="14" count="0" type="stmt"/>
-        <line num="43" count="0" type="stmt"/>
-        <line num="47" count="0" type="stmt"/>
-        <line num="51" count="0" type="stmt"/>
-        <line num="53" count="0" type="stmt"/>
-      </file>
-      <file name="dpop.config.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\config\dpop.config.ts">
-        <metrics statements="21" coveredstatements="6" conditionals="16" coveredconditionals="0" methods="2" coveredmethods="0"/>
-        <line num="1" count="1" type="stmt"/>
-        <line num="15" count="1" type="stmt"/>
-        <line num="17" count="1" type="stmt"/>
-        <line num="18" count="1" type="stmt"/>
-        <line num="19" count="1" type="stmt"/>
-        <line num="25" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="26" count="0" type="stmt"/>
-        <line num="28" count="0" type="stmt"/>
-        <line num="29" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="30" count="0" type="stmt"/>
-        <line num="33" count="0" type="stmt"/>
-        <line num="35" count="0" type="stmt"/>
-        <line num="38" count="1" type="stmt"/>
-        <line num="39" count="0" type="stmt"/>
-        <line num="44" count="0" type="stmt"/>
-        <line num="46" count="0" type="stmt"/>
-        <line num="50" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="51" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="52" count="0" type="stmt"/>
-        <line num="57" count="0" type="stmt"/>
-        <line num="62" count="0" type="stmt"/>
-      </file>
-      <file name="typeorm.config.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\config\typeorm.config.ts">
-        <metrics statements="3" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-        <line num="1" count="0" type="stmt"/>
-        <line num="2" count="0" type="stmt"/>
-        <line num="6" count="0" type="stmt"/>
-      </file>
-    </package>
-    <package name="src.db.migrations">
-      <metrics statements="45" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="0"/>
-      <file name="1727659200000-InitialSchema.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\db\migrations\1727659200000-InitialSchema.ts">
-        <metrics statements="45" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="0"/>
-        <line num="3" count="0" type="stmt"/>
-        <line num="4" count="0" type="stmt"/>
-        <line num="8" count="0" type="stmt"/>
-        <line num="34" count="0" type="stmt"/>
-        <line num="37" count="0" type="stmt"/>
-        <line num="42" count="0" type="stmt"/>
-        <line num="58" count="0" type="stmt"/>
-        <line num="85" count="0" type="stmt"/>
-        <line num="90" count="0" type="stmt"/>
-        <line num="105" count="0" type="stmt"/>
-        <line num="119" count="0" type="stmt"/>
-        <line num="137" count="0" type="stmt"/>
-        <line num="142" count="0" type="stmt"/>
-        <line num="159" count="0" type="stmt"/>
-        <line num="164" count="0" type="stmt"/>
-        <line num="177" count="0" type="stmt"/>
-        <line num="182" count="0" type="stmt"/>
-        <line num="200" count="0" type="stmt"/>
-        <line num="216" count="0" type="stmt"/>
-        <line num="221" count="0" type="stmt"/>
-        <line num="225" count="0" type="stmt"/>
-        <line num="229" count="0" type="stmt"/>
-        <line num="233" count="0" type="stmt"/>
-        <line num="237" count="0" type="stmt"/>
-        <line num="241" count="0" type="stmt"/>
-        <line num="245" count="0" type="stmt"/>
-        <line num="249" count="0" type="stmt"/>
-        <line num="256" count="0" type="stmt"/>
-        <line num="257" count="0" type="stmt"/>
-        <line num="258" count="0" type="stmt"/>
-        <line num="259" count="0" type="stmt"/>
-        <line num="260" count="0" type="stmt"/>
-        <line num="261" count="0" type="stmt"/>
-        <line num="262" count="0" type="stmt"/>
-        <line num="263" count="0" type="stmt"/>
-        <line num="266" count="0" type="stmt"/>
-        <line num="267" count="0" type="stmt"/>
-        <line num="268" count="0" type="stmt"/>
-        <line num="269" count="0" type="stmt"/>
-        <line num="270" count="0" type="stmt"/>
-        <line num="271" count="0" type="stmt"/>
-        <line num="272" count="0" type="stmt"/>
-        <line num="273" count="0" type="stmt"/>
-        <line num="274" count="0" type="stmt"/>
-        <line num="275" count="0" type="stmt"/>
       </file>
     </package>
     <package name="src.filters">
@@ -170,11 +58,11 @@
         <line num="23" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="24" count="0" type="stmt"/>
         <line num="25" count="0" type="stmt"/>
-        <line num="26" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="29" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="30" count="0" type="stmt"/>
-        <line num="33" count="0" type="stmt"/>
-        <line num="38" count="0" type="stmt"/>
+        <line num="26" count="0" type="stmt"/>
+        <line num="30" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="31" count="0" type="stmt"/>
+        <line num="34" count="0" type="stmt"/>
+        <line num="39" count="0" type="stmt"/>
       </file>
     </package>
     <package name="src.modules.auth">
@@ -463,7 +351,7 @@
       </file>
     </package>
     <package name="src.modules.auth.guards">
-      <metrics statements="38" coveredstatements="0" conditionals="38" coveredconditionals="0" methods="3" coveredmethods="0"/>
+      <metrics statements="113" coveredstatements="0" conditionals="84" coveredconditionals="0" methods="10" coveredmethods="0"/>
       <file name="client-auth.guard.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\auth\guards\client-auth.guard.ts">
         <metrics statements="38" coveredstatements="0" conditionals="38" coveredconditionals="0" methods="3" coveredmethods="0"/>
         <line num="1" count="0" type="stmt"/>
@@ -504,6 +392,84 @@
         <line num="125" count="0" type="stmt"/>
         <line num="130" count="0" type="stmt"/>
         <line num="132" count="0" type="stmt"/>
+      </file>
+      <file name="dpop.guard.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\auth\guards\dpop.guard.ts">
+        <metrics statements="75" coveredstatements="0" conditionals="46" coveredconditionals="0" methods="7" coveredmethods="0"/>
+        <line num="1" count="0" type="stmt"/>
+        <line num="9" count="0" type="stmt"/>
+        <line num="10" count="0" type="stmt"/>
+        <line num="11" count="0" type="stmt"/>
+        <line num="12" count="0" type="stmt"/>
+        <line num="23" count="0" type="stmt"/>
+        <line num="26" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="30" count="0" type="stmt"/>
+        <line num="31" count="0" type="stmt"/>
+        <line num="33" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="34" count="0" type="stmt"/>
+        <line num="37" count="0" type="stmt"/>
+        <line num="38" count="0" type="stmt"/>
+        <line num="39" count="0" type="stmt"/>
+        <line num="41" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="45" count="0" type="stmt"/>
+        <line num="47" count="0" type="stmt"/>
+        <line num="58" count="0" type="stmt"/>
+        <line num="60" count="0" type="stmt"/>
+        <line num="61" count="0" type="stmt"/>
+        <line num="63" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="64" count="0" type="stmt"/>
+        <line num="67" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="68" count="0" type="stmt"/>
+        <line num="72" count="0" type="stmt"/>
+        <line num="75" count="0" type="stmt"/>
+        <line num="78" count="0" type="stmt"/>
+        <line num="86" count="0" type="stmt"/>
+        <line num="88" count="0" type="stmt"/>
+        <line num="92" count="0" type="cond" truecount="0" falsecount="6"/>
+        <line num="93" count="0" type="stmt"/>
+        <line num="97" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="98" count="0" type="stmt"/>
+        <line num="104" count="0" type="stmt"/>
+        <line num="105" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="106" count="0" type="stmt"/>
+        <line num="112" count="0" type="stmt"/>
+        <line num="113" count="0" type="stmt"/>
+        <line num="114" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="115" count="0" type="stmt"/>
+        <line num="119" count="0" type="stmt"/>
+        <line num="120" count="0" type="stmt"/>
+        <line num="123" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="124" count="0" type="stmt"/>
+        <line num="134" count="0" type="stmt"/>
+        <line num="138" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="139" count="0" type="stmt"/>
+        <line num="143" count="0" type="stmt"/>
+        <line num="144" count="0" type="stmt"/>
+        <line num="151" count="0" type="stmt"/>
+        <line num="154" count="0" type="stmt"/>
+        <line num="164" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="169" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="170" count="0" type="stmt"/>
+        <line num="175" count="0" type="stmt"/>
+        <line num="179" count="0" type="stmt"/>
+        <line num="180" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="181" count="0" type="stmt"/>
+        <line num="184" count="0" type="stmt"/>
+        <line num="185" count="0" type="stmt"/>
+        <line num="186" count="0" type="stmt"/>
+        <line num="187" count="0" type="stmt"/>
+        <line num="190" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="192" count="0" type="stmt"/>
+        <line num="200" count="0" type="stmt"/>
+        <line num="201" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="202" count="0" type="stmt"/>
+        <line num="207" count="0" type="stmt"/>
+        <line num="210" count="0" type="stmt"/>
+        <line num="211" count="0" type="stmt"/>
+        <line num="212" count="0" type="stmt"/>
+        <line num="213" count="0" type="stmt"/>
+        <line num="214" count="0" type="stmt"/>
+        <line num="216" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="217" count="0" type="stmt"/>
       </file>
     </package>
     <package name="src.modules.auth.store">
@@ -676,7 +642,7 @@
       </file>
     </package>
     <package name="src.modules.compliance">
-      <metrics statements="135" coveredstatements="81" conditionals="93" coveredconditionals="46" methods="29" coveredmethods="19"/>
+      <metrics statements="135" coveredstatements="82" conditionals="93" coveredconditionals="47" methods="29" coveredmethods="19"/>
       <file name="compliance.controller.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\compliance\compliance.controller.ts">
         <metrics statements="18" coveredstatements="0" conditionals="20" coveredconditionals="0" methods="5" coveredmethods="0"/>
         <line num="1" count="0" type="stmt"/>
@@ -716,7 +682,7 @@
         <line num="32" count="0" type="stmt"/>
       </file>
       <file name="compliance.service.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\compliance\compliance.service.ts">
-        <metrics statements="103" coveredstatements="81" conditionals="73" coveredconditionals="46" methods="20" coveredmethods="19"/>
+        <metrics statements="103" coveredstatements="82" conditionals="73" coveredconditionals="47" methods="20" coveredmethods="19"/>
         <line num="1" count="1" type="stmt"/>
         <line num="7" count="1" type="stmt"/>
         <line num="8" count="1" type="stmt"/>
@@ -726,16 +692,16 @@
         <line num="18" count="1" type="stmt"/>
         <line num="22" count="1" type="stmt"/>
         <line num="25" count="1" type="stmt"/>
-        <line num="26" count="2" type="stmt"/>
-        <line num="31" count="2" type="cond" truecount="6" falsecount="2"/>
-        <line num="33" count="2" type="cond" truecount="3" falsecount="1"/>
-        <line num="34" count="2" type="cond" truecount="3" falsecount="1"/>
-        <line num="35" count="2" type="stmt"/>
-        <line num="37" count="2" type="stmt"/>
-        <line num="44" count="1" type="stmt"/>
-        <line num="47" count="1" type="stmt"/>
-        <line num="51" count="1" type="stmt"/>
-        <line num="54" count="1" type="stmt"/>
+        <line num="26" count="5" type="stmt"/>
+        <line num="31" count="5" type="cond" truecount="6" falsecount="2"/>
+        <line num="33" count="5" type="cond" truecount="3" falsecount="1"/>
+        <line num="34" count="5" type="cond" truecount="3" falsecount="1"/>
+        <line num="35" count="5" type="stmt"/>
+        <line num="37" count="5" type="stmt"/>
+        <line num="44" count="3" type="stmt"/>
+        <line num="47" count="3" type="stmt"/>
+        <line num="51" count="2" type="stmt"/>
+        <line num="54" count="2" type="stmt"/>
         <line num="61" count="2" type="stmt"/>
         <line num="66" count="2" type="cond" truecount="1" falsecount="1"/>
         <line num="67" count="0" type="stmt"/>
@@ -755,26 +721,26 @@
         <line num="98" count="1" type="cond" truecount="1" falsecount="1"/>
         <line num="102" count="0" type="stmt"/>
         <line num="105" count="1" type="stmt"/>
-        <line num="113" count="2" type="cond" truecount="1" falsecount="1"/>
-        <line num="114" count="0" type="stmt"/>
-        <line num="119" count="2" type="stmt"/>
-        <line num="129" count="2" type="stmt"/>
-        <line num="130" count="2" type="stmt"/>
-        <line num="133" count="2" type="stmt"/>
-        <line num="135" count="2" type="stmt"/>
-        <line num="136" count="2" type="stmt"/>
-        <line num="138" count="2" type="stmt"/>
-        <line num="140" count="2" type="stmt"/>
-        <line num="147" count="2" type="stmt"/>
-        <line num="158" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="159" count="1" type="stmt"/>
+        <line num="113" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="114" count="1" type="stmt"/>
+        <line num="119" count="4" type="stmt"/>
+        <line num="129" count="4" type="stmt"/>
+        <line num="130" count="4" type="stmt"/>
+        <line num="133" count="4" type="stmt"/>
+        <line num="135" count="4" type="stmt"/>
+        <line num="136" count="4" type="stmt"/>
+        <line num="138" count="4" type="stmt"/>
+        <line num="140" count="4" type="stmt"/>
+        <line num="147" count="4" type="stmt"/>
+        <line num="158" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="159" count="3" type="stmt"/>
         <line num="161" count="1" type="stmt"/>
-        <line num="169" count="2" type="stmt"/>
-        <line num="170" count="3" type="stmt"/>
-        <line num="180" count="2" type="cond" truecount="1" falsecount="1"/>
-        <line num="181" count="2" type="stmt"/>
-        <line num="188" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="189" count="1" type="stmt"/>
+        <line num="169" count="4" type="stmt"/>
+        <line num="170" count="5" type="stmt"/>
+        <line num="180" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="181" count="4" type="stmt"/>
+        <line num="188" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="189" count="3" type="stmt"/>
         <line num="192" count="1" type="stmt"/>
         <line num="196" count="1" type="stmt"/>
         <line num="203" count="1" type="cond" truecount="1" falsecount="1"/>
@@ -786,27 +752,27 @@
         <line num="214" count="1" type="stmt"/>
         <line num="215" count="1" type="stmt"/>
         <line num="217" count="1" type="stmt"/>
-        <line num="221" count="5" type="stmt"/>
-        <line num="226" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="221" count="7" type="stmt"/>
+        <line num="226" count="7" type="cond" truecount="1" falsecount="1"/>
         <line num="227" count="0" type="stmt"/>
-        <line num="230" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="230" count="7" type="cond" truecount="1" falsecount="1"/>
         <line num="231" count="0" type="stmt"/>
         <line num="232" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="233" count="0" type="stmt"/>
-        <line num="236" count="7" type="stmt"/>
-        <line num="238" count="5" type="cond" truecount="2" falsecount="0"/>
-        <line num="240" count="5" type="stmt"/>
+        <line num="236" count="9" type="stmt"/>
+        <line num="238" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="240" count="7" type="stmt"/>
         <line num="243" count="2" type="stmt"/>
         <line num="244" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="245" count="3" type="cond" truecount="1" falsecount="1"/>
-        <line num="246" count="5" type="stmt"/>
+        <line num="245" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="246" count="7" type="stmt"/>
         <line num="248" count="0" type="stmt"/>
         <line num="249" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="251" count="3" type="stmt"/>
-        <line num="254" count="5" type="stmt"/>
-        <line num="256" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="251" count="5" type="stmt"/>
+        <line num="254" count="7" type="stmt"/>
+        <line num="256" count="7" type="cond" truecount="1" falsecount="1"/>
         <line num="261" count="0" type="stmt"/>
-        <line num="264" count="5" type="stmt"/>
+        <line num="264" count="7" type="stmt"/>
         <line num="268" count="0" type="stmt"/>
         <line num="269" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="270" count="0" type="stmt"/>
@@ -816,32 +782,10 @@
         <line num="291" count="0" type="stmt"/>
         <line num="292" count="0" type="stmt"/>
         <line num="294" count="0" type="stmt"/>
-        <line num="299" count="2" type="stmt"/>
-        <line num="300" count="3" type="cond" truecount="1" falsecount="1"/>
-        <line num="305" count="2" type="stmt"/>
+        <line num="299" count="5" type="stmt"/>
+        <line num="300" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="305" count="4" type="stmt"/>
         <line num="309" count="3" type="stmt"/>
-      </file>
-    </package>
-    <package name="src.modules.compliance.dto">
-      <metrics statements="13" coveredstatements="0" conditionals="8" coveredconditionals="0" methods="0" coveredmethods="0"/>
-      <file name="compliance-job-callback.dto.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\compliance\dto\compliance-job-callback.dto.ts">
-        <metrics statements="7" coveredstatements="0" conditionals="8" coveredconditionals="0" methods="0" coveredmethods="0"/>
-        <line num="1" count="0" type="stmt"/>
-        <line num="2" count="0" type="stmt"/>
-        <line num="4" count="0" type="stmt"/>
-        <line num="6" count="0" type="stmt"/>
-        <line num="9" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="13" count="0" type="stmt"/>
-        <line num="17" count="0" type="cond" truecount="0" falsecount="4"/>
-      </file>
-      <file name="request-compliance-job.dto.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\compliance\dto\request-compliance-job.dto.ts">
-        <metrics statements="6" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-        <line num="1" count="0" type="stmt"/>
-        <line num="10" count="0" type="stmt"/>
-        <line num="12" count="0" type="stmt"/>
-        <line num="15" count="0" type="stmt"/>
-        <line num="21" count="0" type="stmt"/>
-        <line num="25" count="0" type="stmt"/>
       </file>
     </package>
     <package name="src.modules.compliance.entities">
@@ -1018,16 +962,15 @@
       </file>
     </package>
     <package name="src.modules.keys">
-      <metrics statements="7" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      <metrics statements="6" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
       <file name="keys.module.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\keys\keys.module.ts">
-        <metrics statements="7" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <metrics statements="6" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="0" type="stmt"/>
         <line num="2" count="0" type="stmt"/>
         <line num="3" count="0" type="stmt"/>
         <line num="4" count="0" type="stmt"/>
         <line num="5" count="0" type="stmt"/>
-        <line num="6" count="0" type="stmt"/>
-        <line num="14" count="0" type="stmt"/>
+        <line num="13" count="0" type="stmt"/>
       </file>
     </package>
     <package name="src.modules.keys.controllers">
@@ -1049,34 +992,34 @@
       <metrics statements="15" coveredstatements="15" conditionals="14" coveredconditionals="11" methods="1" coveredmethods="1"/>
       <file name="signing-key.entity.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\keys\entities\signing-key.entity.ts">
         <metrics statements="15" coveredstatements="15" conditionals="14" coveredconditionals="11" methods="1" coveredmethods="1"/>
-        <line num="1" count="4" type="stmt"/>
-        <line num="10" count="4" type="cond" truecount="2" falsecount="0"/>
-        <line num="11" count="4" type="stmt"/>
-        <line num="12" count="4" type="stmt"/>
-        <line num="13" count="4" type="stmt"/>
-        <line num="18" count="4" type="stmt"/>
-        <line num="20" count="4" type="stmt"/>
-        <line num="23" count="4" type="stmt"/>
-        <line num="26" count="4" type="stmt"/>
-        <line num="29" count="4" type="stmt"/>
-        <line num="32" count="4" type="stmt"/>
-        <line num="39" count="4" type="stmt"/>
-        <line num="42" count="4" type="cond" truecount="3" falsecount="1"/>
-        <line num="45" count="4" type="cond" truecount="3" falsecount="1"/>
-        <line num="48" count="4" type="cond" truecount="3" falsecount="1"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="10" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="11" count="3" type="stmt"/>
+        <line num="12" count="3" type="stmt"/>
+        <line num="13" count="3" type="stmt"/>
+        <line num="18" count="3" type="stmt"/>
+        <line num="20" count="3" type="stmt"/>
+        <line num="23" count="3" type="stmt"/>
+        <line num="26" count="3" type="stmt"/>
+        <line num="29" count="3" type="stmt"/>
+        <line num="32" count="3" type="stmt"/>
+        <line num="39" count="3" type="stmt"/>
+        <line num="42" count="3" type="cond" truecount="3" falsecount="1"/>
+        <line num="45" count="3" type="cond" truecount="3" falsecount="1"/>
+        <line num="48" count="3" type="cond" truecount="3" falsecount="1"/>
       </file>
     </package>
     <package name="src.modules.keys.services">
-      <metrics statements="97" coveredstatements="86" conditionals="32" coveredconditionals="18" methods="9" coveredmethods="9"/>
+      <metrics statements="38" coveredstatements="36" conditionals="10" coveredconditionals="6" methods="5" coveredmethods="5"/>
       <file name="key-management.service.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\keys\services\key-management.service.ts">
         <metrics statements="38" coveredstatements="36" conditionals="10" coveredconditionals="6" methods="5" coveredmethods="5"/>
-        <line num="1" count="4" type="stmt"/>
-        <line num="2" count="4" type="stmt"/>
-        <line num="3" count="4" type="stmt"/>
-        <line num="4" count="4" type="stmt"/>
-        <line num="5" count="4" type="stmt"/>
-        <line num="6" count="4" type="stmt"/>
-        <line num="9" count="4" type="stmt"/>
+        <line num="1" count="3" type="stmt"/>
+        <line num="2" count="3" type="stmt"/>
+        <line num="3" count="3" type="stmt"/>
+        <line num="4" count="3" type="stmt"/>
+        <line num="5" count="3" type="stmt"/>
+        <line num="6" count="3" type="stmt"/>
+        <line num="9" count="3" type="stmt"/>
         <line num="10" count="7" type="stmt"/>
         <line num="14" count="7" type="cond" truecount="3" falsecount="1"/>
         <line num="18" count="1" type="stmt"/>
@@ -1108,68 +1051,6 @@
         <line num="118" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="119" count="0" type="stmt"/>
         <line num="126" count="2" type="stmt"/>
-      </file>
-      <file name="key-rotation.service.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\keys\services\key-rotation.service.ts">
-        <metrics statements="59" coveredstatements="50" conditionals="22" coveredconditionals="12" methods="4" coveredmethods="4"/>
-        <line num="1" count="1" type="stmt"/>
-        <line num="2" count="1" type="stmt"/>
-        <line num="3" count="1" type="stmt"/>
-        <line num="4" count="1" type="stmt"/>
-        <line num="5" count="1" type="stmt"/>
-        <line num="6" count="1" type="stmt"/>
-        <line num="9" count="1" type="stmt"/>
-        <line num="10" count="6" type="stmt"/>
-        <line num="14" count="6" type="cond" truecount="6" falsecount="2"/>
-        <line num="15" count="6" type="stmt"/>
-        <line num="19" count="1" type="stmt"/>
-        <line num="20" count="1" type="stmt"/>
-        <line num="21" count="1" type="stmt"/>
-        <line num="23" count="1" type="stmt"/>
-        <line num="24" count="1" type="stmt"/>
-        <line num="25" count="1" type="stmt"/>
-        <line num="27" count="1" type="stmt"/>
-        <line num="28" count="1" type="stmt"/>
-        <line num="32" count="0" type="stmt"/>
-        <line num="33" count="0" type="stmt"/>
-        <line num="37" count="0" type="stmt"/>
-        <line num="42" count="2" type="stmt"/>
-        <line num="43" count="2" type="stmt"/>
-        <line num="45" count="2" type="stmt"/>
-        <line num="49" count="2" type="stmt"/>
-        <line num="57" count="2" type="stmt"/>
-        <line num="59" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="60" count="1" type="stmt"/>
-        <line num="61" count="1" type="stmt"/>
-        <line num="64" count="1" type="stmt"/>
-        <line num="65" count="1" type="stmt"/>
-        <line num="69" count="1" type="stmt"/>
-        <line num="71" count="1" type="stmt"/>
-        <line num="74" count="1" type="stmt"/>
-        <line num="79" count="1" type="stmt"/>
-        <line num="84" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="85" count="1" type="stmt"/>
-        <line num="87" count="0" type="stmt"/>
-        <line num="92" count="0" type="stmt"/>
-        <line num="96" count="0" type="stmt"/>
-        <line num="100" count="1" type="stmt"/>
-        <line num="106" count="2" type="stmt"/>
-        <line num="107" count="2" type="stmt"/>
-        <line num="109" count="2" type="stmt"/>
-        <line num="113" count="2" type="stmt"/>
-        <line num="121" count="2" type="stmt"/>
-        <line num="123" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="124" count="1" type="stmt"/>
-        <line num="125" count="1" type="stmt"/>
-        <line num="128" count="1" type="stmt"/>
-        <line num="129" count="1" type="stmt"/>
-        <line num="133" count="1" type="stmt"/>
-        <line num="134" count="1" type="stmt"/>
-        <line num="139" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="140" count="1" type="stmt"/>
-        <line num="142" count="0" type="stmt"/>
-        <line num="147" count="0" type="stmt"/>
-        <line num="151" count="0" type="stmt"/>
-        <line num="155" count="1" type="stmt"/>
       </file>
     </package>
     <package name="src.modules.metrics">
@@ -1244,53 +1125,136 @@
       </file>
     </package>
     <package name="src.modules.oidc-discovery">
-      <metrics statements="14" coveredstatements="4" conditionals="4" coveredconditionals="0" methods="3" coveredmethods="1"/>
+      <metrics statements="33" coveredstatements="11" conditionals="14" coveredconditionals="4" methods="7" coveredmethods="3"/>
       <file name="oidc-discovery.controller.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\oidc-discovery\oidc-discovery.controller.ts">
-        <metrics statements="6" coveredstatements="0" conditionals="4" coveredconditionals="0" methods="2" coveredmethods="0"/>
-        <line num="1" count="0" type="stmt"/>
-        <line num="2" count="0" type="stmt"/>
-        <line num="5" count="0" type="stmt"/>
-        <line num="6" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="9" count="0" type="stmt"/>
-        <line num="10" count="0" type="stmt"/>
-      </file>
-      <file name="oidc-discovery.module.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\oidc-discovery\oidc-discovery.module.ts">
-        <metrics statements="4" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <metrics statements="13" coveredstatements="0" conditionals="8" coveredconditionals="0" methods="3" coveredmethods="0"/>
         <line num="1" count="0" type="stmt"/>
         <line num="2" count="0" type="stmt"/>
         <line num="3" count="0" type="stmt"/>
-        <line num="9" count="0" type="stmt"/>
-      </file>
-      <file name="oidc-discovery.service.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\oidc-discovery\oidc-discovery.service.ts">
-        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
-        <line num="1" count="1" type="stmt"/>
-        <line num="4" count="1" type="stmt"/>
-        <line num="6" count="1" type="stmt"/>
-        <line num="7" count="1" type="stmt"/>
-      </file>
-    </package>
-    <package name="src.modules.qrcodes">
-      <metrics statements="46" coveredstatements="0" conditionals="18" coveredconditionals="0" methods="6" coveredmethods="0"/>
-      <file name="qrcodes.controller.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\qrcodes\qrcodes.controller.ts">
-        <metrics statements="10" coveredstatements="0" conditionals="4" coveredconditionals="0" methods="3" coveredmethods="0"/>
-        <line num="1" count="0" type="stmt"/>
-        <line num="2" count="0" type="stmt"/>
-        <line num="5" count="0" type="stmt"/>
-        <line num="6" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="9" count="0" type="stmt"/>
-        <line num="10" count="0" type="stmt"/>
-        <line num="11" count="0" type="stmt"/>
-        <line num="15" count="0" type="stmt"/>
-        <line num="16" count="0" type="stmt"/>
+        <line num="7" count="0" type="stmt"/>
+        <line num="8" count="0" type="cond" truecount="0" falsecount="4"/>
         <line num="17" count="0" type="stmt"/>
+        <line num="18" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="19" count="0" type="stmt"/>
+        <line num="22" count="0" type="stmt"/>
+        <line num="32" count="0" type="stmt"/>
+        <line num="33" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="34" count="0" type="stmt"/>
+        <line num="37" count="0" type="stmt"/>
       </file>
-      <file name="qrcodes.module.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\qrcodes\qrcodes.module.ts">
+      <file name="oidc-discovery.module.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\oidc-discovery\oidc-discovery.module.ts">
         <metrics statements="5" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="0" type="stmt"/>
         <line num="2" count="0" type="stmt"/>
         <line num="3" count="0" type="stmt"/>
         <line num="4" count="0" type="stmt"/>
-        <line num="11" count="0" type="stmt"/>
+        <line num="12" count="0" type="stmt"/>
+      </file>
+      <file name="oidc-discovery.service.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\oidc-discovery\oidc-discovery.service.ts">
+        <metrics statements="15" coveredstatements="11" conditionals="6" coveredconditionals="4" methods="4" coveredmethods="3"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="3" count="1" type="stmt"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="7" count="1" type="cond" truecount="3" falsecount="1"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="13" count="1" type="stmt"/>
+        <line num="14" count="1" type="stmt"/>
+        <line num="63" count="0" type="stmt"/>
+        <line num="67" count="0" type="stmt"/>
+        <line num="93" count="1" type="stmt"/>
+        <line num="95" count="1" type="stmt"/>
+        <line num="101" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="102" count="0" type="stmt"/>
+        <line num="105" count="0" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.modules.privacy">
+      <metrics statements="38" coveredstatements="0" conditionals="20" coveredconditionals="0" methods="7" coveredmethods="0"/>
+      <file name="privacy.controller.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\privacy\privacy.controller.ts">
+        <metrics statements="10" coveredstatements="0" conditionals="4" coveredconditionals="0" methods="3" coveredmethods="0"/>
+        <line num="1" count="0" type="stmt"/>
+        <line num="2" count="0" type="stmt"/>
+        <line num="3" count="0" type="stmt"/>
+        <line num="5" count="0" type="stmt"/>
+        <line num="25" count="0" type="stmt"/>
+        <line num="26" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="34" count="0" type="stmt"/>
+        <line num="38" count="0" type="stmt"/>
+        <line num="47" count="0" type="stmt"/>
+        <line num="52" count="0" type="stmt"/>
+      </file>
+      <file name="privacy.module.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\privacy\privacy.module.ts">
+        <metrics statements="8" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="0" type="stmt"/>
+        <line num="2" count="0" type="stmt"/>
+        <line num="3" count="0" type="stmt"/>
+        <line num="4" count="0" type="stmt"/>
+        <line num="5" count="0" type="stmt"/>
+        <line num="6" count="0" type="stmt"/>
+        <line num="7" count="0" type="stmt"/>
+        <line num="19" count="0" type="stmt"/>
+      </file>
+      <file name="privacy.service.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\privacy\privacy.service.ts">
+        <metrics statements="20" coveredstatements="0" conditionals="16" coveredconditionals="0" methods="4" coveredmethods="0"/>
+        <line num="1" count="0" type="stmt"/>
+        <line num="2" count="0" type="stmt"/>
+        <line num="3" count="0" type="stmt"/>
+        <line num="4" count="0" type="stmt"/>
+        <line num="21" count="0" type="stmt"/>
+        <line num="23" count="0" type="cond" truecount="0" falsecount="8"/>
+        <line num="24" count="0" type="stmt"/>
+        <line num="29" count="0" type="stmt"/>
+        <line num="32" count="0" type="stmt"/>
+        <line num="43" count="0" type="stmt"/>
+        <line num="54" count="0" type="stmt"/>
+        <line num="57" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="58" count="0" type="stmt"/>
+        <line num="64" count="0" type="stmt"/>
+        <line num="76" count="0" type="stmt"/>
+        <line num="91" count="0" type="stmt"/>
+        <line num="95" count="0" type="stmt"/>
+        <line num="106" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="107" count="0" type="stmt"/>
+        <line num="112" count="0" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.modules.qrcodes">
+      <metrics statements="60" coveredstatements="0" conditionals="32" coveredconditionals="0" methods="6" coveredmethods="0"/>
+      <file name="qrcodes.controller.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\qrcodes\qrcodes.controller.ts">
+        <metrics statements="22" coveredstatements="0" conditionals="18" coveredconditionals="0" methods="3" coveredmethods="0"/>
+        <line num="1" count="0" type="stmt"/>
+        <line num="2" count="0" type="stmt"/>
+        <line num="3" count="0" type="stmt"/>
+        <line num="5" count="0" type="stmt"/>
+        <line num="23" count="0" type="stmt"/>
+        <line num="24" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="28" count="0" type="stmt"/>
+        <line num="30" count="0" type="stmt"/>
+        <line num="42" count="0" type="stmt"/>
+        <line num="43" count="0" type="stmt"/>
+        <line num="52" count="0" type="stmt"/>
+        <line num="53" count="0" type="stmt"/>
+        <line num="54" count="0" type="stmt"/>
+        <line num="57" count="0" type="stmt"/>
+        <line num="59" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="60" count="0" type="stmt"/>
+        <line num="63" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="64" count="0" type="stmt"/>
+        <line num="67" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="68" count="0" type="stmt"/>
+        <line num="71" count="0" type="stmt"/>
+        <line num="77" count="0" type="stmt"/>
+      </file>
+      <file name="qrcodes.module.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\qrcodes\qrcodes.module.ts">
+        <metrics statements="7" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="0" type="stmt"/>
+        <line num="2" count="0" type="stmt"/>
+        <line num="3" count="0" type="stmt"/>
+        <line num="4" count="0" type="stmt"/>
+        <line num="5" count="0" type="stmt"/>
+        <line num="6" count="0" type="stmt"/>
+        <line num="13" count="0" type="stmt"/>
       </file>
       <file name="qrcodes.service.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\qrcodes\qrcodes.service.ts">
         <metrics statements="31" coveredstatements="0" conditionals="14" coveredconditionals="0" methods="3" coveredmethods="0"/>
@@ -1609,23 +1573,8 @@
         <line num="53" count="0" type="stmt"/>
       </file>
     </package>
-    <package name="src.modules.users.dto">
-      <metrics statements="9" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-      <file name="create-user.dto.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\users\dto\create-user.dto.ts">
-        <metrics statements="9" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-        <line num="1" count="0" type="stmt"/>
-        <line num="11" count="0" type="stmt"/>
-        <line num="14" count="0" type="stmt"/>
-        <line num="18" count="0" type="stmt"/>
-        <line num="22" count="0" type="stmt"/>
-        <line num="26" count="0" type="stmt"/>
-        <line num="30" count="0" type="stmt"/>
-        <line num="34" count="0" type="stmt"/>
-        <line num="38" count="0" type="stmt"/>
-      </file>
-    </package>
     <package name="src.modules.users.entities">
-      <metrics statements="30" coveredstatements="29" conditionals="24" coveredconditionals="18" methods="1" coveredmethods="0"/>
+      <metrics statements="35" coveredstatements="29" conditionals="20" coveredconditionals="12" methods="6" coveredmethods="0"/>
       <file name="consent-audit.entity.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\users\entities\consent-audit.entity.ts">
         <metrics statements="15" coveredstatements="14" conditionals="8" coveredconditionals="6" methods="1" coveredmethods="0"/>
         <line num="1" count="2" type="stmt"/>
@@ -1645,52 +1594,57 @@
         <line num="45" count="2" type="stmt"/>
       </file>
       <file name="user.entity.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\users\entities\user.entity.ts">
-        <metrics statements="15" coveredstatements="15" conditionals="16" coveredconditionals="12" methods="0" coveredmethods="0"/>
+        <metrics statements="20" coveredstatements="15" conditionals="12" coveredconditionals="6" methods="5" coveredmethods="0"/>
         <line num="1" count="3" type="stmt"/>
-        <line num="13" count="3" type="stmt"/>
-        <line num="15" count="3" type="stmt"/>
-        <line num="18" count="3" type="stmt"/>
+        <line num="19" count="3" type="stmt"/>
         <line num="21" count="3" type="stmt"/>
         <line num="24" count="3" type="stmt"/>
         <line num="27" count="3" type="stmt"/>
-        <line num="30" count="3" type="stmt"/>
-        <line num="33" count="3" type="stmt"/>
-        <line num="36" count="3" type="stmt"/>
-        <line num="39" count="3" type="cond" truecount="3" falsecount="1"/>
-        <line num="42" count="3" type="cond" truecount="3" falsecount="1"/>
-        <line num="45" count="3" type="stmt"/>
-        <line num="48" count="3" type="cond" truecount="3" falsecount="1"/>
-        <line num="51" count="3" type="cond" truecount="3" falsecount="1"/>
+        <line num="32" count="3" type="stmt"/>
+        <line num="38" count="3" type="stmt"/>
+        <line num="44" count="3" type="stmt"/>
+        <line num="47" count="3" type="stmt"/>
+        <line num="54" count="3" type="stmt"/>
+        <line num="61" count="3" type="stmt"/>
+        <line num="68" count="3" type="stmt"/>
+        <line num="75" count="3" type="stmt"/>
+        <line num="78" count="3" type="cond" truecount="3" falsecount="1"/>
+        <line num="81" count="3" type="cond" truecount="3" falsecount="1"/>
+        <line num="85" count="0" type="stmt"/>
+        <line num="89" count="0" type="stmt"/>
+        <line num="93" count="0" type="stmt"/>
+        <line num="97" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="101" count="0" type="cond" truecount="0" falsecount="2"/>
       </file>
     </package>
     <package name="src.modules.webauthn">
-      <metrics statements="121" coveredstatements="29" conditionals="113" coveredconditionals="31" methods="21" coveredmethods="5"/>
+      <metrics statements="121" coveredstatements="29" conditionals="105" coveredconditionals="34" methods="21" coveredmethods="5"/>
       <file name="rp.service.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\webauthn\rp.service.ts">
         <metrics statements="5" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="2"/>
         <line num="1" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
         <line num="6" count="0" type="stmt"/>
-        <line num="11" count="1" type="stmt"/>
-        <line num="16" count="1" type="stmt"/>
+        <line num="11" count="2" type="stmt"/>
+        <line num="16" count="2" type="stmt"/>
       </file>
       <file name="webauthn.controller.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\webauthn\webauthn.controller.ts">
-        <metrics statements="16" coveredstatements="0" conditionals="16" coveredconditionals="0" methods="5" coveredmethods="0"/>
+        <metrics statements="16" coveredstatements="0" conditionals="8" coveredconditionals="0" methods="5" coveredmethods="0"/>
         <line num="1" count="0" type="stmt"/>
         <line num="12" count="0" type="stmt"/>
-        <line num="15" count="0" type="stmt"/>
-        <line num="16" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="20" count="0" type="stmt"/>
-        <line num="21" count="0" type="stmt"/>
+        <line num="19" count="0" type="stmt"/>
+        <line num="20" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="24" count="0" type="stmt"/>
         <line num="25" count="0" type="stmt"/>
-        <line num="30" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="31" count="0" type="stmt"/>
-        <line num="33" count="0" type="stmt"/>
-        <line num="38" count="0" type="stmt"/>
-        <line num="39" count="0" type="stmt"/>
+        <line num="29" count="0" type="stmt"/>
+        <line num="34" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="35" count="0" type="stmt"/>
+        <line num="37" count="0" type="stmt"/>
+        <line num="42" count="0" type="stmt"/>
         <line num="43" count="0" type="stmt"/>
-        <line num="47" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="48" count="0" type="stmt"/>
-        <line num="50" count="0" type="stmt"/>
+        <line num="47" count="0" type="stmt"/>
+        <line num="51" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="52" count="0" type="stmt"/>
+        <line num="54" count="0" type="stmt"/>
       </file>
       <file name="webauthn.module.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\webauthn\webauthn.module.ts">
         <metrics statements="9" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
@@ -1705,7 +1659,7 @@
         <line num="15" count="0" type="stmt"/>
       </file>
       <file name="webauthn.service.ts" path="C:\Edgar\Programacion\SmartEdify_A\Proyecto\smartedify_app\services\support\identity-service\src\modules\webauthn\webauthn.service.ts">
-        <metrics statements="91" coveredstatements="25" conditionals="97" coveredconditionals="31" methods="13" coveredmethods="3"/>
+        <metrics statements="91" coveredstatements="25" conditionals="97" coveredconditionals="34" methods="13" coveredmethods="3"/>
         <line num="1" count="1" type="stmt"/>
         <line num="6" count="1" type="stmt"/>
         <line num="17" count="1" type="stmt"/>
@@ -1714,11 +1668,11 @@
         <line num="20" count="1" type="stmt"/>
         <line num="21" count="1" type="stmt"/>
         <line num="31" count="1" type="stmt"/>
-        <line num="32" count="1" type="stmt"/>
-        <line num="33" count="1" type="stmt"/>
-        <line num="36" count="1" type="cond" truecount="6" falsecount="2"/>
-        <line num="37" count="1" type="cond" truecount="3" falsecount="1"/>
-        <line num="39" count="1" type="stmt"/>
+        <line num="32" count="4" type="stmt"/>
+        <line num="33" count="4" type="stmt"/>
+        <line num="36" count="4" type="cond" truecount="6" falsecount="2"/>
+        <line num="37" count="4" type="cond" truecount="3" falsecount="1"/>
+        <line num="39" count="4" type="stmt"/>
         <line num="43" count="0" type="stmt"/>
         <line num="51" count="0" type="stmt"/>
         <line num="52" count="0" type="stmt"/>
@@ -1731,7 +1685,7 @@
         <line num="66" count="0" type="stmt"/>
         <line num="70" count="0" type="stmt"/>
         <line num="71" count="0" type="stmt"/>
-        <line num="78" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="78" count="4" type="cond" truecount="1" falsecount="1"/>
         <line num="79" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="80" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="81" count="0" type="cond" truecount="0" falsecount="2"/>
@@ -1759,17 +1713,17 @@
         <line num="149" count="0" type="stmt"/>
         <line num="154" count="0" type="stmt"/>
         <line num="157" count="0" type="stmt"/>
-        <line num="167" count="1" type="cond" truecount="2" falsecount="0"/>
-        <line num="171" count="1" type="cond" truecount="2" falsecount="0"/>
-        <line num="175" count="1" type="cond" truecount="2" falsecount="0"/>
-        <line num="179" count="1" type="cond" truecount="2" falsecount="0"/>
-        <line num="188" count="1" type="stmt"/>
-        <line num="190" count="1" type="stmt"/>
-        <line num="191" count="1" type="stmt"/>
-        <line num="195" count="1" type="cond" truecount="4" falsecount="1"/>
+        <line num="167" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="171" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="175" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="179" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="188" count="2" type="stmt"/>
+        <line num="190" count="2" type="stmt"/>
+        <line num="191" count="2" type="stmt"/>
+        <line num="195" count="2" type="cond" truecount="5" falsecount="0"/>
         <line num="196" count="1" type="stmt"/>
-        <line num="199" count="1" type="stmt"/>
-        <line num="223" count="1" type="stmt"/>
+        <line num="199" count="2" type="stmt"/>
+        <line num="223" count="2" type="stmt"/>
         <line num="235" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="236" count="0" type="stmt"/>
         <line num="237" count="0" type="cond" truecount="0" falsecount="2"/>

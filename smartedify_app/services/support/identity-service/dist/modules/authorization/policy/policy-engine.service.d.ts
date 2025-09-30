@@ -1,4 +1,4 @@
 export declare class PolicyEngineService {
     private policies;
-    evaluate(policyName: string, user: any, resource: any): boolean;
+    evaluatePolicy(policyName: string, user: Record<string, unknown>, resource: Record<string, unknown>): boolean;
 }

@@ -41,15 +41,15 @@ let WebauthnController = class WebauthnController {
 };
 exports.WebauthnController = WebauthnController;
 __decorate([
-    (0, common_1.Post)('attestation/options'),
+    (0, common_1.Get)('registration/options'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    __param(0, (0, common_1.Body)('username')),
+    __param(0, (0, common_1.Query)('username')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], WebauthnController.prototype, "registrationOptions", null);
 __decorate([
-    (0, common_1.Post)('attestation/result'),
+    (0, common_1.Post)('registration/verification'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Body)('userId')),
     __param(2, (0, common_1.Headers)('webauthn-challenge')),

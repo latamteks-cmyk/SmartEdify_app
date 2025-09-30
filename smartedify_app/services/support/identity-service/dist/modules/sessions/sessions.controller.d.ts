@@ -2,7 +2,7 @@ import { SessionsService } from './sessions.service';
 export declare class SessionsController {
     private readonly sessionsService;
     constructor(sessionsService: SessionsService);
-    getActiveSessions(): Promise<void>;
+    getActiveSessions(): void;
     revokeSession(sessionId: string): Promise<{
         message: string;
     }>;

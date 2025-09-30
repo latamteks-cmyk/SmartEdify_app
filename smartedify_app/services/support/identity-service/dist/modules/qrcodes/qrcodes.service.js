@@ -92,7 +92,8 @@ let QrcodesService = class QrcodesService {
             return JSON.parse(verified.payload.toString());
         }
         catch (error) {
-            throw new Error(`Invalid QR Code: ${error.message}`);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new Error(`Invalid QR Code: ${errorMsg}`);
         }
     }
 };

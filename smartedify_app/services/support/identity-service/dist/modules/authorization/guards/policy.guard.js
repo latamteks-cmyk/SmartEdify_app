@@ -20,7 +20,7 @@ let PolicyGuard = class PolicyGuard {
         this.reflector = reflector;
         this.authorizationService = authorizationService;
     }
-    async canActivate(context) {
+    canActivate(context) {
         const requiredPolicies = this.reflector.get('policies', context.getHandler());
         if (!requiredPolicies) {
             return true;
@@ -28,8 +28,8 @@ let PolicyGuard = class PolicyGuard {
         const { user } = context.switchToHttp().getRequest();
         const resource = { id: 'mock_resource' };
         for (const policy of requiredPolicies) {
-            const [action, resourceName] = policy.split(':');
-            const isAllowed = await this.authorizationService.checkPolicy(user, action, resource);
+            const [action] = policy.split(':');
+            const isAllowed = this.authorizationService.checkPolicy(user, action, resource);
             if (!isAllowed) {
                 return false;
             }

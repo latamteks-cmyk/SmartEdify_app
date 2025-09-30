@@ -178,7 +178,7 @@ let AuthService = AuthService_1 = class AuthService {
         const refreshToken = await this._generateRefreshToken(user, proof.jkt, scope);
         return [accessToken, refreshToken];
     }
-    exchangeDeviceCodeForTokens(deviceCode) {
+    exchangeDeviceCodeForTokens(_deviceCode) {
         throw new common_1.BadRequestException('Device code grant type not yet implemented');
     }
     async revokeToken(token, token_type_hint) {
@@ -277,6 +277,8 @@ let AuthService = AuthService_1 = class AuthService {
             }
             return {
                 jkt: computedThumbprint,
+                htm: httpMethod,
+                htu: httpUrl,
                 jti: decodedPayload.jti,
                 iat: decodedPayload.iat,
             };
@@ -301,7 +303,7 @@ let AuthService = AuthService_1 = class AuthService {
                 throw new common_1.UnauthorizedException('Missing kid or iss in logout token');
             }
             const client = this.clientStore.findClientById(clientId);
-            if (!client) {
+            if (!client || !client.jwks || !client.jwks.keys) {
                 this.logger.warn(`Back-channel logout attempt for unknown client: ${clientId}`);
                 return;
             }
@@ -324,7 +326,7 @@ let AuthService = AuthService_1 = class AuthService {
             await this.sessionsService.revokeSession(verifiedPayload.sid);
         }
         catch (error) {
-            this.logger.error(`Back-channel logout failed: ${error.message}`);
+            this.logger.error(`Back-channel logout failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 };

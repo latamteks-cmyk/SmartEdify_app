@@ -18,8 +18,14 @@ let AuthorizationService = class AuthorizationService {
         this.policyEngine = policyEngine;
     }
     checkPolicy(user, action, resource) {
-        const policyName = `${resource.name}:${action}`;
-        return this.policyEngine.evaluate(policyName, user, resource);
+        const policyName = `${resource.name ?? 'unknown'}:${action}`;
+        try {
+            return this.policyEngine.evaluatePolicy(policyName, user, resource);
+        }
+        catch (error) {
+            console.error('Policy evaluation failed:', error);
+            return false;
+        }
     }
 };
 exports.AuthorizationService = AuthorizationService;

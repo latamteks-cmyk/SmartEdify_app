@@ -123,11 +123,19 @@ let WebauthnService = class WebauthnService {
         return verification;
     }
     async persistCredential(registrationInfo, response, user) {
-        const credentialID = registrationInfo.credentialID || registrationInfo.credential?.id;
-        const credentialPublicKey = registrationInfo.credentialPublicKey || registrationInfo.credential?.publicKey;
-        const counter = registrationInfo.counter ?? registrationInfo.credential?.counter;
-        const transports = registrationInfo.transports || registrationInfo.credential?.transports;
-        const { aaguid, fmt, credentialDeviceType, credentialBackedUp, authenticatorExtensionResults } = registrationInfo;
+        const credentialID = registrationInfo.credentialID ||
+            registrationInfo.credential
+                ?.id;
+        const credentialPublicKey = registrationInfo.credentialPublicKey ||
+            registrationInfo.credential
+                ?.publicKey;
+        const counter = registrationInfo.counter ??
+            registrationInfo.credential
+                ?.counter;
+        const transports = registrationInfo.transports ||
+            registrationInfo.credential
+                ?.transports;
+        const { aaguid, fmt, credentialDeviceType, credentialBackedUp, authenticatorExtensionResults: _authenticatorExtensionResults, } = registrationInfo;
         let credProtect = undefined;
         const ext = registrationInfo.authenticatorExtensionResults;
         if (ext && typeof ext === 'object' && 'credProtect' in ext) {
@@ -135,8 +143,10 @@ let WebauthnService = class WebauthnService {
         }
         const newCredential = this.webAuthnCredentialRepository.create({
             user,
-            credential_id: this.toBuffer(credentialID ?? Buffer.alloc(0)),
-            public_key: this.toBuffer(credentialPublicKey ?? Buffer.alloc(0)),
+            credential_id: this.toBuffer(credentialID ? Buffer.from(credentialID) : Buffer.alloc(0)),
+            public_key: this.toBuffer(credentialPublicKey
+                ? Buffer.from(credentialPublicKey)
+                : Buffer.alloc(0)),
             sign_count: counter ?? 0,
             rp_id: this.rpService.getRpId(),
             origin: this.rpService.getExpectedOrigin(),
@@ -180,7 +190,9 @@ let WebauthnService = class WebauthnService {
     async verifyAuthentication(response, providedChallenge) {
         if (!providedChallenge)
             throw new common_1.BadRequestException('Authentication challenge is required');
-        const credentialIdSource = response?.credentialID || response?.id || response?.rawId;
+        const credentialIdSource = response.credentialID ||
+            response.id ||
+            response.rawId;
         if (!credentialIdSource)
             throw new common_1.BadRequestException('Credential ID is required');
         const credentialIdBuffer = this.toBuffer(credentialIdSource, 'base64url');

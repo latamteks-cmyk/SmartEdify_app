@@ -267,4 +267,48 @@ describe('ComplianceService', () => {
     expect(secondCallback.status).toBe(ComplianceJobStatus.COMPLETED);
     expect(jobServicesRepository.save).toHaveBeenCalledTimes(afterFirst);
   });
+
+  it('should handle export data request', async () => {
+    const request: RequestComplianceJobDto = {
+      ...baseRequest,
+      type: ComplianceJobType.DATA_EXPORT,
+      affected_services: ['governance-service'],
+    };
+
+    const job = await service.exportData(request);
+
+    expect(job.type).toBe(ComplianceJobType.DATA_EXPORT);
+    expect(job.status).toBe(ComplianceJobStatus.IN_PROGRESS);
+    expect(eventsProducer.emitDataExportRequested).toHaveBeenCalledWith(
+      expect.objectContaining({
+        job_id: 'job-1',
+        type: ComplianceJobType.DATA_EXPORT,
+      }),
+    );
+  });
+
+  it('should handle job creation with different types', async () => {
+    const request: RequestComplianceJobDto = {
+      ...baseRequest,
+      type: ComplianceJobType.DATA_EXPORT,
+      affected_services: ['governance-service'],
+    };
+
+    const job = await service.exportData(request);
+
+    expect(job).toBeDefined();
+    expect(job.type).toBe(ComplianceJobType.DATA_EXPORT);
+    expect(job.status).toBe(ComplianceJobStatus.IN_PROGRESS);
+  });
+
+  it('should throw error for empty affected services', async () => {
+    const request: RequestComplianceJobDto = {
+      ...baseRequest,
+      affected_services: [],
+    };
+
+    await expect(service.deleteData(request)).rejects.toThrow(
+      'At least one affected service is required',
+    );
+  });
 });

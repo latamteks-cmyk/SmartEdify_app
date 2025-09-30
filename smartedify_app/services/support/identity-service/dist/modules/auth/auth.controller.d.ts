@@ -25,7 +25,7 @@ export declare class AuthController {
         expires_in: number;
         interval: number;
     };
-    authorize(res: Response, redirect_uri?: string, scope?: string, request_uri?: string, code_challenge?: string, code_challenge_method?: string): Promise<Response<any, Record<string, any>> | undefined>;
+    authorize(res: Response, redirect_uri?: string, scope?: string, request_uri?: string, code_challenge?: string, code_challenge_method?: string): Response<any, Record<string, any>> | undefined;
     token(grant_type: string, body: TokenRequestBody, dpopProof: string, req: Request): Promise<{
         access_token: string;
         refresh_token: string;

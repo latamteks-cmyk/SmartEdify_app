@@ -1,3 +1,4 @@
+import type { RegistrationResponseJSON, AuthenticationResponseJSON } from '@simplewebauthn/types';
 import { RpService } from './rp.service';
 import { UsersService } from '../users/users.service';
 import { WebAuthnCredential } from './entities/webauthn-credential.entity';
@@ -15,8 +16,8 @@ export declare class WebauthnService {
     private deleteChallenge;
     private toBuffer;
     generateRegistrationOptions(username: string): Promise<import("@simplewebauthn/server").PublicKeyCredentialCreationOptionsJSON>;
-    verifyRegistration(response: any, userId: string, providedChallenge: string): Promise<import("@simplewebauthn/server").VerifiedRegistrationResponse>;
+    verifyRegistration(response: RegistrationResponseJSON, userId: string, providedChallenge: string): Promise<import("@simplewebauthn/server").VerifiedRegistrationResponse>;
     private persistCredential;
     generateAuthenticationOptions(username?: string): Promise<import("@simplewebauthn/server").PublicKeyCredentialRequestOptionsJSON>;
-    verifyAuthentication(response: any, providedChallenge: string): Promise<import("@simplewebauthn/server").VerifiedAuthenticationResponse>;
+    verifyAuthentication(response: AuthenticationResponseJSON, providedChallenge: string): Promise<import("@simplewebauthn/server").VerifiedAuthenticationResponse>;
 }

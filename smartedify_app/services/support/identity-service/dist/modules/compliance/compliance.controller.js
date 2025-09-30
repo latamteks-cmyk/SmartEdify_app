@@ -35,7 +35,7 @@ let ComplianceController = class ComplianceController {
         const job = await this.complianceService.handleJobCallback(jobId, callback);
         return { job_id: job.id, status: job.status };
     }
-    reportIncident(incident) {
+    reportIncident(_incident) {
         throw new common_1.NotImplementedException('Incident reporting not implemented.');
     }
 };

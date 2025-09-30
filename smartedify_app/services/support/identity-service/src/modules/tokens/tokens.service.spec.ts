@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as crypto from 'crypto';
+
 import { TokensService } from './tokens.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
@@ -22,7 +22,7 @@ interface MockSigningKey {
   tenant_id: string;
   private_key_pem: string;
   algorithm: 'ES256';
-  public_key_jwk: jose.JWK & { kid: string; use: string; alg: string };
+  public_key_jwk: { kid: string; use: string; alg: string; kty: string; crv?: string; x?: string; y?: string };
 }
 
 describe('TokensService', () => {
@@ -195,15 +195,19 @@ describe('TokensService', () => {
       const oldToken = 'old-refresh-token';
       mockRefreshTokenRepository.findOne.mockResolvedValue(mockRefreshToken);
       mockRefreshTokenRepository.save.mockResolvedValue(mockRefreshToken);
+      mockRefreshTokenRepository.create.mockImplementation(
+        (entity) => entity as RefreshToken,
+      );
 
-      service.issueRefreshToken = jest
-        .fn()
+      // Mock the issueRefreshToken method directly on the service instance
+      const issueRefreshTokenSpy = jest
+        .spyOn(service, 'issueRefreshToken')
         .mockResolvedValue('new-refresh-token');
 
       const result = await service.rotateRefreshToken(oldToken);
 
       expect(result).toBe('new-refresh-token');
-      expect(service.issueRefreshToken).toHaveBeenCalledWith(
+      expect(issueRefreshTokenSpy).toHaveBeenCalledWith(
         mockUser,
         'jkt-thumbprint-123',
         'family-123',
@@ -212,6 +216,8 @@ describe('TokensService', () => {
         'openid profile',
         'session-1',
       );
+
+      issueRefreshTokenSpy.mockRestore();
     });
 
     it('should detect reuse and revoke token family', async () => {

@@ -33,6 +33,7 @@ const getDatabaseConfig = (isTest = false) => {
             compliance_job_entity_1.ComplianceJob,
             compliance_job_service_entity_1.ComplianceJobService,
         ],
+        migrations: [__dirname + '/../db/migrations/*.ts'],
         synchronize: false,
         logging: process.env.NODE_ENV === 'development'
             ? ['query', 'error', 'warn']
@@ -45,11 +46,30 @@ const getProductionDatabaseConfig = () => ({
     ...(0, exports.getDatabaseConfig)(false),
 });
 exports.getProductionDatabaseConfig = getProductionDatabaseConfig;
-const getTestDatabaseConfig = () => ({
-    ...(0, exports.getDatabaseConfig)(true),
-    synchronize: true,
-    dropSchema: true,
-    logging: false,
-});
+const getTestDatabaseConfig = () => {
+    return {
+        type: 'postgres',
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5433'),
+        username: process.env.DB_USERNAME || 'user',
+        password: process.env.DB_PASSWORD || 'password',
+        database: process.env.DB_TEST_DATABASE || 'identity_test_db',
+        entities: [
+            user_entity_1.User,
+            webauthn_credential_entity_1.WebAuthnCredential,
+            refresh_token_entity_1.RefreshToken,
+            session_entity_1.Session,
+            consent_audit_entity_1.ConsentAudit,
+            revocation_event_entity_1.RevocationEvent,
+            signing_key_entity_1.SigningKey,
+            dpop_replay_proof_entity_1.DpopReplayProof,
+            compliance_job_entity_1.ComplianceJob,
+            compliance_job_service_entity_1.ComplianceJobService,
+        ],
+        synchronize: true,
+        dropSchema: true,
+        logging: false,
+    };
+};
 exports.getTestDatabaseConfig = getTestDatabaseConfig;
 //# sourceMappingURL=database.config.js.map

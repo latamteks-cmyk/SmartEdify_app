@@ -16,5 +16,5 @@ export declare class ComplianceController {
         job_id: string;
         status: import("./types/compliance-job.enums").ComplianceJobStatus;
     }>;
-    reportIncident(incident: any): void;
+    reportIncident(_incident: Record<string, unknown>): void;
 }

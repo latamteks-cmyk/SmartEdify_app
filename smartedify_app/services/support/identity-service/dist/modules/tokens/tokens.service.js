@@ -201,7 +201,7 @@ let TokensService = class TokensService {
         try {
             const notBeforeTime = await this.sessionsService.getNotBeforeTime(userId, tenantId);
             if (notBeforeTime && issuedAt < notBeforeTime) {
-                console.warn(`Access token rejected: issued before last logout. UserId: ${userId}, TenantId: ${tenantId}, IssuedAt: ${issuedAt}, NotBefore: ${notBeforeTime}`);
+                console.warn(`Access token rejected: issued before last logout. UserId: ${userId}, TenantId: ${tenantId}, IssuedAt: ${issuedAt.toISOString()}, NotBefore: ${notBeforeTime.toISOString()}`);
                 return false;
             }
             return true;
@@ -221,7 +221,7 @@ let TokensService = class TokensService {
         if (refreshToken) {
             const notBeforeTime = await this.sessionsService.getNotBeforeTime(user.id, user.tenant_id);
             if (notBeforeTime && refreshToken.created_at < notBeforeTime) {
-                console.warn(`Refresh token rejected: created before last logout. UserId: ${user.id}, TenantId: ${user.tenant_id}, TokenCreatedAt: ${refreshToken.created_at}, NotBefore: ${notBeforeTime}`);
+                console.warn(`Refresh token rejected: created before last logout. UserId: ${user.id}, TenantId: ${user.tenant_id}, TokenCreatedAt: ${refreshToken.created_at.toISOString()}, NotBefore: ${notBeforeTime.toISOString()}`);
                 throw new common_1.UnauthorizedException('Refresh token invalidated due to user logout');
             }
         }

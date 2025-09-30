@@ -77,4 +77,46 @@ describe('WebauthnService (unit)', () => {
     );
     expect(repo.save).toHaveBeenCalled();
   });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  it('should have repository injected', () => {
+    expect(repo).toBeDefined();
+  });
+
+  it('should handle credential creation with minimal data', async () => {
+    const registrationInfo = {
+      credential: {
+        id: 'simple-cred-id',
+        publicKey: Buffer.from('simple-key'),
+        counter: 0,
+        transports: ['internal'],
+      },
+      fmt: 'none',
+      credentialDeviceType: 'singleDevice',
+      credentialBackedUp: false,
+    };
+
+    const response = { response: { transports: ['internal'] } };
+
+    // @ts-expect-error - Testing private method
+    await service['persistCredential'](registrationInfo, response, {
+      id: 'user-id-2',
+      email: 'test2@test.com',
+    });
+
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        credential_id: Buffer.from('simple-cred-id'),
+        public_key: Buffer.from('simple-key'),
+        sign_count: 0,
+        transports: ['internal'],
+        attestation_fmt: 'none',
+        backup_eligible: false,
+        backup_state: 'not_backed_up',
+      }),
+    );
+  });
 });

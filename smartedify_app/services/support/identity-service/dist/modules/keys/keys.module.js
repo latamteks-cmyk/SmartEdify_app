@@ -12,7 +12,6 @@ const typeorm_1 = require("@nestjs/typeorm");
 const signing_key_entity_1 = require("./entities/signing-key.entity");
 const key_management_service_1 = require("./services/key-management.service");
 const jwks_controller_1 = require("./controllers/jwks.controller");
-const key_rotation_service_1 = require("./services/key-rotation.service");
 let KeysModule = class KeysModule {
 };
 exports.KeysModule = KeysModule;
@@ -20,7 +19,7 @@ exports.KeysModule = KeysModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([signing_key_entity_1.SigningKey])],
         controllers: [jwks_controller_1.JwksController],
-        providers: [key_management_service_1.KeyManagementService, key_rotation_service_1.KeyRotationService],
+        providers: [key_management_service_1.KeyManagementService],
         exports: [key_management_service_1.KeyManagementService],
     })
 ], KeysModule);

@@ -24,8 +24,11 @@ export interface ValidateDpopProofOptions {
 }
 export interface ValidatedDpopProof {
     jkt: string;
-    jti: string;
+    htm: string;
+    htu: string;
     iat: number;
+    jti: string;
+    ath?: string;
 }
 export declare class AuthService {
     private readonly authorizationCodeStore;
@@ -59,7 +62,7 @@ export declare class AuthService {
         scope: string;
     }): string;
     exchangeCodeForTokens(code: string, code_verifier: string, dpopProof: string, httpMethod: string, httpUrl: string): Promise<[string, string]>;
-    exchangeDeviceCodeForTokens(deviceCode: string): [string, string];
+    exchangeDeviceCodeForTokens(_deviceCode: string): [string, string];
     revokeToken(token: string, token_type_hint?: string): Promise<void>;
     private _generateAccessToken;
     private _generateRefreshToken;

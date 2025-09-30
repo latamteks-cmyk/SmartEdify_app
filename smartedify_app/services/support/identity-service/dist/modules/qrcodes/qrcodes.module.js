@@ -8,15 +8,17 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QrcodesModule = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
 const qrcodes_service_1 = require("./qrcodes.service");
 const qrcodes_controller_1 = require("./qrcodes.controller");
 const keys_module_1 = require("../keys/keys.module");
+const dpop_replay_proof_entity_1 = require("../auth/entities/dpop-replay-proof.entity");
 let QrcodesModule = class QrcodesModule {
 };
 exports.QrcodesModule = QrcodesModule;
 exports.QrcodesModule = QrcodesModule = __decorate([
     (0, common_1.Module)({
-        imports: [keys_module_1.KeysModule],
+        imports: [keys_module_1.KeysModule, typeorm_1.TypeOrmModule.forFeature([dpop_replay_proof_entity_1.DpopReplayProof])],
         providers: [qrcodes_service_1.QrcodesService],
         controllers: [qrcodes_controller_1.QrcodesController],
     })

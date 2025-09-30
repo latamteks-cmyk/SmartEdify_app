@@ -9,8 +9,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MfaGuard = void 0;
 const common_1 = require("@nestjs/common");
 let MfaGuard = class MfaGuard {
-    canActivate(_context) {
+    canActivate(context) {
         console.log('MFA Guard: Checking for recent second-factor authentication...');
+        const req = context.switchToHttp().getRequest();
+        console.log(`MFA check for request to: ${req.url}`);
         return true;
     }
 };

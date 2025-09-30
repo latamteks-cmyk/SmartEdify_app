@@ -52,6 +52,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const signing_key_entity_1 = require("../entities/signing-key.entity");
 const jose = __importStar(require("node-jose"));
+const crypto_1 = require("crypto");
 let KeyManagementService = KeyManagementService_1 = class KeyManagementService {
     signingKeyRepository;
     logger = new common_1.Logger(KeyManagementService_1.name);
@@ -60,18 +61,29 @@ let KeyManagementService = KeyManagementService_1 = class KeyManagementService {
     }
     async generateNewKey(tenantId) {
         this.logger.log(`Generating new key for tenant ${tenantId}`);
-        const key = await jose.JWK.createKey('EC', 'P-256', {
-            alg: 'ES256',
-            use: 'sig',
+        const { publicKey, privateKey } = (0, crypto_1.generateKeyPairSync)('ec', {
+            namedCurve: 'P-256',
         });
+        const privateKeyPem = privateKey.export({
+            type: 'pkcs8',
+            format: 'pem',
+        });
+        const publicKeyPem = publicKey.export({
+            type: 'spki',
+            format: 'pem',
+        });
+        const jwk = await jose.JWK.asKey(publicKeyPem, 'pem');
+        const publicKeyJwk = jwk.toJSON();
+        publicKeyJwk.alg = 'ES256';
+        publicKeyJwk.use = 'sig';
         const signingKey = this.signingKeyRepository.create({
             tenant_id: tenantId,
             status: signing_key_entity_1.KeyStatus.ACTIVE,
             created_at: new Date(),
             updated_at: new Date(),
             expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-            public_key_jwk: key.toJSON(),
-            private_key_pem: await key.toPEM(true),
+            public_key_jwk: publicKeyJwk,
+            private_key_pem: privateKeyPem,
             algorithm: 'ES256',
         });
         const savedKey = await this.signingKeyRepository.save(signingKey);
@@ -109,24 +121,16 @@ let KeyManagementService = KeyManagementService_1 = class KeyManagementService {
             try {
                 const jwk = await jose.JWK.asKey(key.public_key_jwk);
                 const publicJwk = jwk.toJSON();
+                const keyJwk = key.public_key_jwk;
                 jwksKeys.push({
                     ...publicJwk,
-                    kid: key.kid,
+                    kid: keyJwk.kid || publicJwk.kid,
                     use: 'sig',
                     alg: key.algorithm,
                 });
             }
             catch (error) {
-                let errorMsg;
-                if (typeof error === 'object' &&
-                    error !== null &&
-                    'message' in error &&
-                    typeof error.message === 'string') {
-                    errorMsg = error.message;
-                }
-                else {
-                    errorMsg = String(error);
-                }
+                const errorMsg = error instanceof Error ? error.message : String(error);
                 this.logger.error(`Failed to process key ${key.kid} for JWKS:`, errorMsg);
             }
         }

@@ -17,9 +17,10 @@ let PolicyEngineService = class PolicyEngineService {
             return (user.roles.includes('guard') && user.buildingId === resource.buildingId);
         },
     };
-    evaluate(policyName, user, resource) {
-        if (this.policies[policyName]) {
-            return this.policies[policyName](user, resource);
+    evaluatePolicy(policyName, user, resource) {
+        const policy = this.policies[policyName];
+        if (policy) {
+            return policy(user, resource);
         }
         return false;
     }

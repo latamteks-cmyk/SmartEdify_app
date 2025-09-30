@@ -53,7 +53,7 @@ let ClientAuthGuard = class ClientAuthGuard {
     }
     async canActivate(context) {
         const req = context.switchToHttp().getRequest();
-        const { client_assertion, client_assertion_type } = req.body;
+        const { client_assertion, client_assertion_type } = req.body || {};
         if (!client_assertion ||
             client_assertion_type !==
                 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer') {
@@ -74,7 +74,7 @@ let ClientAuthGuard = class ClientAuthGuard {
             if (!client) {
                 throw new common_1.UnauthorizedException(`Unknown client: ${clientId}`);
             }
-            const jwk = client.jwks.keys.find((k) => k.kid === kid);
+            const jwk = client.jwks?.keys?.find((k) => k.kid === kid);
             if (!jwk) {
                 throw new common_1.UnauthorizedException('Unknown key identifier (kid)');
             }
@@ -83,10 +83,10 @@ let ClientAuthGuard = class ClientAuthGuard {
             const verified = await verifier.verify(client_assertion);
             const verifiedPayload = JSON.parse(verified.payload.toString());
             const now = Math.floor(Date.now() / 1000);
-            if (verifiedPayload.exp < now) {
+            if (!verifiedPayload.exp || verifiedPayload.exp < now) {
                 throw new common_1.UnauthorizedException('Client assertion has expired');
             }
-            const tokenEndpointUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+            const tokenEndpointUrl = `${req.protocol || 'https'}://${req.get?.('host') || 'localhost'}${req.originalUrl || '/'}`;
             if (verifiedPayload.aud !== tokenEndpointUrl) {
                 throw new common_1.UnauthorizedException('Invalid audience for client assertion');
             }
@@ -97,7 +97,7 @@ let ClientAuthGuard = class ClientAuthGuard {
             return true;
         }
         catch (error) {
-            throw new common_1.UnauthorizedException(`Client assertion validation failed: ${error.message}`);
+            throw new common_1.UnauthorizedException(`Client assertion validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 };

@@ -16,6 +16,7 @@ import { QrcodesModule } from './modules/qrcodes/qrcodes.module';
 import { MfaModule } from './modules/mfa/mfa.module';
 import { OidcDiscoveryModule } from './modules/oidc-discovery/oidc-discovery.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { PrivacyModule } from './modules/privacy/privacy.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { MetricsModule } from './modules/metrics/metrics.module';
     MfaModule,
     OidcDiscoveryModule,
     MetricsModule,
+    PrivacyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

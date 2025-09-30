@@ -30,7 +30,7 @@ let AuthController = class AuthController {
     deviceAuthorization() {
         return this.authService.deviceAuthorizationRequest();
     }
-    async authorize(res, redirect_uri, scope, request_uri, code_challenge, code_challenge_method) {
+    authorize(res, redirect_uri, scope, request_uri, code_challenge, code_challenge_method) {
         console.log('🚀 Authorize Debug:', {
             redirect_uri: redirect_uri || 'MISSING',
             scope: scope || 'MISSING',
@@ -69,7 +69,7 @@ let AuthController = class AuthController {
         }
         console.log('✅ Final validation passed:', { redirect_uri, scope });
         const mockUserId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-        const code = await this.authService.generateAuthorizationCode({
+        const code = this.authService.generateAuthorizationCode({
             code_challenge: code_challenge,
             code_challenge_method: code_challenge_method,
             userId: mockUserId,
@@ -172,7 +172,7 @@ __decorate([
     __param(5, (0, common_1.Query)('code_challenge_method')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, String, String, String, String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], AuthController.prototype, "authorize", null);
 __decorate([
     (0, common_1.Post)('oauth/token'),
