@@ -1,1 +1,4 @@
  
+// Placeholder WASM binary for DPoP validation. Replace with actual compiled WASM module.
+// This file must be replaced in CI/CD pipeline or manual build step.
+

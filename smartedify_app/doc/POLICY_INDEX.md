@@ -22,7 +22,7 @@ smartedify_app/
 │  ├─ support/                  # Línea 2 (fundacionales)
 │  │  ├─ auth-service/
 │  │  ├─ user-service/
-│  │  ├─ tenants-service/
+│  │  ├─ tenancy-service/
 │  │  ├─ document-service/
 │  │  ├─ communication-service/
 │  │  └─ finance-service/
