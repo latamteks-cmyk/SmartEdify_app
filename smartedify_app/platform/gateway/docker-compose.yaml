@@ -1,4 +1,4 @@
-
+version: '3.8'
 services:
   gateway:
     build: .
@@ -21,18 +21,20 @@ services:
       - ./config/ratelimit.yaml:/etc/gateway/ratelimit.yaml:ro
       - ./plugins/dpop_validator.wasm:/plugins/dpop_validator.wasm:ro
     depends_on:
+      - rate-limit
+      - spire-server
       - prometheus
       - s3
-#  rate-limit:
-#    image: envoyproxy/ratelimit:v1.5.0
-#    ports:
-#      - "8081:8081"
-  # spire-server:
-  #   image: ghcr.io/spiffe/spire-server:1.7.1
-  #   ports:
-  #     - "8082:8081"
+  rate-limit:
+    image: envoyproxy/ratelimit:latest
+    ports:
+      - "6379:6379"
+  spire-server:
+    image: spiffe/spire-server:1.7.1
+    ports:
+      - "8081:8081"
   prometheus:
-    image: prom/prometheus:v2.52.0
+    image: prom/prometheus:latest
     ports:
       - "9090:9090"
   s3:

@@ -28,6 +28,7 @@ http://localhost:9090
 http://localhost:9000 (usuario: admin, password: admin123)
 ```
 
+
 ## Cobertura de pruebas y validación (DoD)
 
 Scripts automatizados en `scripts/`:
@@ -59,6 +60,10 @@ Pruebas manuales/documentadas:
 
 Consulta los archivos `.md` en `scripts/` para pruebas manuales de observabilidad y WebSocket.
 
----
+## Notas
+- El plugin WASM debe ser reemplazado por el binario real en CI/CD.
+- Las rutas de los servicios backend deben estar disponibles en la red local o mockeadas para pruebas.
+- Para pruebas de resiliencia y rate limit, ajustar los valores en `config/ratelimit.yaml`.
+- Para pruebas de CORS, modificar `config/cors-tenants.yaml`.
 
-- [Documentación principal](README.md)
+
