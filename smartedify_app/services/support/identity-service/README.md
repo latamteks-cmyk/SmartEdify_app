@@ -30,5 +30,5 @@ Proveedor central de identidad, autenticación, autorización y sesiones multi-t
 
 ## Diagrama de contexto (ver especificación)
 
-Frontends (User Web, Admin Web, Mobile App, Guardia App) → API Gateway → identity-service
+Frontends (User Web, Admin Web, Mobile App, Guardia App) → API Gateway → identity-service  
 Dependencias: compliance-service (gate legal), physical-security-service, governance-service, Kafka (eventos)
