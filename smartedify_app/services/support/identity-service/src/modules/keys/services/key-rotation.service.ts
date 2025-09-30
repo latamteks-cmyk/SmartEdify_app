@@ -19,16 +19,21 @@ export class KeyRotationService {
   async handleCron() {
     this.logger.log('=== Starting daily key rotation check ===');
     const startTime = Date.now();
-    
+
     try {
       await this.rotateExpiredActiveKeys();
       await this.expireRolledOverKeys();
-      
+
       const duration = Date.now() - startTime;
-      this.logger.log(`=== Daily key rotation completed successfully in ${duration}ms ===`);
-    } catch (error) {
+      this.logger.log(
+        `=== Daily key rotation completed successfully in ${duration}ms ===`,
+      );
+    } catch (error: unknown) {
       const duration = Date.now() - startTime;
-      this.logger.error(`=== Daily key rotation failed after ${duration}ms ===`, error.stack);
+      this.logger.error(
+        `=== Daily key rotation failed after ${duration}ms ===`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -37,7 +42,9 @@ export class KeyRotationService {
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-    this.logger.debug(`Looking for ACTIVE keys created before: ${ninetyDaysAgo.toISOString()}`);
+    this.logger.debug(
+      `Looking for ACTIVE keys created before: ${ninetyDaysAgo.toISOString()}`,
+    );
 
     const keysToRotate = await this.signingKeyRepository.find({
       select: ['kid', 'tenant_id', 'created_at', 'status'],
@@ -48,45 +55,60 @@ export class KeyRotationService {
     });
 
     this.logger.log(`Found ${keysToRotate.length} ACTIVE keys to rotate`);
-    
+
     if (keysToRotate.length === 0) {
       this.logger.debug('No keys need rotation at this time');
       return;
     }
 
     for (const key of keysToRotate) {
-      this.logger.log(`🔄 Rotating key ${key.kid} for tenant ${key.tenant_id} (created: ${key.created_at?.toISOString()})`);
-      
+      this.logger.log(
+        `🔄 Rotating key ${key.kid} for tenant ${key.tenant_id} (created: ${key.created_at?.toISOString()})`,
+      );
+
       try {
         // 1. Generate a new key for the tenant
-        const newKey = await this.keyManagementService.generateNewKey(key.tenant_id);
-        this.logger.log(`✅ Generated new ACTIVE key ${newKey.kid} for tenant ${key.tenant_id}`);
+        const newKey = await this.keyManagementService.generateNewKey(
+          key.tenant_id,
+        );
+        this.logger.log(
+          `✅ Generated new ACTIVE key ${newKey.kid} for tenant ${key.tenant_id}`,
+        );
 
         // 2. Mark the old key as rolled over
-        const updateResult = await this.signingKeyRepository.update(key.kid, { 
+        const updateResult = await this.signingKeyRepository.update(key.kid, {
           status: KeyStatus.ROLLED_OVER,
-          updated_at: new Date()
+          updated_at: new Date(),
         });
-        
+
         if (updateResult.affected === 1) {
           this.logger.log(`✅ Key ${key.kid} successfully rolled over`);
         } else {
-          this.logger.warn(`⚠️ Key ${key.kid} update affected ${updateResult.affected} rows (expected 1)`);
+          this.logger.warn(
+            `⚠️ Key ${key.kid} update affected ${updateResult.affected} rows (expected 1)`,
+          );
         }
-      } catch (error) {
-        this.logger.error(`❌ Failed to rotate key ${key.kid} for tenant ${key.tenant_id}:`, error.message);
+      } catch (error: unknown) {
+        this.logger.error(
+          `❌ Failed to rotate key ${key.kid} for tenant ${key.tenant_id}:`,
+          error instanceof Error ? error.message : String(error),
+        );
         throw error;
       }
     }
-    
-    this.logger.log(`✅ Successfully processed ${keysToRotate.length} key rotations`);
+
+    this.logger.log(
+      `✅ Successfully processed ${keysToRotate.length} key rotations`,
+    );
   }
 
   private async expireRolledOverKeys() {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    this.logger.debug(`Looking for ROLLED_OVER keys updated before: ${sevenDaysAgo.toISOString()}`);
+    this.logger.debug(
+      `Looking for ROLLED_OVER keys updated before: ${sevenDaysAgo.toISOString()}`,
+    );
 
     const keysToExpire = await this.signingKeyRepository.find({
       select: ['kid', 'tenant_id', 'updated_at', 'status'],
@@ -97,32 +119,41 @@ export class KeyRotationService {
     });
 
     this.logger.log(`Found ${keysToExpire.length} ROLLED_OVER keys to expire`);
-    
+
     if (keysToExpire.length === 0) {
       this.logger.debug('No rolled over keys need expiration at this time');
       return;
     }
 
     for (const key of keysToExpire) {
-      this.logger.log(`🗑️ Expiring key ${key.kid} for tenant ${key.tenant_id} (rolled over: ${key.updated_at?.toISOString()})`);
-      
+      this.logger.log(
+        `🗑️ Expiring key ${key.kid} for tenant ${key.tenant_id} (rolled over: ${key.updated_at?.toISOString()})`,
+      );
+
       try {
-        const updateResult = await this.signingKeyRepository.update(key.kid, { 
+        const updateResult = await this.signingKeyRepository.update(key.kid, {
           status: KeyStatus.EXPIRED,
-          updated_at: new Date()
+          updated_at: new Date(),
         });
-        
+
         if (updateResult.affected === 1) {
           this.logger.log(`✅ Key ${key.kid} successfully expired`);
         } else {
-          this.logger.warn(`⚠️ Key ${key.kid} expiration affected ${updateResult.affected} rows (expected 1)`);
+          this.logger.warn(
+            `⚠️ Key ${key.kid} expiration affected ${updateResult.affected} rows (expected 1)`,
+          );
         }
-      } catch (error) {
-        this.logger.error(`❌ Failed to expire key ${key.kid} for tenant ${key.tenant_id}:`, error.message);
+      } catch (error: unknown) {
+        this.logger.error(
+          `❌ Failed to expire key ${key.kid} for tenant ${key.tenant_id}:`,
+          error instanceof Error ? error.message : String(error),
+        );
         throw error;
       }
     }
-    
-    this.logger.log(`✅ Successfully processed ${keysToExpire.length} key expirations`);
+
+    this.logger.log(
+      `✅ Successfully processed ${keysToExpire.length} key expirations`,
+    );
   }
 }

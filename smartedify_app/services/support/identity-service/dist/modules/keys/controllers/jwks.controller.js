@@ -20,19 +20,21 @@ let JwksController = class JwksController {
     constructor(keyManagementService) {
         this.keyManagementService = keyManagementService;
     }
-    async getJwksForTenant(tenantId) {
+    async getJwksForTenant(tenantIdQuery, tenantIdParam) {
+        const tenantId = tenantIdParam || tenantIdQuery;
         if (!tenantId) {
-            throw new common_1.BadRequestException('tenant_id is a required query parameter.');
+            throw new common_1.BadRequestException('tenant identifier is required.');
         }
         return this.keyManagementService.getJwksForTenant(tenantId);
     }
 };
 exports.JwksController = JwksController;
 __decorate([
-    (0, common_1.Get)('.well-known/jwks.json'),
+    (0, common_1.Get)(['.well-known/jwks.json', 't/:tenantId/.well-known/jwks.json']),
     __param(0, (0, common_1.Query)('tenant_id')),
+    __param(1, (0, common_1.Param)('tenantId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], JwksController.prototype, "getJwksForTenant", null);
 exports.JwksController = JwksController = __decorate([

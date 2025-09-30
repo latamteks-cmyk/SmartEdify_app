@@ -17,7 +17,7 @@ let AuthorizationService = class AuthorizationService {
     constructor(policyEngine) {
         this.policyEngine = policyEngine;
     }
-    async checkPolicy(user, action, resource) {
+    checkPolicy(user, action, resource) {
         const policyName = `${resource.name}:${action}`;
         return this.policyEngine.evaluate(policyName, user, resource);
     }

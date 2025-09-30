@@ -1,19 +1,39 @@
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UnauthorizedException } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { TokensService } from './tokens.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
 import { AuthService } from '../auth/auth.service';
 import { SessionsService } from '../sessions/sessions.service';
+import { KeyManagementService } from '../keys/services/key-management.service';
+import {
+  exportJWK,
+  exportPKCS8,
+  generateKeyPair,
+  jwtVerify,
+  KeyLike,
+} from 'jose';
+import { JtiStoreService } from '../auth/store/jti-store.service';
+
+interface MockSigningKey {
+  kid: string;
+  tenant_id: string;
+  private_key_pem: string;
+  algorithm: 'ES256';
+  public_key_jwk: jose.JWK & { kid: string; use: string; alg: string };
+}
 
 describe('TokensService', () => {
   let service: TokensService;
-  let mockRefreshTokenRepository: Partial<Repository<RefreshToken>>;
-  let mockAuthService: Partial<AuthService>;
-  let mockSessionsService: Partial<SessionsService>;
+  let mockRefreshTokenRepository: jest.Mocked<Repository<RefreshToken>>;
+  let mockAuthService: jest.Mocked<Partial<AuthService>>;
+  let mockSessionsService: jest.Mocked<Partial<SessionsService>>;
+  let mockKeyManagementService: jest.Mocked<KeyManagementService>;
+  let mockJtiStore: jest.Mocked<JtiStoreService>;
+  let publicKey: KeyLike;
+  let signingKey: MockSigningKey;
 
   const mockUser: User = {
     id: 'user-123',
@@ -28,17 +48,21 @@ describe('TokensService', () => {
     preferred_login: 'email',
     created_at: new Date(),
     updated_at: new Date(),
-  } as User;
+    webauthn_credentials: [],
+    refresh_tokens: [],
+  };
 
   const mockRefreshToken: RefreshToken = {
     id: 'token-123',
     token_hash: 'abc123hash',
     user: mockUser,
     jkt: 'jkt-thumbprint-123',
+    kid: 'test-key',
+    jti: 'jti-123',
     family_id: 'family-123',
-    parent_id: null as any,
-    replaced_by_id: null as any,
-    used_at: null as any,
+    parent_id: null,
+    replaced_by_id: null,
+    used_at: null,
     client_id: 'client-1',
     device_id: 'device-1',
     session_id: 'session-1',
@@ -47,9 +71,29 @@ describe('TokensService', () => {
     created_ip: '127.0.0.1',
     created_ua: 'test-agent',
     revoked: false,
-    revoked_reason: null as any,
+    revoked_reason: null,
     created_at: new Date(),
   };
+
+  beforeAll(async () => {
+    const { privateKey, publicKey: generatedPublicKey } =
+      await generateKeyPair('ES256');
+    publicKey = generatedPublicKey;
+    const privateKeyPem = await exportPKCS8(privateKey);
+    const publicJwk = await exportJWK(generatedPublicKey);
+    signingKey = {
+      kid: 'test-key',
+      tenant_id: mockUser.tenant_id,
+      private_key_pem: privateKeyPem,
+      algorithm: 'ES256',
+      public_key_jwk: {
+        ...publicJwk,
+        kid: 'test-key',
+        use: 'sig',
+        alg: 'ES256',
+      },
+    };
+  });
 
   beforeEach(async () => {
     mockRefreshTokenRepository = {
@@ -57,15 +101,27 @@ describe('TokensService', () => {
       save: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
-    };
+    } as unknown as jest.Mocked<Repository<RefreshToken>>;
 
     mockAuthService = {
-      validateDpopProof: jest.fn().mockResolvedValue('jkt-thumbprint-123'),
+      validateDpopProof: jest.fn().mockResolvedValue({
+        jkt: 'jkt-thumbprint-123',
+        jti: 'proof-jti-1',
+        iat: Math.floor(Date.now() / 1000),
+      }),
     };
 
     mockSessionsService = {
-      getNotBeforeTime: jest.fn().mockResolvedValue(null), // Default to no logout events
+      getNotBeforeTime: jest.fn().mockResolvedValue(null),
     };
+
+    mockKeyManagementService = {
+      getActiveSigningKey: jest.fn().mockResolvedValue(signingKey),
+    } as unknown as jest.Mocked<KeyManagementService>;
+
+    mockJtiStore = {
+      register: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<JtiStoreService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -74,37 +130,75 @@ describe('TokensService', () => {
           provide: getRepositoryToken(RefreshToken),
           useValue: mockRefreshTokenRepository,
         },
-        {
-          provide: AuthService,
-          useValue: mockAuthService,
-        },
-        {
-          provide: SessionsService,
-          useValue: mockSessionsService,
-        },
+        { provide: AuthService, useValue: mockAuthService },
+        { provide: SessionsService, useValue: mockSessionsService },
+        { provide: KeyManagementService, useValue: mockKeyManagementService },
+        { provide: JtiStoreService, useValue: mockJtiStore },
       ],
     }).compile();
 
     service = module.get<TokensService>(TokensService);
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('issueRefreshToken', () => {
+    it('should issue an ES256 JWT with binding and persist kid/jti', async () => {
+      const persisted: RefreshToken[] = [];
+      mockRefreshTokenRepository.save.mockImplementation(async (entity) => {
+        persisted.push(entity as RefreshToken);
+        return entity as RefreshToken;
+      });
+      mockRefreshTokenRepository.create.mockImplementation(
+        (entity) => entity as RefreshToken,
+      );
+
+      const token = await service.issueRefreshToken(
+        mockUser,
+        'jkt-thumbprint-123',
+        'family-xyz',
+        'client-1',
+        'device-1',
+        'openid profile',
+      );
+
+      expect(token).toEqual(expect.any(String));
+      expect(mockKeyManagementService.getActiveSigningKey).toHaveBeenCalledWith(
+        mockUser.tenant_id,
+      );
+      expect(mockRefreshTokenRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ kid: 'test-key', jti: expect.any(String) }),
+      );
+
+      const verification = await jwtVerify(token, publicKey, {
+        issuer: `https://auth.smartedify.global/t/${mockUser.tenant_id}`,
+        audience: `https://auth.smartedify.global/t/${mockUser.tenant_id}`,
+      });
+
+      expect(verification.protectedHeader.alg).toBe('ES256');
+      expect(verification.protectedHeader.kid).toBe('test-key');
+      expect(verification.payload.cnf).toEqual({ jkt: 'jkt-thumbprint-123' });
+      expect(verification.payload.family_id).toBe('family-xyz');
+      expect(verification.payload.session_id).toBeDefined();
+      expect(verification.payload.jti).toBeDefined();
+
+      const savedToken = persisted[0];
+      expect(savedToken.kid).toBe('test-key');
+      expect(savedToken.jti).toBe(verification.payload.jti);
+    });
+  });
+
   describe('Refresh Token Rotation', () => {
     it('should rotate refresh token successfully', async () => {
       const oldToken = 'old-refresh-token';
-      const oldTokenHash = require('crypto').createHash('sha256').update(oldToken).digest('hex');
+      mockRefreshTokenRepository.findOne.mockResolvedValue(mockRefreshToken);
+      mockRefreshTokenRepository.save.mockResolvedValue(mockRefreshToken);
 
-      mockRefreshTokenRepository.findOne = jest.fn().mockResolvedValue(mockRefreshToken);
-      mockRefreshTokenRepository.save = jest.fn().mockResolvedValue(mockRefreshToken);
-
-      // Mock the new token creation
-      service.issueRefreshToken = jest.fn().mockResolvedValue('new-refresh-token');
-      
-      const newTokenHash = require('crypto').createHash('sha256').update('new-refresh-token').digest('hex');
-      const newMockToken = { ...mockRefreshToken, id: 'new-token-123', token_hash: newTokenHash };
-      
-      mockRefreshTokenRepository.findOne = jest.fn()
-        .mockResolvedValueOnce(mockRefreshToken) // First call for old token
-        .mockResolvedValueOnce(newMockToken); // Second call for new token
+      service.issueRefreshToken = jest
+        .fn()
+        .mockResolvedValue('new-refresh-token');
 
       const result = await service.rotateRefreshToken(oldToken);
 
@@ -115,41 +209,48 @@ describe('TokensService', () => {
         'family-123',
         'client-1',
         'device-1',
-        'openid profile'
+        'openid profile',
+        'session-1',
       );
     });
 
     it('should detect reuse and revoke token family', async () => {
       const oldToken = 'reused-refresh-token';
-      const usedMockToken = { ...mockRefreshToken, used_at: new Date() }; // Already used
+      const usedMockToken: RefreshToken = {
+        ...mockRefreshToken,
+        used_at: new Date(),
+      };
 
-      mockRefreshTokenRepository.findOne = jest.fn().mockResolvedValue(usedMockToken);
-      
-      // Mock the revokeTokenFamily method to avoid actual database calls
-      const revokeTokenFamilySpy = jest.spyOn(service, 'revokeTokenFamily').mockResolvedValue(undefined);
+      mockRefreshTokenRepository.findOne.mockResolvedValue(usedMockToken);
+
+      const revokeTokenFamilySpy = jest
+        .spyOn(service, 'revokeTokenFamily')
+        .mockResolvedValue(undefined);
 
       await expect(service.rotateRefreshToken(oldToken)).rejects.toThrow(
-        'Refresh token reuse detected - token family revoked'
+        'Refresh token reuse detected - token family revoked',
       );
 
-      expect(revokeTokenFamilySpy).toHaveBeenCalledWith('family-123', 'reuse_detected');
-      
-      // Restore the spy
+      expect(revokeTokenFamilySpy).toHaveBeenCalledWith(
+        'family-123',
+        'reuse_detected',
+      );
+
       revokeTokenFamilySpy.mockRestore();
     });
 
     it('should reject expired refresh token', async () => {
       const oldToken = 'expired-refresh-token';
-      const expiredMockToken = { 
-        ...mockRefreshToken, 
-        expires_at: new Date(Date.now() - 1000), // Expired
-        used_at: undefined // Make sure it's not used
-      }; 
+      const expiredMockToken: RefreshToken = {
+        ...mockRefreshToken,
+        expires_at: new Date(Date.now() - 1000),
+        used_at: null,
+      };
 
-      mockRefreshTokenRepository.findOne = jest.fn().mockResolvedValue(expiredMockToken);
+      mockRefreshTokenRepository.findOne.mockResolvedValue(expiredMockToken);
 
       await expect(service.rotateRefreshToken(oldToken)).rejects.toThrow(
-        'Refresh token has expired'
+        'Refresh token has expired',
       );
     });
   });
@@ -157,104 +258,140 @@ describe('TokensService', () => {
   describe('DPoP Validation', () => {
     it('should validate DPoP binding correctly', async () => {
       const token = 'valid-refresh-token';
-      const tokenHash = require('crypto').createHash('sha256').update(token).digest('hex');
       const dpopProof = 'valid-dpop-proof';
-      
-      const validToken = { 
-        ...mockRefreshToken, 
-        token_hash: tokenHash,
-        used_at: undefined, // Explicitly set to undefined to pass the check
-        revoked: false
+
+      const validToken: RefreshToken = {
+        ...mockRefreshToken,
+        used_at: null,
+        revoked: false,
       };
-      
-      // Reset and setup the mock for this specific test
-      mockRefreshTokenRepository.findOne = jest.fn().mockResolvedValue(validToken);
-      mockAuthService.validateDpopProof = jest.fn().mockResolvedValue('jkt-thumbprint-123');
 
-      const result = await service.validateRefreshToken(token, dpopProof, 'POST', 'https://example.com/token');
+      mockRefreshTokenRepository.findOne.mockResolvedValue(validToken);
+      mockAuthService.validateDpopProof?.mockResolvedValue({
+        jkt: 'jkt-thumbprint-123',
+        jti: 'proof-jti-42',
+        iat: Math.floor(Date.now() / 1000),
+      });
 
-      expect(result).toBe(mockUser);
-      expect(mockAuthService.validateDpopProof).toHaveBeenCalledWith(dpopProof, 'POST', 'https://example.com/token');
+      const result = await service.validateRefreshToken(
+        token,
+        dpopProof,
+        'POST',
+        'https://example.com/token',
+      );
+
+      expect(result.user).toBe(mockUser);
+      expect(result.dpop.jkt).toBe('jkt-thumbprint-123');
+      expect(mockAuthService.validateDpopProof).toHaveBeenCalledWith(
+        dpopProof,
+        'POST',
+        'https://example.com/token',
+        expect.objectContaining({
+          boundJkt: 'jkt-thumbprint-123',
+          requireBinding: true,
+        }),
+      );
+      expect(mockJtiStore.register).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: mockUser.tenant_id,
+          jkt: 'jkt-thumbprint-123',
+          jti: 'proof-jti-42',
+        }),
+      );
     });
 
     it('should reject mismatched DPoP binding', async () => {
       const token = 'valid-refresh-token';
-      const tokenHash = require('crypto').createHash('sha256').update(token).digest('hex');
       const dpopProof = 'invalid-dpop-proof';
-      
-      const validToken = { 
-        ...mockRefreshToken, 
-        token_hash: tokenHash,
-        used_at: undefined, // Explicitly set to undefined to pass the initial check
-        revoked: false
-      };
-      
-      // Reset and setup the mock for this specific test
-      mockRefreshTokenRepository.findOne = jest.fn().mockResolvedValue(validToken);
-      mockAuthService.validateDpopProof = jest.fn().mockResolvedValue('wrong-jkt-thumbprint');
 
-      await expect(service.validateRefreshToken(token, dpopProof, 'POST', 'https://example.com/token'))
-        .rejects.toThrow('DPoP proof does not match refresh token binding');
+      const validToken: RefreshToken = {
+        ...mockRefreshToken,
+        used_at: null,
+        revoked: false,
+      };
+
+      mockRefreshTokenRepository.findOne.mockResolvedValue(validToken);
+      mockAuthService.validateDpopProof?.mockResolvedValue({
+        jkt: 'wrong-jkt-thumbprint',
+        jti: 'proof-jti-43',
+        iat: Math.floor(Date.now() / 1000),
+      });
+
+      await expect(
+        service.validateRefreshToken(
+          token,
+          dpopProof,
+          'POST',
+          'https://example.com/token',
+        ),
+      ).rejects.toThrow('DPoP proof does not match refresh token binding');
     });
   });
 
   describe('Not Before Validation', () => {
     it('should validate access token with not_before check', async () => {
-      const userId = 'user-123';
-      const tenantId = 'tenant-1';
-      const issuedAt = new Date();
-      const accessToken = 'mock-access-token';
+      mockSessionsService.getNotBeforeTime?.mockResolvedValue(null);
 
-      // Mock no logout events (not_before is null)
-      mockSessionsService.getNotBeforeTime = jest.fn().mockResolvedValue(null);
-
-      const result = await service.validateAccessToken(accessToken, userId, tenantId, issuedAt);
+      const result = await service.validateAccessToken(
+        'mock-access-token',
+        'user-123',
+        'tenant-1',
+        new Date(),
+      );
 
       expect(result).toBe(true);
-      expect(mockSessionsService.getNotBeforeTime).toHaveBeenCalledWith(userId, tenantId);
+      expect(mockSessionsService.getNotBeforeTime).toHaveBeenCalledWith(
+        'user-123',
+        'tenant-1',
+      );
     });
 
     it('should reject access token issued before user logout', async () => {
-      const userId = 'user-123';
-      const tenantId = 'tenant-1';
       const issuedAt = new Date('2023-01-01T10:00:00Z');
-      const notBeforeTime = new Date('2023-01-01T12:00:00Z'); // Logout after token issue
-      const accessToken = 'mock-access-token';
+      const notBeforeTime = new Date('2023-01-01T12:00:00Z');
+      mockSessionsService.getNotBeforeTime?.mockResolvedValue(notBeforeTime);
 
-      // Mock a logout event that happened after token was issued
-      mockSessionsService.getNotBeforeTime = jest.fn().mockResolvedValue(notBeforeTime);
-
-      const result = await service.validateAccessToken(accessToken, userId, tenantId, issuedAt);
+      const result = await service.validateAccessToken(
+        'mock-access-token',
+        'user-123',
+        'tenant-1',
+        issuedAt,
+      );
 
       expect(result).toBe(false);
-      expect(mockSessionsService.getNotBeforeTime).toHaveBeenCalledWith(userId, tenantId);
     });
 
     it('should validate refresh token with not_before check', async () => {
       const token = 'valid-refresh-token';
-      const tokenHash = require('crypto').createHash('sha256').update(token).digest('hex');
       const dpopProof = 'valid-dpop-proof';
-      
-      const validToken = { 
-        ...mockRefreshToken, 
-        token_hash: tokenHash,
-        used_at: null as any,
+
+      const validToken: RefreshToken = {
+        ...mockRefreshToken,
+        used_at: null,
         revoked: false,
-        created_at: new Date('2023-01-01T12:00:00Z') // Token created after logout
+        created_at: new Date('2023-01-01T12:00:00Z'),
       };
-      
-      // Mock no logout events (not_before is null)
-      mockRefreshTokenRepository.findOne = jest.fn()
-        .mockResolvedValueOnce(validToken) // First call in validateRefreshToken
-        .mockResolvedValueOnce(validToken); // Second call in validateRefreshTokenWithNotBefore
-        
-      mockAuthService.validateDpopProof = jest.fn().mockResolvedValue('jkt-thumbprint-123');
-      mockSessionsService.getNotBeforeTime = jest.fn().mockResolvedValue(null);
 
-      const result = await service.validateRefreshTokenWithNotBefore(token, dpopProof, 'POST', 'https://example.com/token');
+      mockRefreshTokenRepository.findOne.mockResolvedValue(validToken);
+      mockAuthService.validateDpopProof?.mockResolvedValue({
+        jkt: 'jkt-thumbprint-123',
+        jti: 'proof-jti-99',
+        iat: Math.floor(Date.now() / 1000),
+      });
+      mockSessionsService.getNotBeforeTime?.mockResolvedValue(null);
 
-      expect(result).toBe(mockUser);
-      expect(mockSessionsService.getNotBeforeTime).toHaveBeenCalledWith(mockUser.id, mockUser.tenant_id);
+      const result = await service.validateRefreshTokenWithNotBefore(
+        token,
+        dpopProof,
+        'POST',
+        'https://example.com/token',
+      );
+
+      expect(result.user).toBe(mockUser);
+      expect(mockSessionsService.getNotBeforeTime).toHaveBeenCalledWith(
+        mockUser.id,
+        mockUser.tenant_id,
+      );
     });
   });
 
@@ -267,7 +404,7 @@ describe('TokensService', () => {
 
       expect(mockRefreshTokenRepository.update).toHaveBeenCalledWith(
         { family_id: familyId },
-        { revoked: true, revoked_reason: reason }
+        { revoked: true, revoked_reason: reason },
       );
     });
   });

@@ -1,21 +1,41 @@
 import { Injectable } from '@nestjs/common';
 
+interface User {
+  roles: string[];
+  id: string;
+  buildingId?: string;
+}
+
+interface Resource {
+  ownerId?: string;
+  buildingId?: string;
+}
+
+type PolicyFunction = (user: User, resource: Resource) => boolean;
+
 @Injectable()
 export class PolicyEngineService {
-  private policies = {
-    'document:read': (user, resource) => {
+  private policies: Record<string, PolicyFunction> = {
+    'document:read': (user: User, resource: Resource) => {
       // Allow if the user is an admin or if the user is the owner of the document
       return user.roles.includes('admin') || user.id === resource.ownerId;
     },
-    'camera:view': (user, resource) => {
-        // Allow if the user is a guard and the camera is in their building
-        return user.roles.includes('guard') && user.buildingId === resource.buildingId;
-    }
+    'camera:view': (user: User, resource: Resource) => {
+      // Allow if the user is a guard and the camera is in their building
+      return (
+        user.roles.includes('guard') && user.buildingId === resource.buildingId
+      );
+    },
   };
 
-  evaluate(policyName: string, user: any, resource: any): boolean {
-    if (this.policies[policyName]) {
-      return this.policies[policyName](user, resource);
+  evaluatePolicy(
+    policyName: string,
+    user: Record<string, unknown>,
+    resource: Record<string, unknown>,
+  ): boolean {
+    const policy = this.policies[policyName];
+    if (policy) {
+      return policy(user as unknown as User, resource as unknown as Resource);
     }
     // Default to deny if the policy is not found
     return false;

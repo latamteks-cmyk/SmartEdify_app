@@ -31,7 +31,7 @@ let QrcodesController = class QrcodesController {
 };
 exports.QrcodesController = QrcodesController;
 __decorate([
-    (0, common_1.Post)('generate'),
+    (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -45,7 +45,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], QrcodesController.prototype, "validate", null);
 exports.QrcodesController = QrcodesController = __decorate([
-    (0, common_1.Controller)('qrcodes'),
+    (0, common_1.Controller)('identity/v2/contextual-tokens'),
     __metadata("design:paramtypes", [qrcodes_service_1.QrcodesService])
 ], QrcodesController);
 //# sourceMappingURL=qrcodes.controller.js.map

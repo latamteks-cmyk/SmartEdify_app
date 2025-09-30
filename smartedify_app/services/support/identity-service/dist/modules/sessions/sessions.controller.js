@@ -20,25 +20,47 @@ let SessionsController = class SessionsController {
     constructor(sessionsService) {
         this.sessionsService = sessionsService;
     }
-    async logout(userId, tenantId) {
+    async getActiveSessions() {
+        throw new common_1.NotImplementedException('Get active sessions not implemented.');
+    }
+    async revokeSession(sessionId) {
+        await this.sessionsService.revokeSession(sessionId);
+        return { message: `Session ${sessionId} has been revoked.` };
+    }
+    async revokeSubject(userId, tenantId) {
         if (!tenantId) {
             tenantId = 'mock-tenant-id';
         }
         await this.sessionsService.revokeUserSessions(userId, tenantId);
-        return { message: 'All sessions have been logged out.' };
+        return { message: `All sessions for subject ${userId} have been revoked.` };
     }
 };
 exports.SessionsController = SessionsController;
 __decorate([
-    (0, common_1.Post)('logout'),
+    (0, common_1.Get)('sessions/active'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], SessionsController.prototype, "getActiveSessions", null);
+__decorate([
+    (0, common_1.Post)('sessions/:id/revoke'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], SessionsController.prototype, "revokeSession", null);
+__decorate([
+    (0, common_1.Post)('subject/revoke'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)('user_id')),
     __param(1, (0, common_1.Body)('tenant_id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
-], SessionsController.prototype, "logout", null);
+], SessionsController.prototype, "revokeSubject", null);
 exports.SessionsController = SessionsController = __decorate([
-    (0, common_1.Controller)('sessions'),
+    (0, common_1.Controller)('identity/v2'),
     __metadata("design:paramtypes", [sessions_service_1.SessionsService])
 ], SessionsController);
 //# sourceMappingURL=sessions.controller.js.map

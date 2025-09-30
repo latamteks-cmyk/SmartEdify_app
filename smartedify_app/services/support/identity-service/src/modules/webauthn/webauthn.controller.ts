@@ -1,24 +1,36 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Post,
+  Query,
+  HttpCode,
+  HttpStatus,
+  BadRequestException,
+} from '@nestjs/common';
 import { WebauthnService } from './webauthn.service';
 
 @Controller('webauthn')
 export class WebauthnController {
   constructor(private readonly webauthnService: WebauthnService) {}
 
-  @Post('attestation/options')
+  @Get('registration/options')
   @HttpCode(HttpStatus.OK)
-  async registrationOptions(@Body('username') username: string) {
+  async registrationOptions(@Query('username') username: string) {
     return this.webauthnService.generateRegistrationOptions(username);
   }
 
-  @Post('attestation/result')
+  @Post('registration/verification')
   async registrationVerification(
-    @Body() body: any,
-    @Body('userId') userId: string
+    @Body() body: Record<string, unknown>,
+    @Body('userId') userId: string,
+    @Headers('webauthn-challenge') challenge?: string,
   ) {
-    // Note: The spec uses 'result' but the underlying library uses 'verification'.
-    // The logic remains the same.
-    return this.webauthnService.verifyRegistration(body, userId);
+    if (!challenge) {
+      throw new BadRequestException('webauthn-challenge header is required');
+    }
+    return this.webauthnService.verifyRegistration(body, userId, challenge);
   }
 
   @Post('assertion/options')
@@ -29,11 +41,12 @@ export class WebauthnController {
 
   @Post('assertion/result')
   async authenticationVerification(
-    @Body() body: any,
-    @Body('username') username: string
+    @Body() body: Record<string, unknown>,
+    @Headers('webauthn-challenge') challenge?: string,
   ) {
-    // Note: The spec uses 'result' but the underlying library uses 'verification'.
-    // The logic remains the same.
-    return this.webauthnService.verifyAuthentication(body, username);
+    if (!challenge) {
+      throw new BadRequestException('webauthn-challenge header is required');
+    }
+    return this.webauthnService.verifyAuthentication(body, challenge);
   }
 }

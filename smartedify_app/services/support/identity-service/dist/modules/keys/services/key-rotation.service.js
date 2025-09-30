@@ -39,7 +39,7 @@ let KeyRotationService = KeyRotationService_1 = class KeyRotationService {
         }
         catch (error) {
             const duration = Date.now() - startTime;
-            this.logger.error(`=== Daily key rotation failed after ${duration}ms ===`, error.stack);
+            this.logger.error(`=== Daily key rotation failed after ${duration}ms ===`, error?.stack ?? String(error));
             throw error;
         }
     }
@@ -66,7 +66,7 @@ let KeyRotationService = KeyRotationService_1 = class KeyRotationService {
                 this.logger.log(`✅ Generated new ACTIVE key ${newKey.kid} for tenant ${key.tenant_id}`);
                 const updateResult = await this.signingKeyRepository.update(key.kid, {
                     status: signing_key_entity_1.KeyStatus.ROLLED_OVER,
-                    updated_at: new Date()
+                    updated_at: new Date(),
                 });
                 if (updateResult.affected === 1) {
                     this.logger.log(`✅ Key ${key.kid} successfully rolled over`);
@@ -76,7 +76,7 @@ let KeyRotationService = KeyRotationService_1 = class KeyRotationService {
                 }
             }
             catch (error) {
-                this.logger.error(`❌ Failed to rotate key ${key.kid} for tenant ${key.tenant_id}:`, error.message);
+                this.logger.error(`❌ Failed to rotate key ${key.kid} for tenant ${key.tenant_id}:`, error?.message ?? String(error));
                 throw error;
             }
         }
@@ -103,7 +103,7 @@ let KeyRotationService = KeyRotationService_1 = class KeyRotationService {
             try {
                 const updateResult = await this.signingKeyRepository.update(key.kid, {
                     status: signing_key_entity_1.KeyStatus.EXPIRED,
-                    updated_at: new Date()
+                    updated_at: new Date(),
                 });
                 if (updateResult.affected === 1) {
                     this.logger.log(`✅ Key ${key.kid} successfully expired`);
@@ -113,7 +113,7 @@ let KeyRotationService = KeyRotationService_1 = class KeyRotationService {
                 }
             }
             catch (error) {
-                this.logger.error(`❌ Failed to expire key ${key.kid} for tenant ${key.tenant_id}:`, error.message);
+                this.logger.error(`❌ Failed to expire key ${key.kid} for tenant ${key.tenant_id}:`, error?.message ?? String(error));
                 throw error;
             }
         }

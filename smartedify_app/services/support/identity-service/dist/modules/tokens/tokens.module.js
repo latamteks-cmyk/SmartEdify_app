@@ -13,6 +13,7 @@ const refresh_token_entity_1 = require("./entities/refresh-token.entity");
 const tokens_service_1 = require("./tokens.service");
 const auth_module_1 = require("../auth/auth.module");
 const sessions_module_1 = require("../sessions/sessions.module");
+const keys_module_1 = require("../keys/keys.module");
 let TokensModule = class TokensModule {
 };
 exports.TokensModule = TokensModule;
@@ -22,6 +23,7 @@ exports.TokensModule = TokensModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([refresh_token_entity_1.RefreshToken]),
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
             sessions_module_1.SessionsModule,
+            keys_module_1.KeysModule,
         ],
         providers: [tokens_service_1.TokensService],
         exports: [tokens_service_1.TokensService],

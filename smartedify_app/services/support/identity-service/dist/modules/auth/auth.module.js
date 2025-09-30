@@ -11,31 +11,42 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
+const logout_controller_1 = require("./logout.controller");
 const client_auth_guard_1 = require("./guards/client-auth.guard");
 const authorization_code_store_service_1 = require("./store/authorization-code-store.service");
 const tokens_module_1 = require("../tokens/tokens.module");
 const users_module_1 = require("../users/users.module");
 const sessions_module_1 = require("../sessions/sessions.module");
+const keys_module_1 = require("../keys/keys.module");
 const par_store_service_1 = require("./store/par-store.service");
 const device_code_store_service_1 = require("./store/device-code-store.service");
 const refresh_token_entity_1 = require("../tokens/entities/refresh-token.entity");
 const jti_store_service_1 = require("./store/jti-store.service");
+const dpop_replay_proof_entity_1 = require("./entities/dpop-replay-proof.entity");
+const clients_module_1 = require("../clients/clients.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([refresh_token_entity_1.RefreshToken]), tokens_module_1.TokensModule, users_module_1.UsersModule, sessions_module_1.SessionsModule],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([refresh_token_entity_1.RefreshToken, dpop_replay_proof_entity_1.DpopReplayProof]),
+            tokens_module_1.TokensModule,
+            users_module_1.UsersModule,
+            sessions_module_1.SessionsModule,
+            keys_module_1.KeysModule,
+            clients_module_1.ClientsModule,
+        ],
         providers: [
             auth_service_1.AuthService,
             client_auth_guard_1.ClientAuthGuard,
             authorization_code_store_service_1.AuthorizationCodeStoreService,
             par_store_service_1.ParStoreService,
             device_code_store_service_1.DeviceCodeStoreService,
-            jti_store_service_1.JtiStoreService
+            jti_store_service_1.JtiStoreService,
         ],
-        controllers: [auth_controller_1.AuthController],
-        exports: [auth_service_1.AuthService],
+        controllers: [auth_controller_1.AuthController, logout_controller_1.LogoutController],
+        exports: [auth_service_1.AuthService, jti_store_service_1.JtiStoreService],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

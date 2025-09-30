@@ -6,9 +6,17 @@ export declare class WebauthnService {
     private readonly rpService;
     private readonly usersService;
     private webAuthnCredentialRepository;
+    private readonly challengeTtlMs;
+    private readonly challengeStore;
     constructor(rpService: RpService, usersService: UsersService, webAuthnCredentialRepository: Repository<WebAuthnCredential>);
+    private getChallengeKey;
+    private setChallenge;
+    private getChallenge;
+    private deleteChallenge;
+    private toBuffer;
     generateRegistrationOptions(username: string): Promise<import("@simplewebauthn/server").PublicKeyCredentialCreationOptionsJSON>;
-    verifyRegistration(response: any, expectedChallenge: string): Promise<import("@simplewebauthn/server").VerifiedRegistrationResponse>;
+    verifyRegistration(response: any, userId: string, providedChallenge: string): Promise<import("@simplewebauthn/server").VerifiedRegistrationResponse>;
+    private persistCredential;
     generateAuthenticationOptions(username?: string): Promise<import("@simplewebauthn/server").PublicKeyCredentialRequestOptionsJSON>;
-    verifyAuthentication(response: any, expectedChallenge: string): Promise<import("@simplewebauthn/server").VerifiedAuthenticationResponse>;
+    verifyAuthentication(response: any, providedChallenge: string): Promise<import("@simplewebauthn/server").VerifiedAuthenticationResponse>;
 }

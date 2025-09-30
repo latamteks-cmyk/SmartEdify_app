@@ -5,15 +5,15 @@ import { QrcodesService } from './qrcodes.service';
 export class QrcodesController {
   constructor(private readonly qrcodesService: QrcodesService) {}
 
-  @Post()
-  async generate(@Body() payload: any) {
+  @Post('generate')
+  async generate(@Body() payload: unknown) {
     const qrCodeDataUrl = await this.qrcodesService.generateQrCode(payload);
     return { qrCodeDataUrl };
   }
 
   @Post('validate')
   async validate(@Body('token') token: string) {
-    const isValid = await this.qrcodesService.validateQrCode(token);
+    const isValid: unknown = await this.qrcodesService.validateQrCode(token);
     return { isValid };
   }
 }

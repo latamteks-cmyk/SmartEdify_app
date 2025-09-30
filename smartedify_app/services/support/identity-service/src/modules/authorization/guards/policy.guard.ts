@@ -9,21 +9,28 @@ export class PolicyGuard implements CanActivate {
     private authorizationService: AuthorizationService,
   ) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPolicies = this.reflector.get<string[]>('policies', context.getHandler());
+  canActivate(context: ExecutionContext): boolean {
+    const requiredPolicies = this.reflector.get<string[]>(
+      'policies',
+      context.getHandler(),
+    );
     if (!requiredPolicies) {
       return true;
     }
     const { user } = context.switchToHttp().getRequest();
     // This is a placeholder for a real resource object
-    const resource = { id: 'mock_resource' }; 
-    
+    const resource = { id: 'mock_resource' };
+
     for (const policy of requiredPolicies) {
-        const [action, resourceName] = policy.split(':');
-        const isAllowed = await this.authorizationService.checkPolicy(user, action, resource);
-        if (!isAllowed) {
-            return false;
-        }
+      const [action] = policy.split(':');
+      const isAllowed = this.authorizationService.checkPolicy(
+        user,
+        action,
+        resource,
+      );
+      if (!isAllowed) {
+        return false;
+      }
     }
 
     return true;

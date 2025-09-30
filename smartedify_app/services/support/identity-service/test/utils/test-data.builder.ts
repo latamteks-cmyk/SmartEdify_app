@@ -1,4 +1,7 @@
-import { SigningKey, KeyStatus } from '../../src/modules/keys/entities/signing-key.entity';
+import {
+  SigningKey,
+  KeyStatus,
+} from '../../src/modules/keys/entities/signing-key.entity';
 import * as jose from 'node-jose';
 
 export class TestDataBuilder {
@@ -11,19 +14,27 @@ export class TestDataBuilder {
     daysOld?: number;
     algorithm?: string;
   }): Promise<Partial<SigningKey>> {
-    const { tenantId, status = KeyStatus.ACTIVE, daysOld = 0, algorithm = 'ES256' } = options;
-    
+    const {
+      tenantId,
+      status = KeyStatus.ACTIVE,
+      daysOld = 0,
+      algorithm = 'ES256',
+    } = options;
+
     // Calcular fechas basadas en daysOld
     const createdAt = new Date();
     createdAt.setDate(createdAt.getDate() - daysOld);
-    
+
     const updatedAt = new Date(createdAt);
-    
+
     const expiresAt = new Date(createdAt);
     expiresAt.setDate(expiresAt.getDate() + 90); // 90 días de expiración
 
     // Generar llave JWK real para testing
-    const key = await jose.JWK.createKey('EC', 'P-256', { alg: algorithm, use: 'sig' });
+    const key = await jose.JWK.createKey('EC', 'P-256', {
+      alg: algorithm,
+      use: 'sig',
+    });
 
     return {
       tenant_id: tenantId,
@@ -40,7 +51,10 @@ export class TestDataBuilder {
   /**
    * Crea una llave ACTIVE antigua (para tests de rotación)
    */
-  static async createOldActiveKey(tenantId: string, daysOld: number): Promise<Partial<SigningKey>> {
+  static async createOldActiveKey(
+    tenantId: string,
+    daysOld: number,
+  ): Promise<Partial<SigningKey>> {
     return this.createSigningKey({
       tenantId,
       status: KeyStatus.ACTIVE,
@@ -51,7 +65,10 @@ export class TestDataBuilder {
   /**
    * Crea una llave ROLLED_OVER (para tests de expiración)
    */
-  static async createRolledOverKey(tenantId: string, daysOld: number): Promise<Partial<SigningKey>> {
+  static async createRolledOverKey(
+    tenantId: string,
+    daysOld: number,
+  ): Promise<Partial<SigningKey>> {
     return this.createSigningKey({
       tenantId,
       status: KeyStatus.ROLLED_OVER,
@@ -64,10 +81,10 @@ export class TestDataBuilder {
    */
   static async createMultipleKeys(
     tenantId: string,
-    configurations: Array<{ status: KeyStatus; daysOld: number }>
+    configurations: Array<{ status: KeyStatus; daysOld: number }>,
   ): Promise<Array<Partial<SigningKey>>> {
     const keys: Array<Partial<SigningKey>> = [];
-    
+
     for (const config of configurations) {
       const key = await this.createSigningKey({
         tenantId,
@@ -76,7 +93,7 @@ export class TestDataBuilder {
       });
       keys.push(key);
     }
-    
+
     return keys;
   }
 
@@ -88,10 +105,10 @@ export class TestDataBuilder {
     expectedNewActiveKey: Partial<SigningKey>;
   }> {
     const oldActiveKey = await this.createOldActiveKey(tenantId, 91); // 91 días = debe rotar
-    const expectedNewActiveKey = await this.createSigningKey({ 
-      tenantId, 
-      status: KeyStatus.ACTIVE, 
-      daysOld: 0 
+    const expectedNewActiveKey = await this.createSigningKey({
+      tenantId,
+      status: KeyStatus.ACTIVE,
+      daysOld: 0,
     });
 
     return { oldActiveKey, expectedNewActiveKey };
@@ -100,7 +117,9 @@ export class TestDataBuilder {
   /**
    * Crea un escenario de expiración: llave rolled over antigua
    */
-  static async createExpirationScenario(tenantId: string): Promise<Partial<SigningKey>> {
+  static async createExpirationScenario(
+    tenantId: string,
+  ): Promise<Partial<SigningKey>> {
     return this.createRolledOverKey(tenantId, 8); // 8 días como ROLLED_OVER = debe expirar
   }
 }

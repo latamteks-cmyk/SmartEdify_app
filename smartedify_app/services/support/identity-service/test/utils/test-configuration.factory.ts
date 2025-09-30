@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule, SchedulerRegistry } from '@nestjs/schedule';
 import { KeysModule } from '../../src/modules/keys/keys.module';
-import { getDatabaseConfig, getTestDatabaseConfig } from '../../src/config/database.config';
+import {
+  getDatabaseConfig,
+  getTestDatabaseConfig,
+} from '../../src/config/database.config';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { SigningKey } from '../../src/modules/keys/entities/signing-key.entity';
@@ -27,9 +30,12 @@ import { RefreshToken } from '../../src/modules/tokens/entities/refresh-token.en
 import { AuthService } from '../../src/modules/auth/auth.service';
 import { UsersService } from '../../src/modules/users/users.service';
 import { AuthorizationCodeStoreService } from '../../src/modules/auth/store/authorization-code-store.service';
+import { DpopReplayProof } from '../../src/modules/auth/entities/dpop-replay-proof.entity';
 import { MetricsModule } from '../../src/modules/metrics/metrics.module';
 import { KafkaModule } from '../../src/modules/kafka/kafka.module';
 import { JobsModule } from '../../src/modules/jobs/jobs.module';
+import { ComplianceJob } from '../../src/modules/compliance/entities/compliance-job.entity';
+import { ComplianceJobService as ComplianceJobServiceEntity } from '../../src/modules/compliance/entities/compliance-job-service.entity';
 
 export interface TestModuleSetup {
   app: INestApplication;
@@ -40,6 +46,9 @@ export interface TestModuleSetup {
   sessionsRepository: Repository<Session>;
   webAuthnCredentialsRepository: Repository<WebAuthnCredential>;
   refreshTokensRepository: Repository<RefreshToken>;
+  dpopReplayRepository: Repository<DpopReplayProof>;
+  complianceJobsRepository: Repository<ComplianceJob>;
+  complianceJobServicesRepository: Repository<ComplianceJobServiceEntity>;
   keyRotationService: KeyRotationService;
   keyManagementService: KeyManagementService;
   authService: AuthService;
@@ -76,20 +85,45 @@ export class TestConfigurationFactory {
         const app = moduleFixture.createNestApplication();
         await app.init();
 
-        const keyRotationService = moduleFixture.get<KeyRotationService>(KeyRotationService);
-        const keyManagementService = moduleFixture.get<KeyManagementService>(KeyManagementService);
+        const keyRotationService =
+          moduleFixture.get<KeyRotationService>(KeyRotationService);
+        const keyManagementService =
+          moduleFixture.get<KeyManagementService>(KeyManagementService);
         const authService = moduleFixture.get<AuthService>(AuthService);
         const usersService = moduleFixture.get<UsersService>(UsersService);
-        const authorizationCodeStoreService = moduleFixture.get<AuthorizationCodeStoreService>(AuthorizationCodeStoreService);
+        const authorizationCodeStoreService =
+          moduleFixture.get<AuthorizationCodeStoreService>(
+            AuthorizationCodeStoreService,
+          );
         const signingKeyRepository = moduleFixture.get<Repository<SigningKey>>(
-          getRepositoryToken(SigningKey)
+          getRepositoryToken(SigningKey),
         );
-        const usersRepository = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
-        const consentAuditsRepository = moduleFixture.get<Repository<ConsentAudit>>(getRepositoryToken(ConsentAudit));
-        const sessionsRepository = moduleFixture.get<Repository<Session>>(getRepositoryToken(Session));
-        const webAuthnCredentialsRepository = moduleFixture.get<Repository<WebAuthnCredential>>(getRepositoryToken(WebAuthnCredential));
-        const refreshTokensRepository = moduleFixture.get<Repository<RefreshToken>>(getRepositoryToken(RefreshToken));
-        const schedulerRegistry = moduleFixture.get<SchedulerRegistry>(SchedulerRegistry);
+        const usersRepository = moduleFixture.get<Repository<User>>(
+          getRepositoryToken(User),
+        );
+        const consentAuditsRepository = moduleFixture.get<
+          Repository<ConsentAudit>
+        >(getRepositoryToken(ConsentAudit));
+        const sessionsRepository = moduleFixture.get<Repository<Session>>(
+          getRepositoryToken(Session),
+        );
+        const webAuthnCredentialsRepository = moduleFixture.get<
+          Repository<WebAuthnCredential>
+        >(getRepositoryToken(WebAuthnCredential));
+        const refreshTokensRepository = moduleFixture.get<
+          Repository<RefreshToken>
+        >(getRepositoryToken(RefreshToken));
+        const dpopReplayRepository = moduleFixture.get<
+          Repository<DpopReplayProof>
+        >(getRepositoryToken(DpopReplayProof));
+        const complianceJobsRepository = moduleFixture.get<
+          Repository<ComplianceJob>
+        >(getRepositoryToken(ComplianceJob));
+        const complianceJobServicesRepository = moduleFixture.get<
+          Repository<ComplianceJobServiceEntity>
+        >(getRepositoryToken(ComplianceJobServiceEntity));
+        const schedulerRegistry =
+          moduleFixture.get<SchedulerRegistry>(SchedulerRegistry);
 
         return {
           app,
@@ -106,10 +140,13 @@ export class TestConfigurationFactory {
           usersService,
           authorizationCodeStoreService,
           schedulerRegistry,
+          dpopReplayRepository,
+          complianceJobsRepository,
+          complianceJobServicesRepository,
         };
       },
       TEST_CONSTANTS.SERVICE_INITIALIZATION_TIMEOUT,
-      'Test module creation'
+      'Test module creation',
     );
   }
 
@@ -117,16 +154,55 @@ export class TestConfigurationFactory {
     return TestTimeoutManager.withTimeout(
       async () => {
         console.log('--- Cleaning database ---');
-        await setup.consentAuditsRepository.createQueryBuilder().delete().from(ConsentAudit).execute();
-        await setup.sessionsRepository.createQueryBuilder().delete().from(Session).execute();
-        await setup.webAuthnCredentialsRepository.createQueryBuilder().delete().from(WebAuthnCredential).execute();
-        await setup.refreshTokensRepository.createQueryBuilder().delete().from(RefreshToken).execute();
-        await setup.signingKeyRepository.createQueryBuilder().delete().from(SigningKey).execute();
-        await setup.usersRepository.createQueryBuilder().delete().from(User).execute();
+        await setup.consentAuditsRepository
+          .createQueryBuilder()
+          .delete()
+          .from(ConsentAudit)
+          .execute();
+        await setup.complianceJobServicesRepository
+          .createQueryBuilder()
+          .delete()
+          .from(ComplianceJobServiceEntity)
+          .execute();
+        await setup.complianceJobsRepository
+          .createQueryBuilder()
+          .delete()
+          .from(ComplianceJob)
+          .execute();
+        await setup.sessionsRepository
+          .createQueryBuilder()
+          .delete()
+          .from(Session)
+          .execute();
+        await setup.webAuthnCredentialsRepository
+          .createQueryBuilder()
+          .delete()
+          .from(WebAuthnCredential)
+          .execute();
+        await setup.refreshTokensRepository
+          .createQueryBuilder()
+          .delete()
+          .from(RefreshToken)
+          .execute();
+        await setup.dpopReplayRepository
+          .createQueryBuilder()
+          .delete()
+          .from(DpopReplayProof)
+          .execute();
+        await setup.signingKeyRepository
+          .createQueryBuilder()
+          .delete()
+          .from(SigningKey)
+          .execute();
+        await setup.usersRepository
+          .createQueryBuilder()
+          .delete()
+          .from(User)
+          .execute();
         console.log('--- Database cleaned ---');
       },
       TEST_CONSTANTS.DATABASE_OPERATION_TIMEOUT,
-      'Database cleanup'
+      'Database cleanup',
     );
   }
 
@@ -137,11 +213,14 @@ export class TestConfigurationFactory {
           // Stop all scheduled tasks
           if (setup.schedulerRegistry) {
             const cronJobs = setup.schedulerRegistry.getCronJobs();
-            cronJobs.forEach(job => {
+            cronJobs.forEach((job) => {
               try {
                 job.stop();
               } catch (error) {
-                console.warn('Warning: Could not stop cron job:', error.message);
+                console.warn(
+                  'Warning: Could not stop cron job:',
+                  error.message,
+                );
               }
             });
           }
@@ -158,7 +237,7 @@ export class TestConfigurationFactory {
         }
       },
       TEST_CONSTANTS.MAX_CLEANUP_TIME,
-      'Test module cleanup'
+      'Test module cleanup',
     );
   }
 }
@@ -174,31 +253,32 @@ export const TEST_CONSTANTS = {
 
 export class TestTimeoutManager {
   private static timeouts: NodeJS.Timeout[] = [];
-  
+
   static createTimeout(callback: () => void, delay: number): NodeJS.Timeout {
     const timeout = setTimeout(callback, delay);
     this.timeouts.push(timeout);
     return timeout;
   }
-  
+
   static clearAllTimeouts(): void {
-    this.timeouts.forEach(timeout => clearTimeout(timeout));
+    this.timeouts.forEach((timeout) => clearTimeout(timeout));
     this.timeouts = [];
   }
-  
+
   static async withTimeout<T>(
-    operation: () => Promise<T>, 
-    timeout: number, 
-    description: string
+    operation: () => Promise<T>,
+    timeout: number,
+    description: string,
   ): Promise<T> {
     return Promise.race([
       operation(),
-      new Promise<never>((_, reject) => 
+      new Promise<never>((_, reject) =>
         this.createTimeout(
-          () => reject(new Error(`Timeout: ${description} exceeded ${timeout}ms`)),
-          timeout
-        )
-      )
+          () =>
+            reject(new Error(`Timeout: ${description} exceeded ${timeout}ms`)),
+          timeout,
+        ),
+      ),
     ]);
   }
 }

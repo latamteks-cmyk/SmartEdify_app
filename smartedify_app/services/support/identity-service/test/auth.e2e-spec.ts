@@ -1,6 +1,10 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { TestConfigurationFactory, TestModuleSetup, TEST_CONSTANTS } from './utils/test-configuration.factory';
+import {
+  TestConfigurationFactory,
+  TestModuleSetup,
+  TEST_CONSTANTS,
+} from './utils/test-configuration.factory';
 
 describe('AuthController (e2e)', () => {
   let setup: TestModuleSetup;
@@ -31,7 +35,7 @@ describe('AuthController (e2e)', () => {
       .post('/users')
       .send(createUserDto)
       .expect(201)
-      .then(response => {
+      .then((response) => {
         expect(response.body).toHaveProperty('id');
         expect(response.body.email).toEqual(createUserDto.email);
       });

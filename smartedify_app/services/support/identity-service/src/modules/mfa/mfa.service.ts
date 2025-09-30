@@ -6,7 +6,7 @@ import { UsersService } from '../users/users.service';
 export class MfaService {
   constructor(private readonly usersService: UsersService) {}
 
-  async generateSecret(userId: string): Promise<string> {
+  generateSecret(userId: string): string {
     const secret = authenticator.generateSecret();
     // In a real implementation, we would encrypt and store this secret in the user's record
     // For now, we will just log it.
@@ -14,7 +14,7 @@ export class MfaService {
     return secret;
   }
 
-  async generateOtpAuthUrl(userId: string, email: string, secret: string): Promise<string> {
+  generateOtpAuthUrl(userId: string, email: string, secret: string): string {
     return authenticator.keyuri(email, 'SmartEdify', secret);
   }
 
@@ -22,7 +22,7 @@ export class MfaService {
     // In a real implementation, we would retrieve the user's secret from the database
     const user = await this.usersService.findById(userId);
     if (!user || !user.mfa_secret) {
-        return false;
+      return false;
     }
     return authenticator.verify({ token: code, secret: user.mfa_secret });
   }

@@ -17,7 +17,8 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { password, consent_granted, policy_version, ...rest } = createUserDto;
+    const { password, consent_granted, policy_version, ...rest } =
+      createUserDto;
 
     return this.dataSource.transaction(async (transactionalEntityManager) => {
       let hashedPassword: string | undefined;

@@ -2,7 +2,12 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import * as jose from 'node-jose';
 import * as crypto from 'crypto';
-import { TestConfigurationFactory, TestModuleSetup, TEST_CONSTANTS } from './utils/test-configuration.factory';
+import {
+  TestConfigurationFactory,
+  TestModuleSetup,
+  TEST_CONSTANTS,
+  TestTimeoutManager,
+} from './utils/test-configuration.factory';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
 import { KafkaService } from '../src/modules/kafka/kafka.service';
@@ -23,39 +28,49 @@ describe('Back-Channel Logout (e2e)', () => {
   const keyId = 'test-key-1';
 
   beforeAll(async () => {
-    const mockKafkaService = { publish: jest.fn().mockResolvedValue(undefined) };
+    setup = await TestTimeoutManager.withTimeout(
+      () => TestConfigurationFactory.createTestModule(),
+      TEST_CONSTANTS.SERVICE_INITIALIZATION_TIMEOUT,
+      'Back-Channel Logout test module initialization',
+    );
 
-    const moduleFixture = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-    .overrideProvider(KafkaService)
-    .useValue(mockKafkaService)
-    .compile();
-
-    app = moduleFixture.createNestApplication();
+    app = setup.app;
     sessionsService = app.get<SessionsService>(SessionsService);
-    sessionRepository = app.get<Repository<Session>>(getRepositoryToken(Session));
-    await app.init();
+    sessionRepository = app.get<Repository<Session>>(
+      getRepositoryToken(Session),
+    );
     await app.listen(0);
 
+    // Create client key for testing
     const keyStore = jose.JWK.createKeyStore();
-    clientKey = await keyStore.generate('EC', 'P-256', { alg: 'ES256', use: 'sig' });
+    clientKey = await keyStore.generate('EC', 'P-256', {
+      alg: 'ES256',
+      use: 'sig',
+    });
     const publicJwk = clientKey.toJSON(false);
 
+    // Override the client store to return our test client
     const clientStoreService = app.get<ClientStoreService>(ClientStoreService);
-    const originalFindMethod = clientStoreService.findClientById.bind(clientStoreService);
+    const originalFindMethod =
+      clientStoreService.findClientById.bind(clientStoreService);
     clientStoreService.findClientById = async (id: string) => {
       if (id === clientId) {
         return {
           client_id: clientId,
           jwks: { keys: [{ ...publicJwk, kid: keyId }] },
-        };
+        } as any;
       }
       return originalFindMethod(id);
     };
-
-    setup = { app, moduleFixture } as TestModuleSetup;
   }, TEST_CONSTANTS.TEST_TIMEOUT);
+
+  beforeEach(async () => {
+    await TestTimeoutManager.withTimeout(
+      () => TestConfigurationFactory.cleanDatabase(setup),
+      TEST_CONSTANTS.DATABASE_OPERATION_TIMEOUT,
+      'Database cleanup',
+    );
+  });
 
   afterAll(async () => {
     await TestConfigurationFactory.closeTestModule(setup);
@@ -83,13 +98,19 @@ describe('Back-Channel Logout (e2e)', () => {
     });
 
     const newSession = sessionRepository.create({
-        user: testUser,
-        tenant_id: TEST_CONSTANTS.DEFAULT_TENANT_ID,
-        device_id: 'test-device',
-        cnf_jkt: 'some-jkt',
-        not_after: new Date(Date.now() + 1000 * 60 * 60),
+      user: testUser,
+      tenant_id: TEST_CONSTANTS.DEFAULT_TENANT_ID,
+      device_id: 'test-device',
+      cnf_jkt: 'some-jkt',
+      not_after: new Date(Date.now() + 1000 * 60 * 60),
     });
     const savedSession = await sessionRepository.save(newSession);
+
+    // Verify that session was actually saved to database
+    const sessionCheck = await sessionRepository.findOne({
+      where: { id: savedSession.id },
+    });
+    expect(sessionCheck).not.toBeNull();
 
     // 2. Create a valid logout_token
     const logoutToken = await createLogoutToken({
@@ -106,8 +127,13 @@ describe('Back-Channel Logout (e2e)', () => {
       .send({ logout_token: logoutToken })
       .expect(200);
 
-    // 4. Verify the session is revoked
-    const revokedSession = await sessionRepository.findOne({ where: { id: savedSession.id } });
-    expect(revokedSession.revoked_at).not.toBeNull();
+    // 4. Verify the session is revoked - give some time for processing
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Increase delay for async processing
+
+    const revokedSession = await sessionRepository.findOne({
+      where: { id: savedSession.id },
+    });
+    expect(revokedSession).not.toBeNull();
+    expect(revokedSession!.revoked_at).not.toBeNull();
   });
 });

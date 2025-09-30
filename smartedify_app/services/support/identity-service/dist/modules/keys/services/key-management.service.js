@@ -60,7 +60,10 @@ let KeyManagementService = KeyManagementService_1 = class KeyManagementService {
     }
     async generateNewKey(tenantId) {
         this.logger.log(`Generating new key for tenant ${tenantId}`);
-        const key = await jose.JWK.createKey('EC', 'P-256', { alg: 'ES256', use: 'sig' });
+        const key = await jose.JWK.createKey('EC', 'P-256', {
+            alg: 'ES256',
+            use: 'sig',
+        });
         const signingKey = this.signingKeyRepository.create({
             tenant_id: tenantId,
             status: signing_key_entity_1.KeyStatus.ACTIVE,
@@ -106,10 +109,25 @@ let KeyManagementService = KeyManagementService_1 = class KeyManagementService {
             try {
                 const jwk = await jose.JWK.asKey(key.public_key_jwk);
                 const publicJwk = jwk.toJSON();
-                jwksKeys.push(publicJwk);
+                jwksKeys.push({
+                    ...publicJwk,
+                    kid: key.kid,
+                    use: 'sig',
+                    alg: key.algorithm,
+                });
             }
             catch (error) {
-                this.logger.error(`Failed to process key ${key.kid} for JWKS:`, error.message);
+                let errorMsg;
+                if (typeof error === 'object' &&
+                    error !== null &&
+                    'message' in error &&
+                    typeof error.message === 'string') {
+                    errorMsg = error.message;
+                }
+                else {
+                    errorMsg = String(error);
+                }
+                this.logger.error(`Failed to process key ${key.kid} for JWKS:`, errorMsg);
             }
         }
         return { keys: jwksKeys };

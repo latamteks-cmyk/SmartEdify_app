@@ -20,7 +20,10 @@ export class ParStoreService {
   }
 
   get(requestUri: string): ParPayload | undefined {
-    console.log('🔍 PAR Store GET:', { requestUri, hasValue: this.store.has(requestUri) });
+    console.log('🔍 PAR Store GET:', {
+      requestUri,
+      hasValue: this.store.has(requestUri),
+    });
     const payload = this.store.get(requestUri);
     console.log('📋 PAR Store retrieved:', payload);
     // Request URIs are single-use

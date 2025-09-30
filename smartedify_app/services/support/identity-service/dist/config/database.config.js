@@ -8,6 +8,9 @@ const session_entity_1 = require("../modules/sessions/entities/session.entity");
 const consent_audit_entity_1 = require("../modules/users/entities/consent-audit.entity");
 const revocation_event_entity_1 = require("../modules/sessions/entities/revocation-event.entity");
 const signing_key_entity_1 = require("../modules/keys/entities/signing-key.entity");
+const dpop_replay_proof_entity_1 = require("../modules/auth/entities/dpop-replay-proof.entity");
+const compliance_job_entity_1 = require("../modules/compliance/entities/compliance-job.entity");
+const compliance_job_service_entity_1 = require("../modules/compliance/entities/compliance-job-service.entity");
 const getDatabaseConfig = (isTest = false) => {
     const config = {
         type: 'postgres',
@@ -16,8 +19,8 @@ const getDatabaseConfig = (isTest = false) => {
         username: process.env.DB_USERNAME || 'user',
         password: process.env.DB_PASSWORD || 'password',
         database: isTest
-            ? (process.env.DB_TEST_DATABASE || 'identity_db')
-            : (process.env.DB_DATABASE || 'identity_db'),
+            ? process.env.DB_TEST_DATABASE || 'identity_db'
+            : process.env.DB_DATABASE || 'identity_db',
         entities: [
             user_entity_1.User,
             webauthn_credential_entity_1.WebAuthnCredential,
@@ -26,9 +29,14 @@ const getDatabaseConfig = (isTest = false) => {
             consent_audit_entity_1.ConsentAudit,
             revocation_event_entity_1.RevocationEvent,
             signing_key_entity_1.SigningKey,
+            dpop_replay_proof_entity_1.DpopReplayProof,
+            compliance_job_entity_1.ComplianceJob,
+            compliance_job_service_entity_1.ComplianceJobService,
         ],
         synchronize: false,
-        logging: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+        logging: process.env.NODE_ENV === 'development'
+            ? ['query', 'error', 'warn']
+            : ['error'],
     };
     return config;
 };

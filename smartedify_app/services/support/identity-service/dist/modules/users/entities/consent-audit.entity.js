@@ -40,7 +40,7 @@ __decorate([
     __metadata("design:type", String)
 ], ConsentAudit.prototype, "consent_type", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ default: false }),
     __metadata("design:type", Boolean)
 ], ConsentAudit.prototype, "consent_granted", void 0);
 __decorate([

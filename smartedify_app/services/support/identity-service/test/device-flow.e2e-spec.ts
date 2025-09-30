@@ -1,7 +1,11 @@
-
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { TestConfigurationFactory, TestModuleSetup, TEST_CONSTANTS, TestTimeoutManager } from './utils/test-configuration.factory';
+import {
+  TestConfigurationFactory,
+  TestModuleSetup,
+  TEST_CONSTANTS,
+  TestTimeoutManager,
+} from './utils/test-configuration.factory';
 
 describe('Device Authorization Flow (e2e)', () => {
   let setup: TestModuleSetup;
@@ -11,7 +15,7 @@ describe('Device Authorization Flow (e2e)', () => {
     setup = await TestTimeoutManager.withTimeout(
       () => TestConfigurationFactory.createTestModule(),
       TEST_CONSTANTS.SERVICE_INITIALIZATION_TIMEOUT,
-      'Device Flow test module initialization'
+      'Device Flow test module initialization',
     );
     app = setup.app;
     await app.listen(0);
@@ -21,7 +25,7 @@ describe('Device Authorization Flow (e2e)', () => {
     await TestTimeoutManager.withTimeout(
       () => TestConfigurationFactory.closeTestModule(setup),
       TEST_CONSTANTS.MAX_CLEANUP_TIME,
-      'Device Flow test module cleanup'
+      'Device Flow test module cleanup',
     );
   });
 

@@ -22,8 +22,8 @@ const testClients: Client[] = [
 
 @Injectable()
 export class ClientStoreService {
-  async findClientById(clientId: string): Promise<Client | null> {
-    const client = testClients.find(c => c.client_id === clientId);
+  findClientById(clientId: string): Client | null {
+    const client = testClients.find((c) => c.client_id === clientId);
     if (!client) {
       return null;
     }

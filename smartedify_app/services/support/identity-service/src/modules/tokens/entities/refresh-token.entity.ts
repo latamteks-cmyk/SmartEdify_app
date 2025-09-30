@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, Index, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  Index,
+  JoinColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('refresh_tokens')
@@ -16,6 +24,12 @@ export class RefreshToken {
 
   @Column()
   jkt: string;
+
+  @Column()
+  kid: string;
+
+  @Column('uuid')
+  jti: string;
 
   @Column('uuid')
   family_id: string;

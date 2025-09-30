@@ -18,12 +18,12 @@ let MfaService = class MfaService {
     constructor(usersService) {
         this.usersService = usersService;
     }
-    async generateSecret(userId) {
+    generateSecret(userId) {
         const secret = otplib_1.authenticator.generateSecret();
         console.log(`MFA Secret for user ${userId}: ${secret}`);
         return secret;
     }
-    async generateOtpAuthUrl(userId, email, secret) {
+    generateOtpAuthUrl(userId, email, secret) {
         return otplib_1.authenticator.keyuri(email, 'SmartEdify', secret);
     }
     async verify(userId, code) {

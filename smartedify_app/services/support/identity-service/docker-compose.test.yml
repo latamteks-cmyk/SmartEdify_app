@@ -1,16 +1,21 @@
 version: '3.8'
+
 services:
-  test-db:
-    image: postgres:15
-    container_name: identity-test-db
+  postgres-test:
+    image: postgres:15-alpine
     environment:
+      POSTGRES_DB: identity_test_db
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: identity_db
     ports:
       - "5433:5432"
     volumes:
-      - identity-test-data:/var/lib/postgresql/data
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d identity_test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  identity-test-data:
+  postgres_test_data:

@@ -1,46 +1,38 @@
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual } from 'typeorm';
+import { Repository } from 'typeorm';
 import { KeyRotationService } from './key-rotation.service';
 import { KeyManagementService } from './key-management.service';
 import { SigningKey, KeyStatus } from '../entities/signing-key.entity';
 
-// Mock KeyManagementService
-const mockKeyManagementService = {
-  generateNewKey: jest.fn(),
-};
-
-// Mock TypeORM Repository
-type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
-const createMockRepository = (): MockRepository<SigningKey> => ({
-  find: jest.fn(),
-  update: jest.fn(),
-});
-
 describe('KeyRotationService', () => {
   let service: KeyRotationService;
-  let repository: MockRepository<SigningKey>;
-  let keyManagementService: typeof mockKeyManagementService;
+  let mockRepository: jest.Mocked<Repository<SigningKey>>;
+  let mockKeyManagementService: jest.Mocked<KeyManagementService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KeyRotationService,
         {
-          provide: KeyManagementService,
-          useValue: mockKeyManagementService,
+          provide: getRepositoryToken(SigningKey),
+          useValue: {
+            find: jest.fn(),
+            update: jest.fn(),
+          },
         },
         {
-          provide: getRepositoryToken(SigningKey),
-          useValue: createMockRepository(),
+          provide: KeyManagementService,
+          useValue: {
+            generateNewKey: jest.fn(),
+          },
         },
       ],
     }).compile();
 
     service = module.get<KeyRotationService>(KeyRotationService);
-    repository = module.get<MockRepository<SigningKey>>(getRepositoryToken(SigningKey));
-    keyManagementService = module.get<typeof mockKeyManagementService>(KeyManagementService);
+    mockRepository = module.get(getRepositoryToken(SigningKey));
+    mockKeyManagementService = module.get(KeyManagementService);
   });
 
   afterEach(() => {
@@ -53,9 +45,14 @@ describe('KeyRotationService', () => {
 
   describe('handleCron', () => {
     it('should call rotation and expiration methods', async () => {
-      // Spy on the private methods
-      const rotateSpy = jest.spyOn(service as any, 'rotateExpiredActiveKeys').mockResolvedValue(undefined);
-      const expireSpy = jest.spyOn(service as any, 'expireRolledOverKeys').mockResolvedValue(undefined);
+      // @ts-expect-error: Testing private method
+      const rotateSpy = jest
+        .spyOn(service, 'rotateExpiredActiveKeys')
+        .mockResolvedValue(undefined);
+      // @ts-expect-error: Testing private method
+      const expireSpy = jest
+        .spyOn(service, 'expireRolledOverKeys')
+        .mockResolvedValue(undefined);
 
       await service.handleCron();
 
@@ -66,51 +63,87 @@ describe('KeyRotationService', () => {
 
   describe('rotateExpiredActiveKeys', () => {
     it('should do nothing if no keys need rotation', async () => {
-      repository.find.mockResolvedValue([]);
-      await (service as any).rotateExpiredActiveKeys();
-      expect(repository.find).toHaveBeenCalled();
-      expect(keyManagementService.generateNewKey).not.toHaveBeenCalled();
-      expect(repository.update).not.toHaveBeenCalled();
+      mockRepository.find.mockResolvedValue([]);
+      // @ts-expect-error: Testing private method
+      await service['rotateExpiredActiveKeys']();
+      expect(mockRepository.find).toHaveBeenCalled();
+      expect(mockKeyManagementService.generateNewKey).not.toHaveBeenCalled();
+      expect(mockRepository.update).not.toHaveBeenCalled();
     });
 
     it('should rotate old active keys', async () => {
-      const oldKey = { kid: 'old-key', tenant_id: 'tenant-1' } as SigningKey;
-      const newKey = { kid: 'new-key' } as SigningKey;
-      repository.find.mockResolvedValue([oldKey]);
-      keyManagementService.generateNewKey.mockResolvedValue(newKey);
-      repository.update.mockResolvedValue({ affected: 1 });
-
-      await (service as any).rotateExpiredActiveKeys();
-
-      expect(repository.find).toHaveBeenCalled();
-      expect(keyManagementService.generateNewKey).toHaveBeenCalledWith(oldKey.tenant_id);
-      expect(repository.update).toHaveBeenCalledWith(oldKey.kid, {
-        status: KeyStatus.ROLLED_OVER,
-        updated_at: expect.any(Date),
+      const now = new Date();
+      const oldKey: SigningKey = {
+        kid: 'old-key',
+        tenant_id: 'tenant-1',
+        status: KeyStatus.ACTIVE,
+        public_key_jwk: { kty: 'EC', kid: 'old-key' } as any,
+        private_key_pem: '-----BEGIN PRIVATE KEY-----',
+        algorithm: 'ES256',
+        expires_at: new Date(now.getTime() + 1000000),
+        created_at: now,
+        updated_at: now,
+      };
+      const newKey: SigningKey = { ...oldKey, kid: 'new-key' };
+      mockRepository.find.mockResolvedValue([oldKey]);
+      mockKeyManagementService.generateNewKey.mockResolvedValue(newKey);
+      mockRepository.update.mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
       });
+
+      // @ts-expect-error: Testing private method
+      await service['rotateExpiredActiveKeys']();
+
+      expect(mockRepository.find).toHaveBeenCalled();
+      expect(mockKeyManagementService.generateNewKey).toHaveBeenCalledWith(
+        oldKey.tenant_id,
+      );
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        oldKey.kid,
+        expect.objectContaining({ status: KeyStatus.ROLLED_OVER }),
+      );
     });
   });
 
   describe('expireRolledOverKeys', () => {
     it('should do nothing if no keys need expiration', async () => {
-      repository.find.mockResolvedValue([]);
-      await (service as any).expireRolledOverKeys();
-      expect(repository.find).toHaveBeenCalled();
-      expect(repository.update).not.toHaveBeenCalled();
+      mockRepository.find.mockResolvedValue([]);
+      // @ts-expect-error: Testing private method
+      await service['expireRolledOverKeys']();
+      expect(mockRepository.find).toHaveBeenCalled();
+      expect(mockRepository.update).not.toHaveBeenCalled();
     });
 
     it('should expire old rolled-over keys', async () => {
-      const oldKey = { kid: 'old-rolled-key', tenant_id: 'tenant-1' } as SigningKey;
-      repository.find.mockResolvedValue([oldKey]);
-      repository.update.mockResolvedValue({ affected: 1 });
-
-      await (service as any).expireRolledOverKeys();
-
-      expect(repository.find).toHaveBeenCalled();
-      expect(repository.update).toHaveBeenCalledWith(oldKey.kid, {
-        status: KeyStatus.EXPIRED,
-        updated_at: expect.any(Date),
+      const now = new Date();
+      const oldKey: SigningKey = {
+        kid: 'old-rolled-key',
+        tenant_id: 'tenant-1',
+        status: KeyStatus.ROLLED_OVER,
+        public_key_jwk: { kty: 'EC', kid: 'old-rolled-key' } as any,
+        private_key_pem: '-----BEGIN PRIVATE KEY-----',
+        algorithm: 'ES256',
+        expires_at: new Date(now.getTime() + 1000000),
+        created_at: now,
+        updated_at: now,
+      };
+      mockRepository.find.mockResolvedValue([oldKey]);
+      mockRepository.update.mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
       });
+
+      // @ts-expect-error: Testing private method
+      await service['expireRolledOverKeys']();
+
+      expect(mockRepository.find).toHaveBeenCalled();
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        oldKey.kid,
+        expect.objectContaining({ status: KeyStatus.EXPIRED }),
+      );
     });
   });
 });

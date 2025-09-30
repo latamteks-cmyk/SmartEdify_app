@@ -8,16 +8,27 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ComplianceModule = void 0;
 const common_1 = require("@nestjs/common");
+const microservices_1 = require("@nestjs/microservices");
+const typeorm_1 = require("@nestjs/typeorm");
 const compliance_service_1 = require("./compliance.service");
 const compliance_controller_1 = require("./compliance.controller");
 const mfa_module_1 = require("../mfa/mfa.module");
+const compliance_job_entity_1 = require("./entities/compliance-job.entity");
+const compliance_job_service_entity_1 = require("./entities/compliance-job-service.entity");
+const sessions_module_1 = require("../sessions/sessions.module");
+const compliance_events_producer_1 = require("./services/compliance-events.producer");
 let ComplianceModule = class ComplianceModule {
 };
 exports.ComplianceModule = ComplianceModule;
 exports.ComplianceModule = ComplianceModule = __decorate([
     (0, common_1.Module)({
-        imports: [mfa_module_1.MfaModule],
-        providers: [compliance_service_1.ComplianceService],
+        imports: [
+            mfa_module_1.MfaModule,
+            sessions_module_1.SessionsModule,
+            typeorm_1.TypeOrmModule.forFeature([compliance_job_entity_1.ComplianceJob, compliance_job_service_entity_1.ComplianceJobService]),
+            microservices_1.ClientsModule.register([]),
+        ],
+        providers: [compliance_service_1.ComplianceService, compliance_events_producer_1.ComplianceEventsProducer],
         controllers: [compliance_controller_1.ComplianceController],
     })
 ], ComplianceModule);

@@ -23,43 +23,52 @@ let WebauthnController = class WebauthnController {
     async registrationOptions(username) {
         return this.webauthnService.generateRegistrationOptions(username);
     }
-    async registrationVerification(body, userId) {
-        return this.webauthnService.verifyRegistration(body, userId);
+    async registrationVerification(body, userId, challenge) {
+        if (!challenge) {
+            throw new common_1.BadRequestException('webauthn-challenge header is required');
+        }
+        return this.webauthnService.verifyRegistration(body, userId, challenge);
     }
     async authenticationOptions(username) {
         return this.webauthnService.generateAuthenticationOptions(username);
     }
-    async authenticationVerification(body, username) {
-        return this.webauthnService.verifyAuthentication(body, username);
+    async authenticationVerification(body, challenge) {
+        if (!challenge) {
+            throw new common_1.BadRequestException('webauthn-challenge header is required');
+        }
+        return this.webauthnService.verifyAuthentication(body, challenge);
     }
 };
 exports.WebauthnController = WebauthnController;
 __decorate([
-    (0, common_1.Get)('registration/options'),
-    __param(0, (0, common_1.Query)('username')),
+    (0, common_1.Post)('attestation/options'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)('username')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], WebauthnController.prototype, "registrationOptions", null);
 __decorate([
-    (0, common_1.Post)('registration/verification'),
+    (0, common_1.Post)('attestation/result'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Body)('userId')),
+    __param(2, (0, common_1.Headers)('webauthn-challenge')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", Promise)
 ], WebauthnController.prototype, "registrationVerification", null);
 __decorate([
-    (0, common_1.Get)('authentication/options'),
-    __param(0, (0, common_1.Query)('username')),
+    (0, common_1.Post)('assertion/options'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)('username')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], WebauthnController.prototype, "authenticationOptions", null);
 __decorate([
-    (0, common_1.Post)('authentication/verification'),
+    (0, common_1.Post)('assertion/result'),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Body)('username')),
+    __param(1, (0, common_1.Headers)('webauthn-challenge')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)

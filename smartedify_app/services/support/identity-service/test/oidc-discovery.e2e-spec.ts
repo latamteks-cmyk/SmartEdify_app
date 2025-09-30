@@ -20,8 +20,11 @@ describe('OidcDiscoveryController (e2e)', () => {
     return request(app.getHttpServer())
       .get(`/.well-known/openid-configuration?tenant_id=${tenantId}`)
       .expect(200)
-      .then(response => {
-        expect(response.body).toHaveProperty('issuer', `https://auth.smartedify.global/t/${tenantId}`);
+      .then((response) => {
+        expect(response.body).toHaveProperty(
+          'issuer',
+          `https://auth.smartedify.global/t/${tenantId}`,
+        );
         expect(response.body).toHaveProperty('authorization_endpoint');
         expect(response.body).toHaveProperty('token_endpoint');
         expect(response.body).toHaveProperty('jwks_uri');

@@ -29,7 +29,7 @@ let SessionsService = class SessionsService {
         await this.sessionsRepository.update({
             user: { id: userId },
             tenant_id: tenantId,
-            revoked_at: (0, typeorm_2.IsNull)()
+            revoked_at: (0, typeorm_2.IsNull)(),
         }, { revoked_at: new Date() });
         const revocationEvent = this.revocationEventsRepository.create({
             type: 'USER_LOGOUT',

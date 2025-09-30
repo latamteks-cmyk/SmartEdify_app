@@ -1,7 +1,11 @@
-
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { TestConfigurationFactory, TestModuleSetup, TEST_CONSTANTS, TestTimeoutManager } from './utils/test-configuration.factory';
+import {
+  TestConfigurationFactory,
+  TestModuleSetup,
+  TEST_CONSTANTS,
+  TestTimeoutManager,
+} from './utils/test-configuration.factory';
 import { KeyManagementService } from '../src/modules/keys/services/key-management.service';
 
 describe('Tenant Isolation (e2e)', () => {
@@ -16,7 +20,7 @@ describe('Tenant Isolation (e2e)', () => {
     setup = await TestTimeoutManager.withTimeout(
       () => TestConfigurationFactory.createTestModule(),
       TEST_CONSTANTS.SERVICE_INITIALIZATION_TIMEOUT,
-      'Tenant Isolation test module initialization'
+      'Tenant Isolation test module initialization',
     );
     app = setup.app;
     keyManagementService = setup.keyManagementService;
@@ -27,7 +31,7 @@ describe('Tenant Isolation (e2e)', () => {
     await TestTimeoutManager.withTimeout(
       () => TestConfigurationFactory.cleanDatabase(setup),
       TEST_CONSTANTS.DATABASE_OPERATION_TIMEOUT,
-      'Database cleanup'
+      'Database cleanup',
     );
   });
 
@@ -35,7 +39,7 @@ describe('Tenant Isolation (e2e)', () => {
     await TestTimeoutManager.withTimeout(
       () => TestConfigurationFactory.closeTestModule(setup),
       TEST_CONSTANTS.MAX_CLEANUP_TIME,
-      'Tenant Isolation test module cleanup'
+      'Tenant Isolation test module cleanup',
     );
   });
 

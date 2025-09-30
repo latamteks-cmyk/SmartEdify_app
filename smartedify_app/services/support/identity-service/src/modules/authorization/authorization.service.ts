@@ -5,8 +5,17 @@ import { PolicyEngineService } from './policy/policy-engine.service';
 export class AuthorizationService {
   constructor(private readonly policyEngine: PolicyEngineService) {}
 
-  async checkPolicy(user: any, action: string, resource: any): Promise<boolean> {
-    const policyName = `${resource.name}:${action}`;
-    return this.policyEngine.evaluate(policyName, user, resource);
+  checkPolicy(
+    user: Record<string, unknown>,
+    action: string,
+    resource: Record<string, unknown>,
+  ): boolean {
+    const policyName = `${(resource.name as string) ?? 'unknown'}:${action}`;
+    try {
+      return this.policyEngine.evaluatePolicy(policyName, user, resource);
+    } catch (error) {
+      console.error('Policy evaluation failed:', error);
+      return false;
+    }
   }
 }

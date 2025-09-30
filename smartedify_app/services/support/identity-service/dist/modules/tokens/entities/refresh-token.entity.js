@@ -17,6 +17,8 @@ let RefreshToken = class RefreshToken {
     token_hash;
     user;
     jkt;
+    kid;
+    jti;
     family_id;
     parent_id;
     replaced_by_id;
@@ -50,6 +52,14 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], RefreshToken.prototype, "jkt", void 0);
+__decorate([
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", String)
+], RefreshToken.prototype, "kid", void 0);
+__decorate([
+    (0, typeorm_1.Column)('uuid'),
+    __metadata("design:type", String)
+], RefreshToken.prototype, "jti", void 0);
 __decorate([
     (0, typeorm_1.Column)('uuid'),
     __metadata("design:type", String)

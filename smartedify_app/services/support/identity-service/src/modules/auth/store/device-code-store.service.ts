@@ -42,7 +42,11 @@ export class DeviceCodeStoreService {
     return this.store.get(deviceCode);
   }
 
-  updateStatusByUserCode(userCode: string, status: DeviceCodeStatus, userId: string): boolean {
+  updateStatusByUserCode(
+    userCode: string,
+    status: DeviceCodeStatus,
+    userId: string,
+  ): boolean {
     const deviceCode = this.userCodeIndex.get(userCode);
     if (!deviceCode) {
       return false;

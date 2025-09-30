@@ -4,6 +4,8 @@ export declare class RefreshToken {
     token_hash: string;
     user: User;
     jkt: string;
+    kid: string;
+    jti: string;
     family_id: string;
     parent_id: string;
     replaced_by_id: string;

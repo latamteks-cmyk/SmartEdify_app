@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { SigningKey, KeyStatus } from '../entities/signing-key.entity';
 import * as jose from 'node-jose';
+import { generateKeyPairSync } from 'crypto';
 
 @Injectable()
 export class KeyManagementService {
@@ -15,25 +16,55 @@ export class KeyManagementService {
 
   async generateNewKey(tenantId: string): Promise<SigningKey> {
     this.logger.log(`Generating new key for tenant ${tenantId}`);
-    
-    // Generate a new ECDSA key pair using P-256 curve
-    const key = await jose.JWK.createKey('EC', 'P-256', { alg: 'ES256', use: 'sig' });
-    
+
+    // Generate a new ECDSA key pair using Node.js crypto
+    const { publicKey, privateKey } = generateKeyPairSync('ec', {
+      namedCurve: 'P-256',
+    });
+
+    // Convert to PEM format
+    const privateKeyPem = privateKey.export({
+      type: 'pkcs8',
+      format: 'pem',
+    }) as string;
+
+    const publicKeyPem = publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    }) as string;
+
+    // Create JWK from the public key for JWKS endpoint
+    const jwk = await jose.JWK.asKey(publicKeyPem, 'pem');
+    const publicKeyJwk = jwk.toJSON() as {
+      alg?: string;
+      use?: string;
+      kid?: string;
+      kty: string;
+      crv: string;
+      x: string;
+      y: string;
+    };
+
+    // Ensure proper algorithm and use fields
+    publicKeyJwk.alg = 'ES256';
+    publicKeyJwk.use = 'sig';
+
     // Create the signing key entity
-    const signingKey = this.signingKeyRepository.create({
+    const signingKey: SigningKey = this.signingKeyRepository.create({
       tenant_id: tenantId,
       status: KeyStatus.ACTIVE,
       created_at: new Date(),
       updated_at: new Date(),
       expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
-      public_key_jwk: key.toJSON(),
-      private_key_pem: await key.toPEM(true), // true for private key
+      public_key_jwk: publicKeyJwk,
+      private_key_pem: privateKeyPem,
       algorithm: 'ES256',
     });
-    
-    const savedKey = await this.signingKeyRepository.save(signingKey);
+
+    const savedKey: SigningKey =
+      await this.signingKeyRepository.save(signingKey);
     this.logger.log(`New key generated with kid: ${savedKey.kid}`);
-    
+
     return savedKey;
   }
 
@@ -47,12 +78,14 @@ export class KeyManagementService {
         created_at: 'DESC',
       },
     });
-    
+
     if (!activeKey) {
-      this.logger.warn(`No active key found for tenant ${tenantId}, generating new one`);
+      this.logger.warn(
+        `No active key found for tenant ${tenantId}, generating new one`,
+      );
       return this.generateNewKey(tenantId);
     }
-    
+
     return activeKey;
   }
 
@@ -72,10 +105,21 @@ export class KeyManagementService {
     for (const key of validKeys) {
       try {
         const jwk = await jose.JWK.asKey(key.public_key_jwk);
-        const publicJwk = jwk.toJSON();
-        jwksKeys.push(publicJwk);
-      } catch (error) {
-        this.logger.error(`Failed to process key ${key.kid} for JWKS:`, error.message);
+        const publicJwk = jwk.toJSON() as Record<string, unknown>;
+        const keyJwk = key.public_key_jwk as Record<string, unknown>;
+        jwksKeys.push({
+          ...publicJwk,
+          // Usar el kid del JWK, no el de la base de datos
+          kid: (keyJwk.kid as string) || (publicJwk.kid as string),
+          use: 'sig',
+          alg: key.algorithm,
+        });
+      } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        this.logger.error(
+          `Failed to process key ${key.kid} for JWKS:`,
+          errorMsg,
+        );
       }
     }
 

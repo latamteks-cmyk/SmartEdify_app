@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { Kafka, Producer } from 'kafkajs';
 
 @Injectable()
@@ -6,24 +11,42 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(KafkaService.name);
   private kafka: Kafka;
   private producer: Producer;
+  private readonly isTestMode = process.env.NODE_ENV === 'test';
 
   constructor() {
-    this.kafka = new Kafka({
-      clientId: 'identity-service',
-      brokers: [process.env.KAFKA_BROKER || 'localhost:9092'],
-    });
-    this.producer = this.kafka.producer();
+    if (this.isTestMode) {
+      this.logger.log('Running in test mode - Kafka disabled');
+      // Mock producer for tests
+      this.producer = {
+        connect: () => Promise.resolve(),
+        disconnect: () => Promise.resolve(),
+        send: () => Promise.resolve([]),
+      } as unknown as Producer;
+    } else {
+      this.kafka = new Kafka({
+        clientId: 'identity-service',
+        brokers: [process.env.KAFKA_BROKER || 'localhost:9092'],
+      });
+      this.producer = this.kafka.producer();
+    }
   }
 
   async onModuleInit() {
-    await this.producer.connect();
+    if (!this.isTestMode) {
+      await this.producer.connect();
+    }
   }
 
   async onModuleDestroy() {
-    await this.producer.disconnect();
+    if (!this.isTestMode) {
+      await this.producer.disconnect();
+    }
   }
 
-  async publish(topic: string, message: any): Promise<void> {
+  async publish(
+    topic: string,
+    message: Record<string, unknown>,
+  ): Promise<void> {
     try {
       await this.producer.send({
         topic,

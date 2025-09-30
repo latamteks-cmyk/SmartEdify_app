@@ -14,8 +14,8 @@ let PolicyEngineService = class PolicyEngineService {
             return user.roles.includes('admin') || user.id === resource.ownerId;
         },
         'camera:view': (user, resource) => {
-            return user.roles.includes('guard') && user.buildingId === resource.buildingId;
-        }
+            return (user.roles.includes('guard') && user.buildingId === resource.buildingId);
+        },
     };
     evaluate(policyName, user, resource) {
         if (this.policies[policyName]) {
