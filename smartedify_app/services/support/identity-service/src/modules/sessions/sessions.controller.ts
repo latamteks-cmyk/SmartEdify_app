@@ -7,6 +7,7 @@ import {
   NotImplementedException,
   HttpCode,
   HttpStatus,
+    Request,
 } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 
@@ -15,9 +16,13 @@ export class SessionsController {
   constructor(private readonly sessionsService: SessionsService) {}
 
   @Get('sessions/active')
-  getActiveSessions() {
-    // TODO: Implement logic to retrieve active sessions for the authenticated user.
-    throw new NotImplementedException('Get active sessions not implemented.');
+  async getActiveSessions(@Request() req) {
+    // Se asume que el guard de autenticación añade user y tenant_id al request
+    const user = req.user;
+    if (!user || !user.id || !user.tenant_id) {
+      throw new NotImplementedException('No se encontró usuario autenticado en el contexto.');
+    }
+    return this.sessionsService.getActiveSessions(user.id, user.tenant_id);
   }
 
   @Post('sessions/:id/revoke')

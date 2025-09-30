@@ -1,10 +1,16 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import { KeyManagementService } from '../keys/services/key-management.service';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
+
 @Injectable()
 export class OidcDiscoveryService {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    @Inject(forwardRef(() => KeyManagementService))
+    private readonly keyManagementService: KeyManagementService,
+  ) {}
 
   async getOidcConfiguration(tenantId: string) {
     // Validar tenant_id contra tenancy-service
@@ -61,32 +67,8 @@ export class OidcDiscoveryService {
   async getJwksByTenant(tenantId: string) {
     // Validar tenant_id contra tenancy-service
     await this.validateTenant(tenantId);
-
-    // TODO: Implementar lógica para obtener claves específicas por tenant
-    // Durante rollover, debe retornar 2 claves activas con kid único
-    return {
-      keys: [
-        {
-          kty: 'EC',
-          use: 'sig',
-          crv: 'P-256',
-          kid: `${tenantId}-2024-q4-primary`,
-          x: 'example_x_coordinate',
-          y: 'example_y_coordinate',
-          alg: 'ES256',
-        },
-        // Durante rollover, incluir clave anterior:
-        // {
-        //   kty: 'EC',
-        //   use: 'sig',
-        //   crv: 'P-256',
-        //   kid: `${tenantId}-2024-q3-previous`,
-        //   x: 'example_x_coordinate_old',
-        //   y: 'example_y_coordinate_old',
-        //   alg: 'ES256'
-        // }
-      ],
-    };
+    // Obtener claves activas y de rollover desde KeyManagementService
+    return this.keyManagementService.getJwksForTenant(tenantId);
   }
 
   private async validateTenant(tenantId: string): Promise<void> {
