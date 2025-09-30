@@ -1,3 +1,4 @@
+> **AVISO:** Este directorio contiene scripts, plantillas y utilidades legacy para la gestión de especificaciones técnicas y automatización de contexto de agentes. Está excluido en `.gitignore` para futuros PR y será eliminado en próximas limpiezas del repositorio. No debe usarse para nuevos desarrollos.
 <div align="center">
     <img src="./media/logo_small.webp"/>
     <h1>🌱 Spec Kit</h1>

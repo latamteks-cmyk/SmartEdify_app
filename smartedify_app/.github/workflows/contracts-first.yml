@@ -1,0 +1,10 @@
+name: Contracts First
+on:
+  push:
+    branches: [main]
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # ...otros pasos para validación de contratos

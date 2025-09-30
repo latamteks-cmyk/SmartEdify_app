@@ -1,3 +1,11 @@
+# gateway/
+
+Componente de plataforma para WAF, CORS y rate limits (norte-sur).
+
+Control de acceso, protección de APIs y configuración de dominios.
+
+Consulta las políticas globales en [doc/POLICY_INDEX.md](../../doc/POLICY_INDEX.md).
+
 # SmartEdify API Gateway
 
 ## Autenticación JWT multi-tenant
