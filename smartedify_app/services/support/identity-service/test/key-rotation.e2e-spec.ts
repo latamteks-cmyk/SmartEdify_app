@@ -84,11 +84,11 @@ describe('Key Rotation (e2e)', () => {
         expect(jwksResponse.body.keys).toHaveLength(2);
 
         const rolledOverKey = keysAfterRotation[0];
-        const eightDaysAgo = new Date();
-        eightDaysAgo.setDate(eightDaysAgo.getDate() - 8);
+        const oldDate = new Date();
+        oldDate.setDate(oldDate.getDate() - 100); // más de 90 días
 
         await signingKeyRepository.update(rolledOverKey.kid, {
-          updated_at: eightDaysAgo,
+          updated_at: oldDate,
         });
 
         await keyRotationService.handleCron();

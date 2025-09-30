@@ -21,7 +21,7 @@ import { PrivacyModule } from './modules/privacy/privacy.module';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-    TypeOrmModule.forRoot(getDatabaseConfig()),
+  TypeOrmModule.forRoot(getDatabaseConfig(process.env.NODE_ENV === 'test')),
     KeysModule,
     UsersModule,
     SessionsModule,

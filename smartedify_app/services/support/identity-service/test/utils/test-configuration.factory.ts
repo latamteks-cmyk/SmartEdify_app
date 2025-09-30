@@ -36,6 +36,8 @@ import { JobsModule } from '../../src/modules/jobs/jobs.module';
 import { ComplianceJob } from '../../src/modules/compliance/entities/compliance-job.entity';
 import { ComplianceJobService as ComplianceJobServiceEntity } from '../../src/modules/compliance/entities/compliance-job-service.entity';
 
+import { KeyRotationService } from '../../src/modules/keys/services/key-rotation.service';
+
 export interface TestModuleSetup {
   app: INestApplication;
   moduleFixture: TestingModule;
@@ -49,6 +51,7 @@ export interface TestModuleSetup {
   complianceJobsRepository: Repository<ComplianceJob>;
   complianceJobServicesRepository: Repository<ComplianceJobServiceEntity>;
   keyManagementService: KeyManagementService;
+  keyRotationService: KeyRotationService;
   authService: AuthService;
   usersService: UsersService;
   authorizationCodeStoreService: AuthorizationCodeStoreService;
@@ -85,6 +88,7 @@ export class TestConfigurationFactory {
 
         const keyManagementService =
           moduleFixture.get<KeyManagementService>(KeyManagementService);
+        const keyRotationService = moduleFixture.get<KeyRotationService>(KeyRotationService);
         const authService = moduleFixture.get<AuthService>(AuthService);
         const usersService = moduleFixture.get<UsersService>(UsersService);
         const authorizationCodeStoreService =
@@ -131,6 +135,7 @@ export class TestConfigurationFactory {
           webAuthnCredentialsRepository,
           refreshTokensRepository,
           keyManagementService,
+          keyRotationService,
           authService,
           usersService,
           authorizationCodeStoreService,

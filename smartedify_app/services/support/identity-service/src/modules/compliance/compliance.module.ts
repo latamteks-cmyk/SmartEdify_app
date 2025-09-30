@@ -28,5 +28,6 @@ import { COMPLIANCE_KAFKA_CLIENT } from './tokens/compliance.tokens';
     ComplianceEventsProducer,
   ],
   controllers: [ComplianceController],
+  exports: [ComplianceService],
 })
 export class ComplianceModule {}
