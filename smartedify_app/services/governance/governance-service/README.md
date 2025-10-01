@@ -111,7 +111,80 @@ npm run start:prod
 docker build -t governance-service .
 
 # Ejecutar contenedor
-docker run -p 3000:3000 --env-file .env governance-service
+docker run -p 3011:3011 --env-file .env governance-service
+```
+
+## Arquitectura de Integración
+
+### Diagrama de Servicios
+```mermaid
+graph TD
+    subgraph "Governance Cluster"
+        GS[governance-service<br/>:3011]
+        SS[streaming-service<br/>:3014]
+        CS[compliance-service<br/>:3012]
+    end
+    
+    subgraph "Core Services"
+        IS[identity-service<br/>:3001]
+        DS[documents-service<br/>:3006]
+        TS[tenancy-service<br/>:3003]
+    end
+    
+    subgraph "Infrastructure"
+        K[Kafka]
+        PG[(PostgreSQL)]
+        R[(Redis)]
+    end
+    
+    GS -->|mTLS| SS
+    GS -->|mTLS| CS
+    GS -->|HTTP| IS
+    GS -->|HTTP| DS
+    SS -->|HTTP| IS
+    SS -->|HTTP| TS
+    
+    GS --> K
+    SS --> K
+    
+    GS --> PG
+    SS --> PG
+    
+    GS --> R
+    SS --> R
+```
+
+### Flujo de Integración: Asamblea Híbrida
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant G as Governance
+    participant S as Streaming
+    participant I as Identity
+    participant C as Compliance
+    
+    U->>G: Crear Asamblea
+    G->>C: Validar Política
+    C-->>G: Política Aprobada
+    G->>G: Crear Assembly
+    
+    U->>G: Activar Asamblea
+    G->>S: Crear Sesión Video
+    S-->>G: Sesión Creada
+    G->>G: Activar Assembly
+    
+    U->>S: Validar Asistencia QR
+    S->>I: Validar Token QR
+    I-->>S: Token Válido
+    S->>G: Notificar Asistencia
+    
+    U->>G: Emitir Voto
+    G->>G: Registrar Voto
+    G->>S: Actualizar Quórum
+    
+    G->>S: Finalizar Sesión
+    S-->>G: Datos Auditoría
+    G->>G: Completar Assembly
 ```
 
 ## API Endpoints
@@ -154,10 +227,74 @@ docker run -p 3000:3000 --env-file .env governance-service
 - `GET /health/ready` - Verificación de preparación
 - `GET /health/live` - Verificación de vida
 
+## Integraciones con Servicios
+
+### Servicios Dependientes
+
+#### Compliance Service (Puerto 3012) - **CRÍTICO**
+- **Delegación Completa**: Todas las reglas de negocio y políticas
+- **Endpoints Requeridos**:
+  - `GET /api/v1/policies/{id}/validate` - Validar política vigente
+  - `POST /api/v1/policies/evaluate` - Evaluar reglas de negocio
+  - `GET /api/v1/workflows/{type}` - Obtener flujos de aprobación
+- **Estado**: ⚠️ Pendiente implementación
+
+#### Streaming Service (Puerto 3014) - **INTEGRADO**
+- **Orquestación**: Controla inicio/fin de sesiones de video
+- **Endpoints Utilizados**:
+  - `POST /api/v1/sessions` - Crear sesión (mTLS)
+  - `POST /api/v1/sessions/{id}/end` - Finalizar sesión (mTLS)
+- **Estado**: ✅ Implementado y funcional
+
+#### Identity Service (Puerto 3001) - **REQUERIDO**
+- **Autenticación**: Validación de JWT y permisos
+- **Endpoints Requeridos**:
+  - `POST /oauth/introspect` - Validar tokens
+  - `GET /.well-known/jwks.json` - Claves públicas
+- **Estado**: ⚠️ Pendiente endpoints específicos
+
+#### Documents Service (Puerto 3006) - **REQUERIDO**
+- **Gestión Documental**: PDFs, firmas digitales, almacenamiento
+- **Endpoints Requeridos**:
+  - `POST /api/v1/documents/generate` - Generar actas
+  - `POST /api/v1/documents/{id}/sign` - Firmar documentos
+- **Estado**: ⚠️ Pendiente implementación
+
+### Eventos Kafka Emitidos
+```typescript
+// Eventos del ciclo de vida de asambleas
+'assembly.created.v1'
+'assembly.activated.v1'
+'assembly.completed.v1'
+'assembly.cancelled.v1'
+
+// Eventos de votación
+'vote.created.v1'
+'vote.cast.v1'
+'vote.completed.v1'
+
+// Eventos de sesiones
+'session.requested.v1'
+'session.started.v1'
+'session.ended.v1'
+```
+
+### Eventos Kafka Consumidos
+```typescript
+// Del streaming-service
+'attendance.validated.v1'
+'transcript.chunk.v1'
+'session.ended.v1'
+
+// Del compliance-service (futuro)
+'policy.updated.v1'
+'workflow.completed.v1'
+```
+
 ## Documentación API
 
 La documentación completa de la API está disponible en:
-- **Desarrollo**: http://localhost:3000/api/docs
+- **Desarrollo**: http://localhost:3011/api/docs
 - **Producción**: https://api.smartedify.com/governance/docs
 
 ## Desarrollo
