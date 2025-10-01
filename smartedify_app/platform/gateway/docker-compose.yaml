@@ -28,6 +28,7 @@ services:
   rate-limit:
     image: envoyproxy/ratelimit:latest
     ports:
+<<<<<<< HEAD
       - "8081:8081"
     environment:
       - USE_STATSD=true
@@ -64,10 +65,18 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     command: ["/opt/spire/bin/spire-agent", "run"]
   
+=======
+      - "6379:6379"
+  spire-server:
+    image: spiffe/spire-server:1.7.1
+    ports:
+      - "8081:8081"
+>>>>>>> origin/main
   prometheus:
     image: prom/prometheus:latest
     ports:
       - "9090:9090"
+<<<<<<< HEAD
     volumes:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./config/gateway_rules.yml:/etc/prometheus/gateway_rules.yml:ro
@@ -91,11 +100,14 @@ services:
     depends_on:
       - prometheus
   
+=======
+>>>>>>> origin/main
   s3:
     image: minio/minio:latest
     environment:
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=admin123
+<<<<<<< HEAD
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
@@ -108,3 +120,8 @@ volumes:
   spire_data:
   prometheus_data:
   s3_data:
+=======
+    command: server /data
+    ports:
+      - "9000:9000"
+>>>>>>> origin/main

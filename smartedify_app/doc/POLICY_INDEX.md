@@ -15,6 +15,7 @@ smartedify_app/
 │     ├─ app/                   # BFF Usuario
 │     └─ mobile/                # BFF Móvil
 ├─ services/
+<<<<<<< HEAD
 │  ├─ core/                     # Servicios fundamentales (Línea 1)
 │  │  ├─ identity-service/      # Puerto 3001 - Gestión de identidad, JWT, RBAC/ABAC
 │  │  ├─ user-profiles-service/ # Puerto 3002 - Perfiles de usuario, roles por condominio
@@ -35,6 +36,26 @@ smartedify_app/
 │  └─ business/                 # Servicios de negocio (Línea 4)
 │     ├─ marketplace-service/   # Puerto 3015 - Ecosistema servicios premium
 │     └─ analytics-service/     # Puerto 3016 - BI, dashboards, ML predictivo
+=======
+│  ├─ pmv/                      # Línea 1 (Assembly, Reservation, Maintenance)
+│  │  ├─ assembly-service/
+│  │  ├─ reservation-service/
+│  │  └─ maintenance-service/
+│  ├─ support/                  # Línea 2 (fundacionales)
+│  │  ├─ auth-service/
+│  │  ├─ user-service/
+│  │  ├─ tenancy-service/
+│  │  ├─ document-service/
+│  │  ├─ communication-service/
+│  │  └─ finance-service/
+│  └─ complementary/            # Línea 3 (complementarios)
+│     ├─ payments-service/
+│     ├─ compliance-service/
+│     ├─ payroll-service/
+│     ├─ certification-service/
+│     ├─ support-bot-service/
+│     └─ facility-security-service/
+>>>>>>> origin/main
 ├─ platform/
 │  ├─ gateway/                  # WAF, CORS, rate limits (norte-sur)
 │  ├─ mesh/                     # mTLS, S2S authZ, retries, circuit breaking

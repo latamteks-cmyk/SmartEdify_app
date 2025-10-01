@@ -1,3 +1,4 @@
+<<<<<<< HEAD:smartedify_app/services/core/README.md
 # Core Services
 
 Servicios fundamentales que proporcionan la base para toda la plataforma SmartEdify.
@@ -42,3 +43,18 @@ Estos servicios son la base del sistema y son consumidos por servicios de otras 
 - **Event-driven**: Publican eventos de dominio vía Kafka
 - **API-first**: Contratos OpenAPI versionados
 - **Observabilidad**: Métricas, logs y trazas estándar
+=======
+# support/
+
+Servicios fundacionales de la plataforma SmartEdify (línea 2):
+- auth-service
+- user-service
+- tenants-service
+- document-service
+- communication-service
+- finance-service
+
+Proveen capacidades esenciales de identidad, usuarios, documentos y comunicación.
+
+Consulta las políticas globales en [doc/POLICY_INDEX.md](../../doc/POLICY_INDEX.md).
+>>>>>>> origin/main:smartedify_app/services/support/README.md

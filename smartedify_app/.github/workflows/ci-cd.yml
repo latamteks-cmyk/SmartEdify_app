@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 name: CI/CD Pipeline
 
 on:
@@ -299,3 +300,34 @@ jobs:
         run: |
           echo "Deploying to staging environment..."
           # Aquí iría la lógica de deployment real
+=======
+name: CI/CD
+
+on:
+  push:
+    branches: [main, Identity_final]
+  pull_request:
+    branches: [main, Identity_final]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./smartedify_app/services/support/identity-service
+      - name: Lint
+        run: npm run lint
+        working-directory: ./smartedify_app/services/support/identity-service
+      - name: Run tests
+        run: npm run test
+        working-directory: ./smartedify_app/services/support/identity-service
+      - name: Build
+        run: npm run build
+        working-directory: ./smartedify_app/services/support/identity-service
+>>>>>>> origin/main

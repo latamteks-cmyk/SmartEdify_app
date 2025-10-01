@@ -1,4 +1,5 @@
 # CODEOWNERS para revisión obligatoria de PR y cambios críticos
+<<<<<<< HEAD
 # Estructura actualizada según SCOPE v2.0
 
 # === SERVICIOS CORE ===
@@ -67,3 +68,12 @@
 # === TESTING Y QA ===
 /qa/ @latamteks-cmyk/qa @latamteks-cmyk/sre
 /scripts/ @latamteks-cmyk/platform
+=======
+
+# Servicios fundacionales
+/services/support/identity-service/ @latamteks-cmyk/identity-core
+
+# Infraestructura y políticas globales
+/doc/ @latamteks-cmyk/platform
+/.github/ @latamteks-cmyk/platform
+>>>>>>> origin/main
