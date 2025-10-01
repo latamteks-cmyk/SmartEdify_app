@@ -10,6 +10,35 @@ static_resources:
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_http
+                use_remote_address: true
+                xff_num_trusted_hops: 1
+                common_http_protocol_options:
+                  idle_timeout: 60s
+                  max_connection_duration: 300s
+                http2_protocol_options:
+                  max_concurrent_streams: 100
+                  initial_stream_window_size: 65536
+                  initial_connection_window_size: 1048576
+                compression_config:
+                  response_direction_config:
+                    common_config:
+                      min_content_length: 1024
+                      content_type:
+                        - "text/html"
+                        - "text/plain"
+                        - "text/css"
+                        - "text/javascript"
+                        - "application/json"
+                        - "application/javascript"
+                        - "text/xml"
+                        - "application/xml"
+                    compressor_library:
+                      name: "text_optimized"
+                      typed_config:
+                        "@type": type.googleapis.com/envoy.extensions.compression.brotli.compressor.v3.Brotli
+                        quality: 6
+                        window_bits: 18
+                        disable_literal_context_modeling: false
                 route_config:
                   name: local_route
                   virtual_hosts:
@@ -17,9 +46,33 @@ static_resources:
                       domains: ["*"]
                       routes:
                         - match: { prefix: "/api/v1/identity/" }
-                          route: { cluster: identity-service }
+                          route: 
+                            cluster: identity-service
+                            timeout: 15s
+                            retry_policy:
+                              retry_on: "5xx,reset,connect-failure,refused-stream"
+                              num_retries: 2
+                              per_try_timeout: 800ms
+                              retry_back_off:
+                                base_interval: 25ms
+                                max_interval: 250ms
+                              retry_host_predicate:
+                                - name: envoy.retry_host_predicates.previous_hosts
+                              host_selection_retry_max_attempts: 3
                         - match: { prefix: "/api/v1/governance/" }
-                          route: { cluster: governance-service }
+                          route: 
+                            cluster: governance-service
+                            timeout: 15s
+                            retry_policy:
+                              retry_on: "5xx,reset,connect-failure,refused-stream"
+                              num_retries: 2
+                              per_try_timeout: 800ms
+                              retry_back_off:
+                                base_interval: 25ms
+                                max_interval: 250ms
+                              retry_host_predicate:
+                                - name: envoy.retry_host_predicates.previous_hosts
+                              host_selection_retry_max_attempts: 3
                         - match: { prefix: "/api/v1/streaming/" }
                           route: { cluster: streaming-service }
                         - match: { prefix: "/api/v1/documents/" }
@@ -40,7 +93,90 @@ static_resources:
                           route: { cluster: gateway-admin }
                         - match: { prefix: "/.well-known/egress-policy" }
                           route: { cluster: gateway-admin }
+                request_headers_timeout: 5s
+                stream_idle_timeout: 60s
                 http_filters:
+                  - name: envoy.filters.http.local_ratelimit
+                    typed_config:
+                      "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+                      type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      value:
+                        stat_prefix: waf_ratelimit
+                        token_bucket:
+                          max_tokens: 100
+                          tokens_per_fill: 100
+                          fill_interval: 60s
+                        filter_enabled:
+                          runtime_key: waf_ratelimit_enabled
+                          default_value:
+                            numerator: 100
+                            denominator: HUNDRED
+                        filter_enforced:
+                          runtime_key: waf_ratelimit_enforced
+                          default_value:
+                            numerator: 100
+                            denominator: HUNDRED
+                  - name: envoy.filters.http.waf
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                      inline_code: |
+                        function envoy_on_request(request_handle)
+                          local method = request_handle:headers():get(":method")
+                          local content_type = request_handle:headers():get("content-type")
+                          local content_length = request_handle:headers():get("content-length")
+                          
+                          -- Bloquear métodos no permitidos
+                          if method == "TRACE" or method == "TRACK" or method == "CONNECT" then
+                            request_handle:respond(
+                              {[":status"] = "405", ["content-type"] = "application/problem+json"},
+                              '{"type":"about:blank","title":"Method Not Allowed","status":405,"detail":"Method ' .. method .. ' is not allowed"}'
+                            )
+                            return
+                          end
+                          
+                          -- Validar Content-Length máximo (5MB)
+                          if content_length and tonumber(content_length) > 5242880 then
+                            request_handle:respond(
+                              {[":status"] = "413", ["content-type"] = "application/problem+json"},
+                              '{"type":"about:blank","title":"Payload Too Large","status":413,"detail":"Request body exceeds maximum size of 5MB"}'
+                            )
+                            return
+                          end
+                          
+                          -- Validar Content-Type allowlist
+                          if method ~= "GET" and method ~= "DELETE" and content_type then
+                            local allowed = false
+                            local allowed_types = {
+                              "application/json",
+                              "multipart/form-data",
+                              "text/plain",
+                              "text/html",
+                              "text/css",
+                              "text/javascript"
+                            }
+                            
+                            for _, allowed_type in ipairs(allowed_types) do
+                              if string.find(content_type, allowed_type, 1, true) then
+                                allowed = true
+                                break
+                              end
+                            end
+                            
+                            if not allowed then
+                              request_handle:respond(
+                                {[":status"] = "415", ["content-type"] = "application/problem+json"},
+                                '{"type":"about:blank","title":"Unsupported Media Type","status":415,"detail":"Content-Type ' .. content_type .. ' is not allowed"}'
+                              )
+                              return
+                            end
+                          end
+                          
+                          -- Limpiar hop-by-hop headers
+                          local hop_by_hop = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailers", "transfer-encoding", "upgrade"}
+                          for _, header in ipairs(hop_by_hop) do
+                            request_handle:headers():remove(header)
+                          end
+                        end
                   - name: envoy.filters.http.jwt_authn
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
@@ -81,11 +217,61 @@ static_resources:
                           h:headers():add("Permissions-Policy","camera=(), microphone=()")
                         end
                   - name: envoy.filters.http.router
+                stats_config:
+                  stats_tags:
+                    - tag_name: route
+                      regex: "^route\\.(\\w+)\\."
+                    - tag_name: tenant
+                      regex: "^tenant\\.(\\w+)\\."
+                    - tag_name: method
+                      regex: "^method\\.(\\w+)\\."
   clusters:
     - name: identity-service
-      connect_timeout: 1s
+      connect_timeout: 2s
       type: strict_dns
       lb_policy: round_robin
+      upstream_connection_options:
+        tcp_keepalive: {}
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          common_tls_context:
+            tls_certificate_sds_secret_configs:
+              - name: "spiffe://smartedify.global/gateway"
+                sds_config:
+                  api_config_source:
+                    api_type: GRPC
+                    grpc_services:
+                      - envoy_grpc:
+                          cluster_name: spire_agent
+            validation_context_sds_secret_config:
+              name: "spiffe://smartedify.global/ca"
+              sds_config:
+                api_config_source:
+                  api_type: GRPC
+                  grpc_services:
+                    - envoy_grpc:
+                        cluster_name: spire_agent
+      health_checks:
+        - timeout: 1s
+          interval: 5s
+          unhealthy_threshold: 3
+          healthy_threshold: 2
+          http_health_check:
+            path: "/healthz"
+      outlier_detection:
+        consecutive_5xx: 3
+        interval: 30s
+        base_ejection_time: 30s
+        max_ejection_percent: 50
+      circuit_breakers:
+        thresholds:
+          - priority: DEFAULT
+            max_connections: 100
+            max_pending_requests: 50
+            max_requests: 200
+            max_retries: 3
       load_assignment:
         cluster_name: identity-service
         endpoints:
@@ -94,9 +280,51 @@ static_resources:
                   address:
                     socket_address: { address: identity-service, port_value: 3001 }
     - name: governance-service
-      connect_timeout: 1s
+      connect_timeout: 2s
       type: strict_dns
       lb_policy: round_robin
+      upstream_connection_options:
+        tcp_keepalive: {}
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          common_tls_context:
+            tls_certificate_sds_secret_configs:
+              - name: "spiffe://smartedify.global/gateway"
+                sds_config:
+                  api_config_source:
+                    api_type: GRPC
+                    grpc_services:
+                      - envoy_grpc:
+                          cluster_name: spire_agent
+            validation_context_sds_secret_config:
+              name: "spiffe://smartedify.global/ca"
+              sds_config:
+                api_config_source:
+                  api_type: GRPC
+                  grpc_services:
+                    - envoy_grpc:
+                        cluster_name: spire_agent
+      health_checks:
+        - timeout: 1s
+          interval: 5s
+          unhealthy_threshold: 3
+          healthy_threshold: 2
+          http_health_check:
+            path: "/healthz"
+      outlier_detection:
+        consecutive_5xx: 3
+        interval: 30s
+        base_ejection_time: 30s
+        max_ejection_percent: 50
+      circuit_breakers:
+        thresholds:
+          - priority: DEFAULT
+            max_connections: 100
+            max_pending_requests: 50
+            max_requests: 200
+            max_retries: 3
       load_assignment:
         cluster_name: governance-service
         endpoints:
@@ -202,7 +430,90 @@ static_resources:
           - lb_endpoints:
               - endpoint:
                   address:
-                    socket_address: { address: rate-limit, port_value: 6379 }
+                    socket_address: { address: rate-limit, port_value: 8081 }
+    - name: spire_agent
+      connect_timeout: 1s
+      type: static
+      lb_policy: round_robin
+      http2_protocol_options: {}
+      load_assignment:
+        cluster_name: spire_agent
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: spire-agent, port_value: 8081 }
+    - name: prometheus_cluster
+      connect_timeout: 1s
+      type: strict_dns
+      lb_policy: round_robin
+      load_assignment:
+        cluster_name: prometheus_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: prometheus, port_value: 9090 }
+    - name: otel_collector
+      connect_timeout: 1s
+      type: strict_dns
+      lb_policy: round_robin
+      http2_protocol_options: {}
+      load_assignment:
+        cluster_name: otel_collector
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: otel-collector, port_value: 4317 }
+stats_sinks:
+  - name: envoy.stat_sinks.metrics_service
+    typed_config:
+      "@type": type.googleapis.com/envoy.config.core.v3.GrpcService
+      envoy_grpc:
+        cluster_name: prometheus_cluster
+  - name: envoy.stat_sinks.statsd
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.stat_sinks.statsd.v3.StatsdSink
+      address:
+        socket_address:
+          address: prometheus
+          port_value: 9125
+      prefix: "smartedify.gateway"
+
+tracing:
+  http:
+    name: envoy.tracers.opentelemetry
+    typed_config:
+      "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+      grpc_service:
+        envoy_grpc:
+          cluster_name: otel_collector
+      service_name: "smartedify-gateway"
+
+access_log:
+  - name: envoy.access_loggers.worm_s3
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+      path: "/var/log/envoy/access.log"
+      format: |
+        {
+          "timestamp": "%START_TIME%",
+          "method": "%REQ(:METHOD)%",
+          "path": "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%",
+          "status": "%RESPONSE_CODE%",
+          "tenant_id": "%REQ(X-TENANT-ID)%",
+          "sub": "%REQ(X-USER-ID)%",
+          "kid": "%REQ(X-JWT-KID)%",
+          "jti": "%REQ(X-JWT-JTI)%",
+          "asn": "%REQ(X-CLIENT-ASN)%",
+          "latency_ms": "%DURATION%",
+          "trace_id": "%REQ(X-TRACE-ID)%",
+          "user_agent": "%REQ(USER-AGENT)%",
+          "remote_addr": "%DOWNSTREAM_REMOTE_ADDRESS%",
+          "request_id": "%REQ(X-REQUEST-ID)%"
+        }
+
 admin:
   access_log_path: /tmp/admin_access.log
   address:

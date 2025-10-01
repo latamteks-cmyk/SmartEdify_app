@@ -1,0 +1,768 @@
+openapi: 3.0.3
+info:
+  title: Marketplace Service API
+  description: Ecosistema de servicios premium para condominios
+  version: 1.0.0
+  contact:
+    name: SmartEdify Platform Team
+    email: platform@smartedify.global
+servers:
+  - url: http://localhost:3015
+    description: Development server
+  - url: https://api.smartedify.global/v1/marketplace
+    description: Production server
+
+paths:
+  /catalog:
+    get:
+      summary: Obtener catálogo de servicios
+      tags: [Catalog]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [legal, maintenance, accounting, insurance, consulting]
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: certified_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Catálogo de servicios disponibles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+
+  /catalog/{serviceId}:
+    get:
+      summary: Obtener detalles de servicio específico
+      tags: [Catalog]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalles del servicio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceDetails'
+
+  /quotes:
+    post:
+      summary: Solicitar cotización
+      tags: [Quotes]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+      responses:
+        '201':
+          description: Cotización solicitada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+
+    get:
+      summary: Listar cotizaciones
+      tags: [Quotes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, received, accepted, rejected, expired]
+      responses:
+        '200':
+          description: Lista de cotizaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quote'
+
+  /quotes/{quoteId}:
+    get:
+      summary: Obtener cotización específica
+      tags: [Quotes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: quoteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalles de la cotización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteDetails'
+
+  /contracts:
+    post:
+      summary: Contratar servicio
+      tags: [Contracts]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractRequest'
+      responses:
+        '201':
+          description: Servicio contratado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+
+    get:
+      summary: Listar contratos
+      tags: [Contracts]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, completed, cancelled, disputed]
+      responses:
+        '200':
+          description: Lista de contratos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contract'
+
+  /legal-review:
+    post:
+      summary: Solicitar revisión legal de acta
+      tags: [Legal Services]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegalReviewRequest'
+      responses:
+        '201':
+          description: Revisión legal solicitada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalReview'
+
+    get:
+      summary: Listar revisiones legales
+      tags: [Legal Services]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de revisiones legales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LegalReview'
+
+  /live-advisory:
+    post:
+      summary: Solicitar asesoría legal en vivo
+      tags: [Legal Services]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveAdvisoryRequest'
+      responses:
+        '201':
+          description: Asesoría en vivo solicitada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveAdvisory'
+
+  /providers:
+    post:
+      summary: Registrar nuevo proveedor
+      tags: [Providers]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderRegistration'
+      responses:
+        '201':
+          description: Proveedor registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+
+    get:
+      summary: Listar proveedores
+      tags: [Providers]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: certified
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Lista de proveedores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Provider'
+
+  /commissions:
+    get:
+      summary: Reporte de comisiones
+      tags: [Commissions]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: provider_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reporte de comisiones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommissionReport'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          type: string
+          enum: [legal, maintenance, accounting, insurance, consulting]
+        description:
+          type: string
+        provider_id:
+          type: string
+          format: uuid
+        provider_name:
+          type: string
+        is_certified:
+          type: boolean
+        rating:
+          type: number
+          minimum: 0
+          maximum: 5
+        price_range:
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+            currency:
+              type: string
+        location:
+          type: string
+        availability:
+          type: string
+          enum: [available, busy, unavailable]
+
+    ServiceDetails:
+      allOf:
+        - $ref: '#/components/schemas/Service'
+        - type: object
+          properties:
+            detailed_description:
+              type: string
+            features:
+              type: array
+              items:
+                type: string
+            certifications:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  issuer:
+                    type: string
+                  valid_until:
+                    type: string
+                    format: date
+            reviews:
+              type: array
+              items:
+                $ref: '#/components/schemas/Review'
+            portfolio:
+              type: array
+              items:
+                type: string
+                format: uri
+
+    QuoteRequest:
+      type: object
+      required: [service_id, description]
+      properties:
+        service_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        requirements:
+          type: array
+          items:
+            type: string
+        preferred_date:
+          type: string
+          format: date-time
+        budget_range:
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+        urgency:
+          type: string
+          enum: [low, medium, high, urgent]
+
+    Quote:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        service_id:
+          type: string
+          format: uuid
+        provider_id:
+          type: string
+          format: uuid
+        condominium_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, received, accepted, rejected, expired]
+        requested_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    QuoteDetails:
+      allOf:
+        - $ref: '#/components/schemas/Quote'
+        - type: object
+          properties:
+            provider_response:
+              type: object
+              properties:
+                price:
+                  type: number
+                currency:
+                  type: string
+                estimated_duration:
+                  type: string
+                included_services:
+                  type: array
+                  items:
+                    type: string
+                terms_and_conditions:
+                  type: string
+                valid_until:
+                  type: string
+                  format: date-time
+
+    ContractRequest:
+      type: object
+      required: [quote_id]
+      properties:
+        quote_id:
+          type: string
+          format: uuid
+        payment_method:
+          type: string
+          enum: [credit_card, bank_transfer, financing]
+        special_instructions:
+          type: string
+
+    Contract:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        quote_id:
+          type: string
+          format: uuid
+        service_id:
+          type: string
+          format: uuid
+        provider_id:
+          type: string
+          format: uuid
+        condominium_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, completed, cancelled, disputed]
+        total_amount:
+          type: number
+        currency:
+          type: string
+        smartedify_commission:
+          type: number
+        start_date:
+          type: string
+          format: date-time
+        expected_completion:
+          type: string
+          format: date-time
+        actual_completion:
+          type: string
+          format: date-time
+        contract_document_url:
+          type: string
+          format: uri
+
+    LegalReviewRequest:
+      type: object
+      required: [assembly_id, minutes_document_url]
+      properties:
+        assembly_id:
+          type: string
+          format: uuid
+        minutes_document_url:
+          type: string
+          format: uri
+        urgency:
+          type: string
+          enum: [standard, expedited]
+        specific_concerns:
+          type: array
+          items:
+            type: string
+
+    LegalReview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assembly_id:
+          type: string
+          format: uuid
+        lawyer_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, in_review, completed, requires_revision]
+        review_result:
+          type: string
+          enum: [approved, approved_with_comments, requires_changes, rejected]
+        comments:
+          type: string
+        legal_validity_score:
+          type: number
+          minimum: 0
+          maximum: 100
+        reviewed_at:
+          type: string
+          format: date-time
+        cost:
+          type: number
+
+    LiveAdvisoryRequest:
+      type: object
+      required: [assembly_id, session_id]
+      properties:
+        assembly_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        topic:
+          type: string
+        expected_duration:
+          type: integer
+          description: Duración esperada en minutos
+
+    LiveAdvisory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assembly_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        lawyer_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [scheduled, active, completed, cancelled]
+        join_url:
+          type: string
+          format: uri
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+        cost:
+          type: number
+
+    ProviderRegistration:
+      type: object
+      required: [company_name, category, contact_email]
+      properties:
+        company_name:
+          type: string
+        category:
+          type: string
+          enum: [legal, maintenance, accounting, insurance, consulting]
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        certifications:
+          type: array
+          items:
+            type: object
+        portfolio_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+
+    Provider:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_name:
+          type: string
+        category:
+          type: string
+        is_certified:
+          type: boolean
+        certification_level:
+          type: string
+          enum: [bronze, silver, gold, platinum]
+        rating:
+          type: number
+        total_contracts:
+          type: integer
+        success_rate:
+          type: number
+        response_time_hours:
+          type: number
+        location:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        contract_id:
+          type: string
+          format: uuid
+        rating:
+          type: number
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        reviewer_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CommissionReport:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date
+            to:
+              type: string
+              format: date
+        total_gmv:
+          type: number
+          description: Gross Merchandise Value
+        total_commissions:
+          type: number
+        average_commission_rate:
+          type: number
+        contracts_count:
+          type: integer
+        by_category:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              gmv:
+                type: number
+              commissions:
+                type: number
+              contracts:
+                type: integer
+        top_providers:
+          type: array
+          items:
+            type: object
+            properties:
+              provider_id:
+                type: string
+                format: uuid
+              provider_name:
+                type: string
+              gmv:
+                type: number
+              commissions:
+                type: number
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri

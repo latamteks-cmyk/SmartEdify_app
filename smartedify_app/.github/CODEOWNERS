@@ -1,8 +1,69 @@
 # CODEOWNERS para revisión obligatoria de PR y cambios críticos
+# Estructura actualizada según SCOPE v2.0
 
-# Servicios fundacionales
-/services/support/identity-service/ @latamteks-cmyk/identity-core
+# === SERVICIOS CORE ===
+/services/core/identity-service/ @latamteks-cmyk/identity-core @latamteks-cmyk/security
+/services/core/user-profiles-service/ @latamteks-cmyk/core-team
+/services/core/tenancy-service/ @latamteks-cmyk/core-team
+/services/core/notifications-service/ @latamteks-cmyk/core-team
+/services/core/documents-service/ @latamteks-cmyk/core-team @latamteks-cmyk/legal
 
-# Infraestructura y políticas globales
-/doc/ @latamteks-cmyk/platform
+# === SERVICIOS GOVERNANCE ===
+/services/governance/governance-service/ @latamteks-cmyk/governance-team @latamteks-cmyk/legal
+/services/governance/compliance-service/ @latamteks-cmyk/governance-team @latamteks-cmyk/legal
+/services/governance/reservation-service/ @latamteks-cmyk/governance-team
+/services/governance/streaming-service/ @latamteks-cmyk/governance-team @latamteks-cmyk/media
+
+# === SERVICIOS OPERATIONS ===
+/services/operations/physical-security-service/ @latamteks-cmyk/operations-team @latamteks-cmyk/security
+/services/operations/finance-service/ @latamteks-cmyk/operations-team @latamteks-cmyk/finance
+/services/operations/payroll-service/ @latamteks-cmyk/operations-team @latamteks-cmyk/finance
+/services/operations/hr-compliance-service/ @latamteks-cmyk/operations-team @latamteks-cmyk/legal
+/services/operations/asset-management-service/ @latamteks-cmyk/operations-team
+
+# === SERVICIOS BUSINESS ===
+/services/business/marketplace-service/ @latamteks-cmyk/business-team @latamteks-cmyk/product
+/services/business/analytics-service/ @latamteks-cmyk/business-team @latamteks-cmyk/data
+
+# === PLATAFORMA ===
+/platform/gateway/ @latamteks-cmyk/platform @latamteks-cmyk/security
+/platform/mesh/ @latamteks-cmyk/platform
+/platform/events/ @latamteks-cmyk/platform
+/platform/observability/ @latamteks-cmyk/platform @latamteks-cmyk/sre
+/platform/security/ @latamteks-cmyk/platform @latamteks-cmyk/security
+/platform/shared/ @latamteks-cmyk/platform
+
+# === CONTRATOS Y APIs ===
+/contracts/openapi/ @latamteks-cmyk/platform @latamteks-cmyk/api-design
+/contracts/asyncapi/ @latamteks-cmyk/platform @latamteks-cmyk/api-design
+/contracts/pacts/ @latamteks-cmyk/platform @latamteks-cmyk/qa
+
+# === INFRAESTRUCTURA ===
+/infra/ @latamteks-cmyk/platform @latamteks-cmyk/sre
+/infra/terraform/ @latamteks-cmyk/sre
+/infra/cicd/ @latamteks-cmyk/platform @latamteks-cmyk/sre
+
+# === APLICACIONES FRONTEND ===
+/apps/web-admin/ @latamteks-cmyk/frontend-team @latamteks-cmyk/ux
+/apps/web-user/ @latamteks-cmyk/frontend-team @latamteks-cmyk/ux
+/apps/mobile/ @latamteks-cmyk/mobile-team @latamteks-cmyk/ux
+/apps/bff/ @latamteks-cmyk/frontend-team @latamteks-cmyk/security
+
+# === CONFIGURACIÓN Y POLÍTICAS ===
+/config/ @latamteks-cmyk/platform @latamteks-cmyk/sre
+/doc/ @latamteks-cmyk/platform @latamteks-cmyk/tech-writing
+/doc/security/ @latamteks-cmyk/security @latamteks-cmyk/legal
+/doc/adr/ @latamteks-cmyk/architecture
 /.github/ @latamteks-cmyk/platform
+
+# === ARCHIVOS CRÍTICOS ===
+/README.md @latamteks-cmyk/platform @latamteks-cmyk/product
+/SCOPE.md @latamteks-cmyk/architecture @latamteks-cmyk/product
+/POLICY_INDEX.md @latamteks-cmyk/platform
+/.spectral.yml @latamteks-cmyk/api-design
+/docker-compose.yml @latamteks-cmyk/platform
+/package.json @latamteks-cmyk/platform
+
+# === TESTING Y QA ===
+/qa/ @latamteks-cmyk/qa @latamteks-cmyk/sre
+/scripts/ @latamteks-cmyk/platform

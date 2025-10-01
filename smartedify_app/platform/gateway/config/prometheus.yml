@@ -1,0 +1,40 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "/etc/prometheus/gateway_rules.yml"
+
+scrape_configs:
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['gateway:9901']
+    metrics_path: '/stats/prometheus'
+    scrape_interval: 5s
+    
+  - job_name: 'rate-limit'
+    static_configs:
+      - targets: ['rate-limit:8081']
+    metrics_path: '/metrics'
+    
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8889']
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Gateway-specific recording rules
+recording_rules:
+  - name: gateway.rules
+    rules:
+      - record: smartedify:gateway:request_rate
+        expr: rate(envoy_http_downstream_rq_total[5m])
+      
+      - record: smartedify:gateway:error_rate
+        expr: rate(envoy_http_downstream_rq_xx{envoy_response_code_class="5"}[5m]) / rate(envoy_http_downstream_rq_total[5m])
+      
+      - record: smartedify:gateway:p95_latency
+        expr: histogram_quantile(0.95, rate(envoy_http_downstream_rq_time_bucket[5m]))

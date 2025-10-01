@@ -1,0 +1,764 @@
+openapi: 3.0.3
+info:
+  title: Governance Service API
+  description: Ciclo completo de asambleas con validez legal adaptable multi-país
+  version: 1.0.0
+  contact:
+    name: SmartEdify Platform Team
+    email: platform@smartedify.global
+servers:
+  - url: http://localhost:3011
+    description: Development server
+  - url: https://api.smartedify.global/v1/governance
+    description: Production server
+
+paths:
+  /assemblies:
+    post:
+      summary: Crear iniciativa de convocatoria
+      tags: [Assemblies]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssemblyRequest'
+      responses:
+        '201':
+          description: Iniciativa creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assembly'
+
+    get:
+      summary: Listar asambleas
+      tags: [Assemblies]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, collecting_adhesions, formal_convocation, in_session, completed, cancelled]
+        - name: condominium_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de asambleas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Assembly'
+
+  /assemblies/{assemblyId}:
+    get:
+      summary: Obtener asamblea específica
+      tags: [Assemblies]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalles de la asamblea
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assembly'
+
+  /assemblies/{assemblyId}/adhesions:
+    post:
+      summary: Adherir a iniciativa de convocatoria
+      tags: [Adhesions]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Adhesión registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Adhesion'
+
+    get:
+      summary: Obtener adhesiones de la iniciativa
+      tags: [Adhesions]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de adhesiones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdhesionSummary'
+
+  /assemblies/{assemblyId}/formal-convocation:
+    post:
+      summary: Emitir convocatoria formal
+      tags: [Convocation]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormalConvocationRequest'
+      responses:
+        '201':
+          description: Convocatoria formal emitida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormalConvocation'
+
+  /assemblies/{assemblyId}/voting:
+    post:
+      summary: Registrar voto
+      tags: [Voting]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoteRequest'
+      responses:
+        '201':
+          description: Voto registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoteResult'
+
+    get:
+      summary: Obtener resultados de votación
+      tags: [Voting]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: agenda_item_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Resultados de votación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VotingResults'
+
+  /assemblies/{assemblyId}/quorum:
+    get:
+      summary: Obtener estado del quórum
+      tags: [Quorum]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estado actual del quórum
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuorumStatus'
+
+    post:
+      summary: Cerrar quórum y generar sello
+      tags: [Quorum]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Quórum cerrado con sello criptográfico
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuorumSeal'
+
+  /assemblies/{assemblyId}/minutes:
+    post:
+      summary: Generar acta con IA (MCP)
+      tags: [Minutes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateMinutesRequest'
+      responses:
+        '201':
+          description: Acta generada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Minutes'
+
+    get:
+      summary: Obtener acta de la asamblea
+      tags: [Minutes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Acta de la asamblea
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Minutes'
+
+  /assemblies/{assemblyId}/gamification:
+    get:
+      summary: Obtener puntos de gamificación
+      tags: [Gamification]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Puntos ganados en la asamblea
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationPoints'
+
+  /verification/{assemblyId}/{sealHash}:
+    get:
+      summary: Endpoint público de verificación de integridad
+      tags: [Verification]
+      parameters:
+        - name: assemblyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sealHash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verificación de integridad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrityVerification'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateAssemblyRequest:
+      type: object
+      required: [title, agenda_items, scheduled_date]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        agenda_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgendaItem'
+        scheduled_date:
+          type: string
+          format: date-time
+        assembly_type:
+          type: string
+          enum: [ordinary, extraordinary]
+
+    Assembly:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        condominium_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [draft, collecting_adhesions, formal_convocation, in_session, completed, cancelled]
+        assembly_type:
+          type: string
+          enum: [ordinary, extraordinary]
+        agenda_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgendaItem'
+        scheduled_date:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        adhesions_count:
+          type: integer
+        adhesions_percentage:
+          type: number
+        required_adhesions_percentage:
+          type: number
+          default: 25
+
+    AgendaItem:
+      type: object
+      required: [title, type]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [informative, votable]
+        voting_type:
+          type: string
+          enum: [simple_majority, qualified_majority, unanimity]
+        attachments:
+          type: array
+          items:
+            type: string
+            format: uri
+
+    Adhesion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assembly_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        aliquot_percentage:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+
+    AdhesionSummary:
+      type: object
+      properties:
+        assembly_id:
+          type: string
+          format: uuid
+        total_adhesions:
+          type: integer
+        total_aliquot_percentage:
+          type: number
+        required_percentage:
+          type: number
+        can_proceed_to_formal:
+          type: boolean
+        adhesions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Adhesion'
+
+    FormalConvocationRequest:
+      type: object
+      required: [convocation_date, assembly_date]
+      properties:
+        convocation_date:
+          type: string
+          format: date-time
+        assembly_date:
+          type: string
+          format: date-time
+        location:
+          type: string
+        virtual_meeting_url:
+          type: string
+          format: uri
+        additional_notes:
+          type: string
+
+    FormalConvocation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assembly_id:
+          type: string
+          format: uuid
+        convocation_date:
+          type: string
+          format: date-time
+        assembly_date:
+          type: string
+          format: date-time
+        location:
+          type: string
+        virtual_meeting_url:
+          type: string
+          format: uri
+        document_url:
+          type: string
+          format: uri
+        aliquot_snapshot:
+          type: object
+          description: Snapshot congelado de alícuotas al momento de la convocatoria
+
+    VoteRequest:
+      type: object
+      required: [agenda_item_id, vote]
+      properties:
+        agenda_item_id:
+          type: string
+          format: uuid
+        vote:
+          type: string
+          enum: [in_favor, against, abstention]
+        comments:
+          type: string
+        is_manual_registration:
+          type: boolean
+          description: Para votos registrados manualmente por moderador
+
+    VoteResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        agenda_item_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        vote:
+          type: string
+        aliquot_weight:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+
+    VotingResults:
+      type: object
+      properties:
+        agenda_item_id:
+          type: string
+          format: uuid
+        total_votes:
+          type: integer
+        in_favor:
+          type: object
+          properties:
+            count:
+              type: integer
+            aliquot_percentage:
+              type: number
+        against:
+          type: object
+          properties:
+            count:
+              type: integer
+            aliquot_percentage:
+              type: number
+        abstention:
+          type: object
+          properties:
+            count:
+              type: integer
+            aliquot_percentage:
+              type: number
+        result:
+          type: string
+          enum: [approved, rejected, pending]
+        required_majority:
+          type: number
+
+    QuorumStatus:
+      type: object
+      properties:
+        assembly_id:
+          type: string
+          format: uuid
+        current_attendees:
+          type: integer
+        current_aliquot_percentage:
+          type: number
+        required_quorum_percentage:
+          type: number
+        has_quorum:
+          type: boolean
+        attendees:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+                format: uuid
+              aliquot_percentage:
+                type: number
+              attendance_method:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+
+    QuorumSeal:
+      type: object
+      properties:
+        assembly_id:
+          type: string
+          format: uuid
+        seal_hash:
+          type: string
+          description: Hash criptográfico del estado del quórum
+        timestamp:
+          type: string
+          format: date-time
+        attendees_snapshot:
+          type: array
+          items:
+            type: object
+        video_hash:
+          type: string
+          description: Hash del video para verificación cruzada
+
+    GenerateMinutesRequest:
+      type: object
+      properties:
+        transcript_id:
+          type: string
+          format: uuid
+        include_attachments:
+          type: boolean
+          default: true
+        template_id:
+          type: string
+          format: uuid
+
+    Minutes:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assembly_id:
+          type: string
+          format: uuid
+        content:
+          type: string
+          description: Contenido del acta generada por IA
+        status:
+          type: string
+          enum: [draft, approved, signed]
+        generated_at:
+          type: string
+          format: date-time
+        approved_by:
+          type: string
+          format: uuid
+        signed_by:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+                format: uuid
+              role:
+                type: string
+              signature_timestamp:
+                type: string
+                format: date-time
+        document_url:
+          type: string
+          format: uri
+        attachments:
+          type: array
+          items:
+            type: string
+            format: uri
+
+    GamificationPoints:
+      type: object
+      properties:
+        assembly_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        points_earned:
+          type: integer
+        breakdown:
+          type: object
+          properties:
+            attendance:
+              type: integer
+            participation:
+              type: integer
+            voting:
+              type: integer
+        redeemable_discount:
+          type: number
+          description: Descuento en cuotas que se puede canjear
+
+    IntegrityVerification:
+      type: object
+      properties:
+        assembly_id:
+          type: string
+          format: uuid
+        seal_hash:
+          type: string
+        is_valid:
+          type: boolean
+        verification_timestamp:
+          type: string
+          format: date-time
+        video_hash_match:
+          type: boolean
+        minutes_hash_match:
+          type: boolean
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
