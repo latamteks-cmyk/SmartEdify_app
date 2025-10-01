@@ -1,0 +1,347 @@
+openapi: 3.0.3
+info:
+  title: Identity Service API
+  description: Gestión de identidad digital, autenticación y autorización
+  version: 1.0.0
+  contact:
+    name: SmartEdify Platform Team
+    email: platform@smartedify.global
+servers:
+  - url: http://localhost:3001
+    description: Development server
+  - url: https://api.smartedify.global/v1/identity
+    description: Production server
+
+paths:
+  /auth/login:
+    post:
+      summary: Autenticación de usuario
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                mfa_code:
+                  type: string
+                  description: Código MFA (opcional)
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/register:
+    post:
+      summary: Registro de nuevo usuario
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/refresh:
+    post:
+      summary: Renovar token de acceso
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v2/contextual-tokens:
+    post:
+      summary: Emitir token contextual QR
+      tags: [Contextual Tokens]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [context, assembly_id]
+              properties:
+                context:
+                  type: string
+                  enum: [assembly_attendance]
+                assembly_id:
+                  type: string
+                  format: uuid
+                expires_in:
+                  type: integer
+                  default: 300
+      responses:
+        '201':
+          description: Token contextual creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContextualToken'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v2/contextual-tokens/validate:
+    post:
+      summary: Validar token contextual QR
+      tags: [Contextual Tokens]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: Token QR escaneado
+      responses:
+        '200':
+          description: Token válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenValidation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /.well-known/jwks.json:
+    get:
+      summary: JSON Web Key Set
+      tags: [JWKS]
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: JWKS público
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWKS'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+          description: JWT access token (ES256/EdDSA con kid)
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+        scope:
+          type: string
+
+    RegisterRequest:
+      type: object
+      required: [email, password, first_name, last_name, condominium_id]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        first_name:
+          type: string
+        last_name:
+          type: string
+        condominium_id:
+          type: string
+          format: uuid
+        phone:
+          type: string
+        document_type:
+          type: string
+          enum: [DNI, CE, PASSPORT]
+        document_number:
+          type: string
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        condominium_id:
+          type: string
+          format: uuid
+        roles:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ContextualToken:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Token JWT contextual
+        qr_code:
+          type: string
+          description: QR code en base64
+        expires_at:
+          type: string
+          format: date-time
+        context:
+          type: string
+
+    TokenValidation:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        user_id:
+          type: string
+          format: uuid
+        context:
+          type: string
+        assembly_id:
+          type: string
+          format: uuid
+        expires_at:
+          type: string
+          format: date-time
+
+    JWKS:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: object
+            properties:
+              kty:
+                type: string
+              use:
+                type: string
+              kid:
+                type: string
+              alg:
+                type: string
+              n:
+                type: string
+              e:
+                type: string
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    Conflict:
+      description: Conflicto - recurso ya existe
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    TooManyRequests:
+      description: Demasiadas solicitudes
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri

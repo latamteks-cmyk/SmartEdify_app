@@ -1,0 +1,391 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: smartedify-core
+  labels:
+    name: smartedify-core
+    tier: core-services
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-profiles-config
+  namespace: smartedify-core
+  labels:
+    app: user-profiles-service
+    component: config
+data:
+  NODE_ENV: "production"
+  PORT: "3002"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  METRICS_ENABLED: "true"
+  TELEMETRY_ENABLED: "true"
+  OTEL_SERVICE_NAME: "user-profiles-service"
+  OTEL_SERVICE_VERSION: "2.1.0"
+  
+  # Database configuration
+  DB_SCHEMA: "user_profiles"
+  DB_POOL_MIN: "5"
+  DB_POOL_MAX: "20"
+  DB_POOL_IDLE_TIMEOUT: "30000"
+  DB_POOL_CONNECTION_TIMEOUT: "2000"
+  DB_SSL_ENABLED: "true"
+  DB_RLS_ENABLED: "true"
+  
+  # Redis configuration
+  REDIS_TTL: "300"
+  REDIS_MAX: "1000"
+  
+  # Operations configuration
+  BULK_MAX_ROWS_PER_JOB: "10000"
+  BULK_MAX_CONCURRENT_JOBS: "5"
+  EXPORTS_MAX_PER_MINUTE: "10"
+  PERMISSIONS_CACHE_TTL_SECONDS: "300"
+  PDP_TIMEOUT_MS: "5000"
+  PDP_FAIL_CLOSED: "true"
+  
+  # External services
+  COMPLIANCE_SERVICE_URL: "http://compliance-service.smartedify-governance:3012"
+  IDENTITY_SERVICE_URL: "http://identity-service.smartedify-core:3001"
+  TENANCY_SERVICE_URL: "http://tenancy-service.smartedify-core:3003"
+  
+  # Health check configuration
+  HEALTH_DB_TIMEOUT_MS: "3000"
+  HEALTH_REDIS_TIMEOUT_MS: "3000"
+  HEALTH_EXTERNAL_TIMEOUT_MS: "5000"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user-profiles-secrets
+  namespace: smartedify-core
+  labels:
+    app: user-profiles-service
+    component: secrets
+type: Opaque
+stringData:
+  DATABASE_URL: "postgresql://user_profiles:${DB_PASSWORD}@postgres-cluster.smartedify-data:5432/smartedify?schema=user_profiles"
+  REDIS_URL: "redis://redis-cluster.smartedify-cache:6379"
+  JWT_SECRET: "${JWT_SECRET}"
+  ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-profiles-service
+  namespace: smartedify-core
+  labels:
+    app: user-profiles-service
+    component: api
+    version: "2.1.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: user-profiles-service
+      component: api
+  template:
+    metadata:
+      labels:
+        app: user-profiles-service
+        component: api
+        version: "2.1.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3002"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: user-profiles-service
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: user-profiles-service
+        image: smartedify/user-profiles-service:2.1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 3002
+          protocol: TCP
+        - name: metrics
+          containerPort: 3002
+          protocol: TCP
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        envFrom:
+        - configMapRef:
+            name: user-profiles-config
+        - secretRef:
+            name: user-profiles-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health/startup
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - user-profiles-service
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: "smartedify.global/core-services"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-profiles-service
+  namespace: smartedify-core
+  labels:
+    app: user-profiles-service
+    component: api
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3002"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 3002
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: user-profiles-service
+    component: api
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: user-profiles-service
+  namespace: smartedify-core
+  labels:
+    app: user-profiles-service
+automountServiceAccountToken: true
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: user-profiles-service
+  namespace: smartedify-core
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: user-profiles-service
+  namespace: smartedify-core
+subjects:
+- kind: ServiceAccount
+  name: user-profiles-service
+  namespace: smartedify-core
+roleRef:
+  kind: Role
+  name: user-profiles-service
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: user-profiles-service
+  namespace: smartedify-core
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: user-profiles-service
+      component: api
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: user-profiles-service
+  namespace: smartedify-core
+spec:
+  podSelector:
+    matchLabels:
+      app: user-profiles-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: smartedify-gateway
+    - namespaceSelector:
+        matchLabels:
+          name: smartedify-governance
+    - namespaceSelector:
+        matchLabels:
+          name: smartedify-operations
+    - namespaceSelector:
+        matchLabels:
+          name: smartedify-business
+    ports:
+    - protocol: TCP
+      port: 3002
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: smartedify-data
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: smartedify-cache
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: smartedify-core
+    ports:
+    - protocol: TCP
+      port: 3001
+    - protocol: TCP
+      port: 3003
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: smartedify-governance
+    ports:
+    - protocol: TCP
+      port: 3012
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 443
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: user-profiles-service
+  namespace: smartedify-core
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: user-profiles-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60

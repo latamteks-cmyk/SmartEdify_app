@@ -1,0 +1,503 @@
+asyncapi: 3.0.0
+info:
+  title: Governance Events
+  version: 1.0.0
+  description: Eventos del dominio de gobernanza para asambleas y votaciones
+  contact:
+    name: SmartEdify Platform Team
+    email: platform@smartedify.global
+
+servers:
+  kafka-dev:
+    host: localhost:9092
+    protocol: kafka
+    description: Kafka development server
+  kafka-prod:
+    host: kafka.smartedify.global:9092
+    protocol: kafka
+    description: Kafka production server
+
+channels:
+  governance.assembly.lifecycle:
+    description: Eventos del ciclo de vida de asambleas
+    messages:
+      AssemblyCreated:
+        $ref: '#/components/messages/AssemblyCreated'
+      AssemblyConvocationIssued:
+        $ref: '#/components/messages/AssemblyConvocationIssued'
+      AssemblyStarted:
+        $ref: '#/components/messages/AssemblyStarted'
+      AssemblyEnded:
+        $ref: '#/components/messages/AssemblyEnded'
+      QuorumAchieved:
+        $ref: '#/components/messages/QuorumAchieved'
+      QuorumLost:
+        $ref: '#/components/messages/QuorumLost'
+
+  governance.voting:
+    description: Eventos de votación
+    messages:
+      VoteCast:
+        $ref: '#/components/messages/VoteCast'
+      VotingClosed:
+        $ref: '#/components/messages/VotingClosed'
+      VotingResultsPublished:
+        $ref: '#/components/messages/VotingResultsPublished'
+
+  governance.attendance:
+    description: Eventos de asistencia
+    messages:
+      AttendanceRegistered:
+        $ref: '#/components/messages/AttendanceRegistered'
+      AttendanceValidated:
+        $ref: '#/components/messages/AttendanceValidated'
+
+  governance.minutes:
+    description: Eventos de actas
+    messages:
+      MinutesGenerated:
+        $ref: '#/components/messages/MinutesGenerated'
+      MinutesApproved:
+        $ref: '#/components/messages/MinutesApproved'
+      MinutesSigned:
+        $ref: '#/components/messages/MinutesSigned'
+
+operations:
+  publishAssemblyCreated:
+    action: send
+    channel:
+      $ref: '#/channels/governance.assembly.lifecycle'
+    messages:
+      - $ref: '#/channels/governance.assembly.lifecycle/messages/AssemblyCreated'
+
+  publishVoteCast:
+    action: send
+    channel:
+      $ref: '#/channels/governance.voting'
+    messages:
+      - $ref: '#/channels/governance.voting/messages/VoteCast'
+
+  subscribeToAssemblyEvents:
+    action: receive
+    channel:
+      $ref: '#/channels/governance.assembly.lifecycle'
+
+components:
+  messages:
+    AssemblyCreated:
+      name: AssemblyCreated
+      title: Assembly Created
+      summary: Nueva asamblea creada
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AssemblyCreatedPayload'
+
+    AssemblyConvocationIssued:
+      name: AssemblyConvocationIssued
+      title: Assembly Convocation Issued
+      summary: Convocatoria formal emitida
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AssemblyConvocationIssuedPayload'
+
+    AssemblyStarted:
+      name: AssemblyStarted
+      title: Assembly Started
+      summary: Asamblea iniciada
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AssemblyStartedPayload'
+
+    AssemblyEnded:
+      name: AssemblyEnded
+      title: Assembly Ended
+      summary: Asamblea finalizada
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AssemblyEndedPayload'
+
+    QuorumAchieved:
+      name: QuorumAchieved
+      title: Quorum Achieved
+      summary: Quórum alcanzado
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/QuorumAchievedPayload'
+
+    QuorumLost:
+      name: QuorumLost
+      title: Quorum Lost
+      summary: Quórum perdido
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/QuorumLostPayload'
+
+    VoteCast:
+      name: VoteCast
+      title: Vote Cast
+      summary: Voto emitido
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/VoteCastPayload'
+
+    VotingClosed:
+      name: VotingClosed
+      title: Voting Closed
+      summary: Votación cerrada
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/VotingClosedPayload'
+
+    VotingResultsPublished:
+      name: VotingResultsPublished
+      title: Voting Results Published
+      summary: Resultados de votación publicados
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/VotingResultsPublishedPayload'
+
+    AttendanceRegistered:
+      name: AttendanceRegistered
+      title: Attendance Registered
+      summary: Asistencia registrada
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AttendanceRegisteredPayload'
+
+    AttendanceValidated:
+      name: AttendanceValidated
+      title: Attendance Validated
+      summary: Asistencia validada
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AttendanceValidatedPayload'
+
+    MinutesGenerated:
+      name: MinutesGenerated
+      title: Minutes Generated
+      summary: Acta generada por IA
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/MinutesGeneratedPayload'
+
+    MinutesApproved:
+      name: MinutesApproved
+      title: Minutes Approved
+      summary: Acta aprobada
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/MinutesApprovedPayload'
+
+    MinutesSigned:
+      name: MinutesSigned
+      title: Minutes Signed
+      summary: Acta firmada digitalmente
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/MinutesSignedPayload'
+
+  schemas:
+    EventMetadata:
+      type: object
+      required: [eventId, eventType, timestamp, version, source]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        source:
+          type: string
+        correlationId:
+          type: string
+          format: uuid
+        causationId:
+          type: string
+          format: uuid
+
+    AssemblyCreatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, condominiumId, title, createdBy]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            condominiumId:
+              type: string
+              format: uuid
+            title:
+              type: string
+            assemblyType:
+              type: string
+              enum: [ordinary, extraordinary]
+            scheduledDate:
+              type: string
+              format: date-time
+            createdBy:
+              type: string
+              format: uuid
+
+    AssemblyConvocationIssuedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, convocationDate, assemblyDate]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            convocationDate:
+              type: string
+              format: date-time
+            assemblyDate:
+              type: string
+              format: date-time
+            documentUrl:
+              type: string
+              format: uri
+            aliquotSnapshot:
+              type: object
+
+    AssemblyStartedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, sessionId, startedAt]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            sessionId:
+              type: string
+              format: uuid
+            startedAt:
+              type: string
+              format: date-time
+            moderatorId:
+              type: string
+              format: uuid
+
+    AssemblyEndedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, endedAt, finalAttendance]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            endedAt:
+              type: string
+              format: date-time
+            finalAttendance:
+              type: integer
+            quorumSealHash:
+              type: string
+
+    QuorumAchievedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, attendanceCount, aliquotPercentage]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            attendanceCount:
+              type: integer
+            aliquotPercentage:
+              type: number
+            requiredPercentage:
+              type: number
+
+    QuorumLostPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, attendanceCount, aliquotPercentage]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            attendanceCount:
+              type: integer
+            aliquotPercentage:
+              type: number
+            requiredPercentage:
+              type: number
+
+    VoteCastPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, agendaItemId, userId, vote, aliquotWeight]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            agendaItemId:
+              type: string
+              format: uuid
+            userId:
+              type: string
+              format: uuid
+            vote:
+              type: string
+              enum: [in_favor, against, abstention]
+            aliquotWeight:
+              type: number
+            isManualRegistration:
+              type: boolean
+
+    VotingClosedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, agendaItemId, closedAt]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            agendaItemId:
+              type: string
+              format: uuid
+            closedAt:
+              type: string
+              format: date-time
+            totalVotes:
+              type: integer
+
+    VotingResultsPublishedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, agendaItemId, result]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            agendaItemId:
+              type: string
+              format: uuid
+            result:
+              type: string
+              enum: [approved, rejected]
+            inFavorPercentage:
+              type: number
+            againstPercentage:
+              type: number
+            abstentionPercentage:
+              type: number
+
+    AttendanceRegisteredPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, userId, method, timestamp]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            userId:
+              type: string
+              format: uuid
+            method:
+              type: string
+              enum: [qr, biometric, sms, email, manual]
+            timestamp:
+              type: string
+              format: date-time
+            aliquotPercentage:
+              type: number
+
+    AttendanceValidatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, userId, validatedAt]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            userId:
+              type: string
+              format: uuid
+            validatedAt:
+              type: string
+              format: date-time
+            validationMethod:
+              type: string
+
+    MinutesGeneratedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, minutesId, generatedAt]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            minutesId:
+              type: string
+              format: uuid
+            generatedAt:
+              type: string
+              format: date-time
+            generatedBy:
+              type: string
+              enum: [ai_mcp, manual]
+
+    MinutesApprovedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, minutesId, approvedBy, approvedAt]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            minutesId:
+              type: string
+              format: uuid
+            approvedBy:
+              type: string
+              format: uuid
+            approvedAt:
+              type: string
+              format: date-time
+
+    MinutesSignedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventMetadata'
+        - type: object
+          required: [assemblyId, minutesId, signedBy, signedAt]
+          properties:
+            assemblyId:
+              type: string
+              format: uuid
+            minutesId:
+              type: string
+              format: uuid
+            signedBy:
+              type: array
+              items:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    format: uuid
+                  role:
+                    type: string
+                  signedAt:
+                    type: string
+                    format: date-time
+            documentUrl:
+              type: string
+              format: uri

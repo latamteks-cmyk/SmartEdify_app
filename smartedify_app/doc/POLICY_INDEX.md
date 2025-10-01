@@ -15,6 +15,28 @@ smartedify_app/
 │     ├─ app/                   # BFF Usuario
 │     └─ mobile/                # BFF Móvil
 ├─ services/
+<<<<<<< HEAD
+│  ├─ core/                     # Servicios fundamentales (Línea 1)
+│  │  ├─ identity-service/      # Puerto 3001 - Gestión de identidad, JWT, RBAC/ABAC
+│  │  ├─ user-profiles-service/ # Puerto 3002 - Perfiles de usuario, roles por condominio
+│  │  ├─ tenancy-service/       # Puerto 3003 - Ciclo de vida de condominios, alícuotas
+│  │  ├─ notifications-service/ # Puerto 3005 - Email, SMS, push, Event Schema Registry
+│  │  └─ documents-service/     # Puerto 3006 - Gestión documental, firma electrónica
+│  ├─ governance/               # Servicios de gobernanza (Línea 2)
+│  │  ├─ governance-service/    # Puerto 3011 - Asambleas, votación, actas con IA
+│  │  ├─ streaming-service/     # Puerto 3014 - Video en vivo, QR, transcripción
+│  │  ├─ compliance-service/    # Puerto 3012 - Motor normativo global, validaciones
+│  │  └─ reservation-service/   # Puerto 3013 - Reservas de áreas comunes
+│  ├─ operations/               # Servicios operativos (Línea 3)
+│  │  ├─ finance-service/       # Puerto 3007 - Cuotas, conciliación, PCGE/NIIF
+│  │  ├─ asset-management-service/ # Puerto 3010 - Inventario, mantenimiento, proveedores
+│  │  ├─ physical-security-service/ # Puerto 3004 - CCTV, control accesos, IoT
+│  │  ├─ payroll-service/       # Puerto 3008 - Nóminas, PLAME, beneficios
+│  │  └─ hr-compliance-service/ # Puerto 3009 - Ciclo empleado, SST, contratos
+│  └─ business/                 # Servicios de negocio (Línea 4)
+│     ├─ marketplace-service/   # Puerto 3015 - Ecosistema servicios premium
+│     └─ analytics-service/     # Puerto 3016 - BI, dashboards, ML predictivo
+=======
 │  ├─ pmv/                      # Línea 1 (Assembly, Reservation, Maintenance)
 │  │  ├─ assembly-service/
 │  │  ├─ reservation-service/
@@ -33,6 +55,7 @@ smartedify_app/
 │     ├─ certification-service/
 │     ├─ support-bot-service/
 │     └─ facility-security-service/
+>>>>>>> origin/main
 ├─ platform/
 │  ├─ gateway/                  # WAF, CORS, rate limits (norte-sur)
 │  ├─ mesh/                     # mTLS, S2S authZ, retries, circuit breaking

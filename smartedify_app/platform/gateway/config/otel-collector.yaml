@@ -1,0 +1,57 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  
+  resource:
+    attributes:
+      - key: service.name
+        value: smartedify-gateway
+        action: upsert
+      - key: service.version
+        value: "2.0"
+        action: upsert
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    const_labels:
+      service: "smartedify-gateway"
+  
+  logging:
+    loglevel: info
+  
+  # Para logs WORM a S3 (configurar según necesidades)
+  awss3:
+    s3uploader:
+      region: 'us-east-1'
+      s3_bucket: 'smartedify-gateway-logs'
+      s3_prefix: 'traces'
+      s3_partition: 'minute'
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [logging, awss3]
+    
+    metrics:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [prometheus, logging]
+    
+    logs:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [logging, awss3]
+
+  extensions: []

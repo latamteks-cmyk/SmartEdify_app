@@ -1,0 +1,1275 @@
+openapi: 3.1.0
+info:
+  title: Tenancy Service API
+  description: |
+    Fuente canónica de tenants, condominios, edificios y unidades.
+    Mantiene la estructura física y organizativa de cada comunidad.
+  version: 1.0.0
+  contact:
+    name: SmartEdify Platform Team
+    email: platform@smartedify.global
+  license:
+    name: Proprietary
+    url: https://smartedify.global/license
+
+servers:
+  - url: http://localhost:3003
+    description: Development server
+  - url: https://api.smartedify.global/v1/tenancy
+    description: Production server
+
+security:
+  - BearerAuth: []
+  - DPoP: []
+
+paths:
+  # === TENANTS ===
+  /tenants:
+    post:
+      summary: Crear nuevo tenant
+      description: Crear cliente SaaS (administradora o junta)
+      tags: [Tenants]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantRequest'
+            examples:
+              administradora:
+                summary: Administradora de edificios
+                value:
+                  type: "ADMINISTRADORA"
+                  legal_name: "Gestora XYZ S.A.C."
+                  country_code: "PE"
+                  contact_email: "admin@gestoraxyz.com"
+                  tax_id: "20123456789"
+              junta:
+                summary: Junta de propietarios
+                value:
+                  type: "JUNTA"
+                  legal_name: "Junta de Propietarios Edificio Los Pinos"
+                  country_code: "PE"
+                  contact_email: "junta@lospinos.com"
+      responses:
+        '201':
+          description: Tenant creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /tenants/{tenantId}:
+    parameters:
+      - $ref: '#/components/parameters/TenantId'
+    
+    get:
+      summary: Obtener tenant específico
+      tags: [Tenants]
+      responses:
+        '200':
+          description: Detalles del tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Actualizar tenant
+      tags: [Tenants]
+      security:
+        - BearerAuth: []
+        - DPoP: []sícuotaalión de  Gestcription:s
+    desquotname: Alias
+  - masiviones Operac: cription    desions
+perat: Bulk O)
+  - nameunescomas y s (privad de unidadeestiónon: Gscriptidets
+    e: Uniam - ndificios
+ de en: Gestión scriptiongs
+    dee: Buildi  - nam
+condominios de tiónon: Ges   descriptiominiums
+  name: Cond SaaS)
+  -lientes tenants (c: Gestión deonscriptide
+     Tenants- name:gs:
+  
+tatring
+   type: s             reason:
+              pe: string
+ty                name:
+            es:
+    properti  ct
+        ype: obje  t      items:
+          array
+        type:     
+  id_params:nval      ima
+   problepecífica del estancia la insntifica idequen: URI iodescript
+          riat: u        formtring
+  : spe         ty
+   instance:ema
+       problelcífica dón espelicacin: Expriptio   descng
+        stritype:        tail:
+    deHTTP
+      ado ódigo de estption: Cescri   d    er
+   egtype: int          status:
+ ema
+       le del problegibmen lon: Resu  descripti     ing
+   ype: str         t
+       title:ma
+  e problea el tipo de identificURI qun: descriptio
+          riormat: u          f
+e: string   typ   type:
+          erties:
+     prop
+   s]e, statue, titlired: [typequ      r object
+pe:     tyDetails:
+ roblem  Per
+
+  ntegpe: i          tya:
+  schem    
+      fter:   Retry-Ar
+     ype: intege      t     ema:
+     sch     eset:
+  RateLimit-R
+       e: integeryp t              schema:
+       :
+ningaiLimit-Rem      Rateer
+  pe: integ ty       ma:
+            schet-Limit:
+      RateLimiers:
+         headls'
+ oblemDetai/schemas/Prents#/compon $ref: '          
+     schema:     
+ lem+json:on/prob applicati     
+  t:nten    codes
+   solicituDemasiadasscription:    dequests:
+   ManyRe
+    Toos"
+unitance: "/st       in
+         inio"omondn este c e-101' 'Tigod con el códuna unidaste l: "Ya exi   detai            s: 409
+ atu       st     ct"
+     Confli"Resource title:             flict"
+   ource-conoblems/resprfy.global/martedi/s"https:/  type:           e:
+    valu          licado
+    dupl  locadigo summary: Có            al_code:
+ cate_loc      dupli  s:
+    xample        e
+  etails'mDProble/schemas/componentsref: '#/     $
+       hema:     scon:
+     roblem+jscation/ppli   apnt:
+     conte    iminar
+  el se puede  existe o nourso yaflicto - recn: Conscriptio  de  t:
+      Conflic
+
+s'tailoblemDe/Prhemasnts/sc '#/componeref: $          hema:
+        sc   em+json:
+blroon/pcati      applicontent:
+  
+      ontrado enccurso noption: Recri:
+      desFound Not
+   s'
+tailoblemDehemas/Prents/scf: '#/compon $re          
+ ma:che    s
+      n:/problem+jsoonapplicati       ontent:
+ ido
+      cibceso prohtion: Acescrip     den:
+    Forbidd
+
+ emDetails'hemas/Problnents/scmporef: '#/co         $
+    schema:       
+  lem+json:/probpplication     a  ent:
+    cont  orizado
+ o aution: N  descript  ized:
+   Unauthor"
+
+   te value"duplica  reason:             
+      de""local_co   - name:            
+    id_params: inval              nits"
+ /u"ce:    instan           nio"
+  omir conder único poebe sde' d 'local_coampoail: "El c det               
+atus: 400        st        ror"
+ Ertion: "Validaitle       t
+         "tion-errorlidavams/bal/probleartedify.glops://smhtt    type: "            ue:
+  val           ación
+ idr de valroummary: Er       s:
+       n_erroriolidat   va        es:
+  exampl
+         emDetails'Problts/schemas//componen    $ref: '#a:
+        em       sch+json:
+   ion/problemat    applic
+    nt:     conteida
+ tud inválion: Solici  descript    est:
+BadRequonses:
+    er
+
+  respnumb:     type           _aliquot:
+     new      mber
+    : nu      type
+          iquot: old_al        tring
+      s  type:         code:
+     ocal_  l    id
+        ormat: uu           fing
+        type: str         t_id:
+        uni          rties:
+rope p       ect
+    objpe:    ty
+            items:  
+     ype: array       t  hanges:
+ 
+        crbe: num       type_total:
+   
+        newype: number     total:
+      previous_t      
+  integere: typ        s:
+ pdated_unit     u string
+    type:         od:
+eth  md
+       format: uui         ring
+stpe:        tyid:
+   inium_ondom
+        cs:tieper   pro]
+   its updated_und,, methodominium_iduired: [coneq
+      r: objectpe:
+      tyResultuotRebalanceAliq
+
+    ype: number  t           :
+   _m2        areaer
+      numbe:         typ:
+        aliquot              : string
+ype        t        ocal_code:
+    l          t: uuid
+     forma         tring
+  type: s               nit_id:
+            uerties:
+    prop       t
+    ype: objec           t
+   items:y
+        e: arra         typ  units:
+ ber
+      pe: num        ty  e:
+tion_from_ondevia        er
+ype: numb         tquot:
+ units_aliivate_        pr: integer
+    typent:
+      ou units_cber
+        type: num        _aliquot:
+     total   uid
+ rmat: u fo    ing
+     e: str typ
+         minium_id:  condo    
+  ies:propert  nt]
+    its_coualiquot, unotal_um_id, tniomied: [cond  requirt
+    : objec      typeSummary:
+   Aliquot
+ AGEMENT ===UOT MANIQ=== AL
+
+    # : integer  type          rors:
+       er       
+ype: integer         t
+     sed:   proces    ger
+     nte i  type:        otal:
+     t    es:
+       tiroper          p
+e: object         typ:
+   progress
+      imedate-trmat:      fo
+      string  type:      t:
+  ed_a    creat]
+    TED, FAILEDNG, COMPLE, PROCESSI[QUEUEDm:      enuing
+     e: str       typ   :
+  statusuid
+        format: ug
+        e: strin  typ      
+       job_id:erties:
+     prop  d_at]
+  atus, created, st_iuired: [job  req    object
+      type:s:
+ kJobStatu
+    Bulobject
+    type: s:
+             item
+     type: array      s:
+        warning   g
+ trine: s       typ     
+    ge:     messa          string
+ype:        t
+         field:      r
+       e: intege  typ     
+         row:        
+      operties:        prject
+       type: ob:
+                itemsray
+   ype: ar         terrors:
+    n
+     : boolea    type        valid:
+ :
+      properties]
+     rnings, errors, waed: [valid      requirject
+pe: obtylt:
+      ionResukValidat
+
+    Bulbject type: o      s:
+        item   0
+    ems: 100     maxItrray
+      type: a           data:
+
+      ]UOTSCE_ALIQBALANTS, RE, UPDATE_UNI_UNITSCREATEnum: [  eng
+        rie: st     typ  pe:
+   operation_ty       ies:
+ propert
+      ata]ype, dion_ted: [operat requirect
+     e: obj typest:
+     ionRequxecutBulkUnitsEect
+
+    bjpe: o      ty     tems:
+       i0
+    xItems: 100        maay
+  : arr     typedata:
+             IQUOTS]
+ALEBALANCE_TS, R, UPDATE_UNIATE_UNITSnum: [CRE    e      string
+    type:      ype:
+ ration_t        opees:
+roperti      pe, data]
+ypon_ttieraopuired: [eq rject
+     pe: ob    tyst:
+  ationRequesValidlkUnitBu   
+ RATIONS ===ULK OPE    # === Bfig'
+
+eConRevenu/schemas/omponents$ref: '#/c        
+  nue_cfg:     reve
+   e: string        typr_id:
+  st_cente        coue
+trties: tionalProperddi     a
+     ject    type: ob      meta:
+ 0
+            minimum:  
+    ber: num type         rea_m2:
+   a
+     g strin   type:
+       r:       floo: 1
+ umaxim      m 0
+    um:       minimmber
+   ype: nu        t
+  t:liquo a
+       operties:t
+      prec obj  type::
+    eUnitRequest
+
+    Updaties: trueerttionalProp  addi        ect
+bj ope:     tyeta:
+      m
+       ueConfig'mas/Revennents/sche#/compo    $ref: '    e_cfg:
+  enu     rev   string
+      type:     nter_id:
+cost_ce      mum: 0
+  ini    m      mber
+e: nu     typm2:
+     ea_   ar
+     format: uuid  
+        g type: strin
+         lding_id:   bui
+     e: string   typ
+       ype:mon_t
+        comON] enum: [COMM    
+      string       type:kind:
+         
+  axLength: 50     m  ring
+       type: st   e:
+      local_cod
+     at: uuidrm        foring
+  e: st typ        
+ _id:iniumdom       con
+ ies:rtropepe]
+      pommon_ty kind, ce,al_codm_id, loc [condominiu   required:ct
+    obje     type:t:
+ quesReeCommonUniteat
+    Cr
+uetrerties: onalProp additi        : object
+ pety
+          a:met     : 0
+      minimum  
+     type: number        a_m2:
+  
+        are stringpe:     ty    floor:
+ 1
+        : mum      maxi
+    nimum: 0      minumber
+    :     type
+      ot:iqu
+        almat: uuid         forstring
+ type:         _id:
+     building
+     RIVATE] enum: [P     
+    e: string typ      kind:
+       : 50
+    axLength
+          mring type: st      
+   local_code:       
+ format: uuid      
+    ringpe: st    ty_id:
+      inium      condomrties:
+  
+      propend]l_code, kiium_id, locacondomin required: [     object
+   type:   t:
+ tRequesvateUniePri
+    Creat true
+ties:lProperdditiona         act
+  type: obje     a:
+            metum: 1
+nim  mi
+        integer      type: :
+         levels
+   0h: 10axLengt    m
+      pe: string      tyname:
+            perties:
+    pro
+  : object    typeRequest:
+  Building
+    Updaterue
+ies: tlPropertonadditi         a: object
+ pety       a:
+   met     1
+   nimum:     mir
+      egeype: int      t:
+       levels   00
+  xLength: 1   ma      
+ ype: string  t          name:
+uid
+      format: u       tring
+   pe: s       ty_id:
+   ondominium
+        cties:roper
+      pm_id, name]miniuondo[crequired: 
+      bject     type: oRequest:
+ lding CreateBuifile'
+
+   FinancialPros//schemanents/compo $ref: '#       le:
+  ncial_profi fina      tring
+    type: sss:
+              addre: 200
+ xLength     mag
+     strinype:          t name:
+ :
+       rties
+      propebjectpe: o
+      tyuest:umReqeCondomini
+    Updatrofile'
+lPFinanciants/schemas/ompone$ref: '#/c         file:
+ al_pro    financi
+    {2}$'Z]rn: '^[A-       patte
+   e: stringyp          tcode:
+ntry_cou        ring
+e: st  typ       s:
+       addres
+   200ength:    maxLring
+      ste:  typ  
+         name:     perties:
+ 
+      proe]try_codme, counequired: [na      rpe: object
+t:
+      tyniumRequesmiondoeateC Cr   string
+
+  type: 
+        d:    tax_i
+    ormat: email   fing
+        strtype:  :
+        ntact_email co    00
+   ngth: 2  maxLe        string
+ type:          :
+_name    legal
+    erties: prop  bject
+       type: o
+  st:eTenantRequepdat
+
+    U stringtype:         tax_id:
+        
+ mat: email     fortring
+         type: s:
+      mailontact_e   c   
+  [A-Z]{2}$'ern: '^      pattstring
+       type:    ode:
+    country_c00
+        ength: 2xL      mag
+     strin   type:me:
+           legal_naJUNTA]
+    A, ORADMINISTRAD: [um   en       ring
+: st       typepe:
+        tyrties:
+   
+      prope]ountry_codee, came, legal_n[typed: uir     reqject
+ type: ob     
+ :antRequest  CreateTenAS ===
+  EQUEST SCHEM# === R   lean
+
+ e: boo         typff:
+            staean
+     boolpe:       ty     rs:
+   _membe     board     erties:
+         propct
+   type: obje          tions:
+  exemp 100
+      um:axim         m
+     nimum: 0        miber
+      e: num         typ
+     ncel_pct:ca  late_
+           0   minimum:           number
+    type:       :
+    show no_         
+  :iesropert  pt
+        pe: objec     ty     ies:
+lt     penam: 15
+   minimu            er
+  : integ   type       tes:
+    ck_minu    min_blo        -Z]{3}$'
+tern: '^[A    pat      ing
+    trpe: s          tyy:
+         currenc     imum: 0
+     min  r
+         ype: numbe        tice:
+       hour_pr         ties:
+   proper         ct
+pe: obje  ty       n:
+ eservatio     r:
+   operties prject
+      obtype:  onfig:
+        RevenueCer
+
+type: numb              g_rate:
+ withholdin           
+ number    type:        rate:
+    vat_         perties:
+      pro   object
+  :    type       ings:
+  tax_sett  : 1
+    maximum             0
+ nimum: mi           
+   ber  type: num       d:
+     funerve_      res
+      m: 1     maximu         inimum: 0
+        m  umber
+    ype: n      t  
+      fund:maintenance_     es:
+          properti      
+ type: object         
+ les:_ruentionret        m]
+ custoribution, equal_distrea_based, enum: [a        ing
+ tr: s type
+         culation: aliquot_cal
+       "PEN"ple:      exam$'
+     ]{3}n: '^[A-Z    patterg
+      : strin  type:
+        encyrrcu     rties:
+   rope
+      pbject type: o     ofile:
+Pr Financial  HEMAS ===
+  SCONFIGURATION # === C   rivadas)
+
+dades p unisolo para (ivas actesíasbro de mem: Númerscriptionde              e: integer
+    typ          unt:
+ps_cohi   members        ing
+  strype:      t       um_name:
+ ndominico       e
+     lable: tru  nul          tring
+  e: s       typ     :
+  uilding_name    b
+        roperties:    p
+      type: object        - mas/Unit'
+ents/sche'#/compon - $ref:      :
+   allOfails:
+     itDet
+    Unate-time
+t: dma        for string
+    type:
+        _at:ated
+        updmeate-ti format: dg
+         ype: strin       td_at:
+        createE]
+   E, INACTIVACTIV    enum: [    
+  ype: string        t:
+  usat  stfig'
+      enueCons/Revschemaents/#/compon   $ref: '  cfg:
+         revenue_
+    : trueble      nulla    string
+   type:
+        r_id:centeost_       ce
+ es: truonalProperti  additit
+        e: objec         typ   meta:
+   mum: 0
+   ini          m: number
+type         
+    area_m2:
+     able: true    null       string
+   type:  oor:
+     
+        flaximum: 1         m 0
+ minimum:           number
+ type:
+            aliquot:   ue
+  tre:    nullabl
+       uidformat: u          g
+ type: strin   
+      ng_id:di  buil   
+   ble: true       nulla   string
+ ype:          tmon_type:
+  comN]
+      MMORIVATE, CO [P      enum:    g
+e: strin  typ      ind:
+         kh: 50
+ Lengt         maxng
+ type: stri
+          ocal_code:       luid
+ t: u   forma       ring
+ype: st t      
+   d:um_iomini        condat: uuid
+  formg
+        rin  type: st        id:
+nt_        tena
+t: uuid    formang
+      stri type:             id:
+   perties:
+  ]
+      protus kind, stal_code,d, locadominium_iid, cond, tenant_equired: [i  r  : object
+   typenit:
+     me
+
+    U: date-ti      format
+    : string     type:
+      updated_ate
+       e-tim format: dat   g
+       strine:     typ
+     ted_at:   crea
+     rties: truePropenalitio add        
+ bject    type: ota:
+       me    
+   mum: 1    minieger
+       type: int         vels:
+ le      100
+ Length: ax    mg
+      strin     type:     name:
+   uid
+       uat:orm    fng
+      triype: s         t
+ ium_id:condomin        uuid
+ mat:for
+          ing  type: str        ant_id:
+en      t  uid
+ormat: u       fng
+   type: stri             id:
+ :
+    properties
+      , name]minium_id_id, condonant: [id, teequiredt
+      r objecpe:
+      tyng: Buildi  
+ er
+umb   type: n         
+  liquot_sum:       a    er
+ type: numb           _m2:
+   al_area        tot    eger
+nt     type: i    :
+     _areas_count   common        r
+ ntege type: i         
+    _count:te_units    priva        integer
+ ype: t      t:
+       counits_  un        ger
+  ype: inte       t       gs_count:
+   buildin      
+   operties: pr      
+    object    - type:
+    m'/Condominiuschemasnents/f: '#/compore       - $Of:
+      all
+ etails:mDondominiu    Cime
+
+date-t  format:         g
+type: strin      t:
+    dated_a up        date-time
+     format:tring
+     pe: s    ty:
+      created_at
+        Profile'nancialas/Finents/schemf: '#/compo     $re   ile:
+  ial_profinanc       fENDED]
+ , SUSPIVEACTIVE, INum: [ACT  en  
+      pe: string        tystatus:
+       $'
+   2}A-Z]{attern: '^[        png
+  ri st      type:e:
+    untry_cod co    ing
+   pe: str         tyess:
+      addr0
+   ength: 20  maxL      
+  : string       type:
+     nameuid
+       uormat:        f: string
+   type:
+         nt_idnate       uuid
+  t:     formatring
+          type: s     id:
+        :
+operties]
+      prcode, statusme, country_enant_id, naed: [id, t     requirobject
+ :       typeminium:
+    Condoe-time
+
+ format: dat
+         ngtype: stri
+          t:_a  updated    ime
+  date-t   format:       : string
+   type    d_at:
+    create        : string
+ype       t
+   ax_id:        t email
+     format:
+     type: string         email:
+     contact_ELLED]
+    ENDED, CANCVE, SUSPnum: [ACTI       e   pe: string
+       ty:
+        status"
+   le: "PE   examp
+       }$'n: '^[A-Z]{2terat
+          pype: string     tde:
+     ntry_co    cou0
+    gth: 20   maxLenng
+       type: stri      _name:
+    egal  l]
+      TAADORA, JUN: [ADMINISTRenum  
+        pe: string         type:
+ ty
+        t: uuidma         for
+ : stringpe        ty  id:
+       ties:
+     proper  e, status]
+cody_ntrme, coual_nalegd, type, : [iquired      rect
+ype: obje
+      tt:Tenan
+    TIES === ENTI=== CORE #    chemas:
+
+
+  s"034466554400-41d4-a716-0e8400-e29ble: "88  examp    : uuid
+      format  g
+strin     type: schema:
+   
+      d: truererequipath
+      :      innitId
+   name: u  itId:
+     Un
+
+ 002"440554466d4-a716-00-e29b-41"770e84  example: 
+    rmat: uuid
+        fotype: string     chema:
+   e
+      sd: tru     require path
+  in:    ldingId
+ me: bui  na:
+    Id  Building
+  1"
+-44665544000a7160-e29b-41d4-60e840mple: "6     exa
+ rmat: uuid     fong
+     type: stri        schema:
+true
+    red: requih
+         in: patniumId
+   : condomime:
+      naondominiumId   C
+
+ "000440-446655b-41d4-a7162900-e"550e84ple:   exam  t: uuid
+  formag
+        type: strin       ma:
+    sche: true
+   redquih
+      rein: pat      
+: tenantId  name   TenantId:
+ s:
+    eter
+
+  param) (RFC 9449WToof Jon: DPoP prscripti de DPoP
+     me:   nader
+      in: hea   e: apiKey
+
+      typ  DPoP:rio
+   obligatocon kid56/EdDSA  ES2WT: Jiption
+      descrWTmat: JForer
+      bearbearer   scheme: e: http
+   typ   
+   BearerAuth:mes:
+    curitySche:
+  semponents
+
+colt'suReotRebalancemas/Aliquts/sche#/componen   $ref: '      ma:
+       sche   
+           son:ation/j      applic     t:
+ onten       cadas
+   anceebaltas r: Alícuoiondescript          '200':
+       nses:
+ respor
+      numbe   type:                      iquot:
+     al                uuid
+  ormat:    f                   
+ pe: string       ty            d:
+         unit_i                  
+erties:  prop               ject
+    type: ob              ems:
+          it             e: array
+    typ            iquots:
+  _al   custom     ]
+        stomtion, curibuual_distbased, eq [area_  enum:            
+    ng  type: stri          od:
+           meth          :
+ rtiesrope    p         ct
+ e: obje    typ
+              schema:     on:
+   lication/js      appt:
+      conten    stBody:
+   reque[]
+        - DPoP:      uth: []
+arerABe      - ity:
+     securs]
+   iquot [Altags:
+      tasalícuocear ary: Rebalan    summt:
+  
+    postSummary'
+uoAliqemas/ents/sch'#/compon      $ref:   a:
+        chem        s:
+      onion/jsplicat       apnt:
+            contenio
+   l condomiícuotas deumen de ales Rtion:scrip   de    :
+   0'       '20
+ onses:resps]
+      uot tags: [Aliq    
+ otaslícusumen de ar renete: Obmary
+      sum'
+    get:umIdiniters/Condomts/parame '#/componen  - $ref:
+    rameters:
+    pa}/aliquots:miniumIddoniums/{con
+  /condomi===NT EMEANAGALIQUOT M  # === s'
+
+JobStatuhemas/Bulkmponents/scef: '#/co    $r  
+             schema:          ion/json:
+ applicat          ent:
+        contda
+    niciaulk ieración b Opdescription:
+              '202':
+    nses:po  res
+    st'tionRequeeculkUnitsExemas/Buents/sch/compon    $ref: '#          ema:
+        sch    
+/json:ication       applt:
+   onten
+        ced: true  requir    ody:
+  requestB]
+      P: [    - DPo
+    Auth: []- Bearer     urity:
+     sec
+    s]peration[Bulk O     tags: 
+ de unidadesón bulk r operaciecutaummary: Ej:
+      sstte:
+    po:bulk/execu
+
+  /unitssult'dationRes/BulkValinents/schemaef: '#/compo   $r        ema:
+             sch      :
+cation/jsonppli       a     content:
+      letada
+     compalidaciónption: V      descri  200':
+      '
+    ponses:   res'
+   stqueonRedatialisVBulkUnits/schemas/omponentf: '#/c     $re    :
+      schema           son:
+tion/j     applicat:
+           conten  
+d: trueequire       rBody:
+   request: []
+          - DPoP
+   [] BearerAuth::
+        -rity   secu   erations]
+OpBulk s: [
+      tagunidades bulk de ónidar operaciummary: Val:
+      s   postate:
+ s:bulk/valid
+  /unitATIONS ==== BULK OPER == #Unit'
+
+ nts/schemas/'#/compone$ref:             ma:
+      sche            json:
+lication/    appt:
+         conten      vada
+   ad desactiiption: Unidscr          de00':
+
+        '2es:ns   respoP: []
+        - DPo   rAuth: []
+- Beare        security:
+      [Units]
+      tags: ad
+ctivar unidry: Desa
+      summa   post:d'
+ /UnitImeterss/para'#/component$ref: - ers:
+        paramet
+  ctivate:unitId}:deaunits/{it'
+
+  /emas/Unnents/sch: '#/comporef        $  :
+      hema     sc     json:
+    on/   applicati         ent:
+    contda
+      zauali: Unidad actription       desc:
+       '200':
+    nses   respot'
+   quesnitReemas/UpdateU/schntsmpone/co $ref: '#            a:
+      schem
+       n/json:icatio  appl
+        ontent:       cy:
+ tBodues   reqoP: []
+     - DP    th: []
+   BearerAu    -:
+    securityts]
+      s: [Uni
+      tagunidadr  Actualizaary:    summpatch:
+  s'
+
+    s/UnitDetailchemanents/sf: '#/compo$re        :
+          schema        
+    /json:tion     applicant:
+       conte          idad
+s de la un Detalleon: descripti       
+  200':      '
+  s:esponse
+      rgs: [Units]ta      ca
+ecífispd ener unidaObte: maryum     s
+    get:
+ Id'
+    /Unitparametersomponents/ef: '#/c
+      - $rs:rameter   patId}:
+  /units/{uni/Unit'
+
+ hemasnts/sc/componef: '#      $re           
+ ms:    ite         : array
+    type              ma:
+      sche       :
+  onion/jsicat       appltent:
+            condes
+   idaa de union: Listscript         de200':
+  '   s:
+    esponse      rpe: string
+        tyma:
+       schery
+           in: que  pe
+    common_ty   - name:   CTIVE]
+   TIVE, INA   enum: [AC
+         pe: string  ty         ma:
+    sche
+       query    in: 
+      me: status    - na uuid
+       format:         
+ string     type:
+         schema:     ry
+     in: que      ding_id
+  ame: buil       - nMON]
+ IVATE, COMPR [enum:       tring
+        type: s         a:
+schem
+          ery  in: qu     ind
+   - name: k   uuid
+     ormat:           f
+  ype: string        tma:
+      sche     e
+   uired: tru      req
+     in: query     m_id
+    ominiu- name: cond       rs:
+ aramete     pnits]
+ s: [Utag
+      ades unid: Listarary summet:
+         gt'
+
+as/Unihemnents/sc/compoef: '# $r             
+  a:hem      sc    /json:
+    onapplicati       ent:
+        cont      
+ ntesametoa exieadnidad crcription: U  des:
+        201'    'es:
+        responstrue
+  members: ard_bo                  :
+    exemptions          
+          _pct: 50ancel   late_c                  5.0
+ show: 1no_                     s:
+ naltiepe           0
+         inutes: 6min_block_m                      PEN"
+rrency: " cu             0
+        0._price: 2      hour         n:
+         reservatio             _cfg:
+     venue   re             "
+  C-001"Cnter_id: t_ceos      c         0.0
+   a_m2: 12      are           l"
+ type: "poocommon_                 
+ ON"OMM  kind: "C         
+       INA"AC-PISCl_code: "     loca             0000"
+66554444-a716-0-e29b-41d450e840um_id: "5inidomcon             alue:
+                v)
+     (piscinaomún a cary: Áre      summ    
+      a:n_aremmo      co 1
+        king_spaces:    par             oms: 2
+   ro bath                   
+ rooms: 3          
+           meta:          
+      a_m2: 85.5       are          
+ : "10"   floor             5
+  .02iquot: 0        al          "
+40001716-446655429b-41d4-a"660e8400-ed: ding_iuil   b             RIVATE"
+     kind: "P               1"
+de: "T-10ocal_co  l                0"
+665544000-a716-44-41d429b0e8400-eium_id: "55minondo        c          alue:
+  v         o)
+     artamentepivada (didad prary: Un summ             :
+  private_unit        s:
+       example          est'
+ mmonUnitRequateCo/Creschemasents/compon: '#/     - $ref        uest'
+   UnitReqPrivatereatets/schemas/Cencomponref: '#/   - $           :
+         oneOf      a:
+ hem sc      :
+     cation/json     applient:
+        cont   true
+  quired:      rey:
+   questBod
+      re - DPoP: []     : []
+   BearerAuth       -ity:
+ ur secits]
+     gs: [Unta     va unidad
+ ar nuery: Cre  summaost:
+    :
+    pits===
+  /un= UNITS 
+
+  # ==ls'ais/ProblemDetnents/schemacompo   $ref: '#/       ema:
+         sch           blem+json:
+tion/proplica          apent:
+     cont     das
+  asociaes  unidadar - tieneliminse puede en: No   descriptio      ':
+       '409iminado
+   o elcition: Edifi     descrip
+     '204':        es:
+ons   resp  DPoP: []
+ 
+        - erAuth: [] - Bear     y:
+      securit]
+  : [Buildings      tags asociadas
+destiene unidao  Solo si nscription:      der edificio
+ Eliminary:  summae:
+    elet   dilding'
+
+ chemas/Bunts/s/compone '#ef:          $r
+       schema:           
+  n/json:iocat      applient:
+      cont       zado
+   io actualiicon: Edifipti descr        
+    '200':  ponses:
+   es    request'
+  ateBuildingRas/Upd/schemmponents '#/co   $ref:           
+   schema:       
+  tion/json:lica       app:
+   tent
+        conuestBody:  req
+    oP: []     - DP
+   Auth: []Bearer    -   
+  security:     dings]
+ : [Buil     tagsficio
+  edi: Actualizarmmary   su  
+ 
+    patch:   ildingId'
+ eters/Bunts/param '#/compone     - $ref:
+ arameters:
+    pId}:ildingildings/{bu'
+
+  /bulding/Buihemass/scnentef: '#/compo$r                  tems:
+ i        ray
+       ar:    type      
+           schema:          n:
+ation/jso  applic          t:
+nten  co        ios
+icif edon: Lista descripti       de'200':
+   :
+        sponses
+      reormat: uuid         fing
+   strype:            thema:
+       sc  true
+    required:         
+query       in: ium_id
+   me: condominna   - s:
+      parameterngs]
+     s: [Builditag     dificios
+ Listar eummary:    s   get:
+   ng'
+
+ hemas/Buildits/scmponen'#/coef:     $r     
+         schema:          on/json:
+  tipplica         aontent:
+   
+          csamenteto creado exin: Edificio descriptio:
+            '201's:
+      response
+     est'BuildingRequatehemas/Crets/scenonomp  $ref: '#/c               schema:
+
+         /json:tion  applica        ontent:
+
+        cired: truerequ
+        equestBody:
+      r DPoP: []  -     h: []
+ - BearerAuty:
+             securit
+ ildings]ags: [Bu
+      tficioo edinuevear Cr   summary:   post:
+   gs:
+  ildinS ===
+  /bu=== BUILDING
+  # minium'
+do/Conschemasomponents/ef: '#/c$r              a:
+    schem           ion/json:
+   applicat         t:
+ ennt      co    do
+sactivanio deondomiption: C      descri':
+     '200
+       responses:   []
+     - DPoP:   th: []
+    erAuBear      - 
+  ity:     securs]
+ miniumags: [Condoio
+      tndominr coesactivammary: D
+      su    post:iniumId'
+eters/Condoms/paramcomponentref: '#/  - $ters:
+    
+    parame:}:deactivateumId{condominiiums/condomin'
+
+  /ium/Condominents/schemasponef: '#/com      $r   ma:
+              sche    json:
+   ion/plicat ap          
+ content:
+          izadominio actualndoion: Co    descript    '200':
+          es:
+espons'
+      riniumRequestndommas/UpdateCohesconents/omp'#/c   $ref:        :
+        schema
+        on/json:plicati   ap
+          content:     y:
+tBod   reques: []
+   DPoP   -   
+   uth: []rA  - Beare
+         security:
+   ondominiums]s: [C tagio
+     dominconActualizar mary:   sum    h:
+ patcails'
+
+   iumDetmas/Condominhe/sccomponents $ref: '#/           :
+         schema:
+         tion/jsonpplica a         ent:
+  cont         ndominio
+ lles del coDetaon: pti    descri00':
+        '2
+        responses:ums]
+    Condominiags: [
+      tcíficodominio espeObtener con   summary: et:
+    g
+   umId'
+    ondominimeters/Cponents/pararef: '#/com    - $ameters:
+  d}:
+    pariumI{condominums/inicondomnium'
+
+  /mimas/Condoponents/sche#/com     $ref: '       
+        items:              rray
+type: a               chema:
+     s          n:
+ication/jsopl   ap        ent:
+ ont  c
+        ominiosa de condn: Listiocript       des'200':
+   
+        onses:  resp]{2}$'
+    ^[A-Z pattern: '       
+    tring  type: s       
+       schema:    y
+  : quer         in
+ ountry_codeme: c    - na   DED]
+ IVE, SUSPENCTINA: [ACTIVE, um    en
+         string      type:      schema:
+    ry
+      : que      intatus
+     - name: s   eters:
+         param
+ s]ndominium[Co tags:      ant
+teninios del omListar condsummary:       :
+'
+
+    getndominiums/Coschema/components/$ref: '#        
+        schema:             n/json:
+   applicatio       :
+   nt       contee
+   osament creado exitinioCondomn: iodescript         '201':
+  :
+        responses  5
+   fund: 0.0ve_ reser            
+         : 0.10enance_fund    maint              les:
+    on_runti   rete            ed"
+     a_bas "areculation:t_cal    aliquo               EN"
+ y: "P  currenc             le:
+     cial_profi   finan             E"
+  de: "Ptry_co     coun             
+dro, Lima"123, San Isir Prado  "Av. Javieaddress:             "
+     noss Pio Lo"Edifici:   name               value:
+          
+       residencialnio ondomiy: C summar               
+esidential: r            examples:
+         quest'
+    iniumReCondomas/Create/schemntsmponeef: '#/co        $r   chema:
+    s     n:
+      soion/j    applicat:
+         contentrue
+      required: t      ody:
+  requestB    
+ P: []      - DPo]
+  erAuth: [      - Bearcurity:
+      se
+  s]iniums: [Condom   tagdominio
+   vo conrear nue: Cmary
+      sum
+    post:niums:domion===
+  /cUMS NICONDOMI
+  # === '
+s/Tenanthemaents/sc#/compon    $ref: '           chema:
+      s:
+         ion/jsonplicat  ap        ntent:
+       coado
+     esactivTenant description:       d0':
+     '20
+       responses:00
+      ength: 5  maxL             ring
+   e: st         typ     eason:
+              ries:
+      opert  pr          ect
+  : obj   type       ma:
+            sche
+    ion/json:    applicat     nt:
+  conte  dy:
+     tBo    reques
+  P: []    - DPo    erAuth: []
+   - Bear   
+  rity:
+      secuants]: [Tentags
+      anten tDesactivarummary:  s    
+     post:
+d'/TenantIetersents/param'#/componf: - $res:
+      er paramete:
+   eactivatd}:dantIs/{tennt  /tena'
+
+stes/BadRequets/respons/componenef: '#     $r
+          '400':   '
+enantts/schemas/T/componen   $ref: '#         ma:
+            sche     
+ ation/json:     applic:
+            contentado
+     t actualizTenanon: scripti de       0':
+  20   's:
+     esponse     ruest'
+ antReqs/UpdateTenents/schemaompon/cf: '#     $re        
+ chema:         s/json:
+    application    nt:
+     conte
+        dy:requestBo
+      

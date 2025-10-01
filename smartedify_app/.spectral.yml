@@ -1,0 +1,120 @@
+# Spectral configuration for OpenAPI validation
+extends: ["@stoplight/spectral/rulesets/oas"]
+
+rules:
+  # Reglas personalizadas para SmartEdify
+  
+  # Todos los endpoints deben tener security definido (excepto públicos)
+  operation-security-defined:
+    description: "All operations must have security defined"
+    given: "$.paths.*[get,post,put,patch,delete]"
+    then:
+      - field: "security"
+        function: "truthy"
+    except:
+      # Excepciones para endpoints públicos
+      - "$.paths['/healthz'].*"
+      - "$.paths['/.well-known/jwks.json'].*"
+      - "$.paths['/verification/{assemblyId}/{sealHash}'].*"
+
+  # Todos los servicios deben usar Bearer Auth
+  security-scheme-bearer:
+    description: "Must use Bearer authentication"
+    given: "$.components.securitySchemes.*"
+    then:
+      - field: "type"
+        function: "pattern"
+        functionOptions:
+          match: "http"
+      - field: "scheme"
+        function: "pattern"
+        functionOptions:
+          match: "bearer"
+
+  # Respuestas de error deben usar RFC 7807
+  error-responses-rfc7807:
+    description: "Error responses should use RFC 7807 Problem Details"
+    given: "$.paths.*.*.responses[4*,5*].content"
+    then:
+      - field: "application/problem+json"
+        function: "truthy"
+
+  # UUIDs deben usar format uuid
+  uuid-format:
+    description: "UUID fields must use format: uuid"
+    given: "$..**[?(@property.match(/.*[Ii]d$/) && @.type === 'string')]"
+    then:
+      - field: "format"
+        function: "pattern"
+        functionOptions:
+          match: "uuid"
+
+  # Fechas deben usar format date-time
+  datetime-format:
+    description: "DateTime fields must use format: date-time"
+    given: "$..**[?(@property.match(/.*(at|At|date|Date|time|Time)$/) && @.type === 'string')]"
+    then:
+      - field: "format"
+        function: "pattern"
+        functionOptions:
+          match: "date-time|date"
+
+  # Todos los schemas deben tener description
+  schema-description:
+    description: "All schemas should have descriptions"
+    given: "$.components.schemas.*"
+    then:
+      - field: "description"
+        function: "truthy"
+
+  # Operaciones deben tener tags
+  operation-tags:
+    description: "All operations must have tags"
+    given: "$.paths.*[get,post,put,patch,delete]"
+    then:
+      - field: "tags"
+        function: "truthy"
+
+  # Parámetros de path deben estar en el path
+  path-params-defined:
+    description: "Path parameters must be defined in the path"
+    given: "$.paths.*[get,post,put,patch,delete].parameters[?(@.in === 'path')]"
+    then:
+      - field: "required"
+        function: "truthy"
+
+  # Responses 2xx deben tener content (excepto 204)
+  success-response-content:
+    description: "Success responses should have content (except 204)"
+    given: "$.paths.*.*.responses[2*][?(@property !== '204')]"
+    then:
+      - field: "content"
+        function: "truthy"
+
+  # Servicios SmartEdify deben seguir convenciones de puerto
+  smartedify-server-ports:
+    description: "SmartEdify services must use correct ports"
+    given: "$.servers[?(@.description === 'Development server')].url"
+    then:
+      - function: "pattern"
+        functionOptions:
+          match: "http://localhost:(300[1-9]|301[0-6])"
+
+  # Info debe tener contact
+  info-contact:
+    description: "API info must have contact information"
+    given: "$.info"
+    then:
+      - field: "contact"
+        function: "truthy"
+      - field: "contact.name"
+        function: "truthy"
+      - field: "contact.email"
+        function: "truthy"
+
+# Configuración de severidad
+severity:
+  error: 2
+  warn: 1
+  info: 0
+  hint: -1

@@ -1,0 +1,728 @@
+openapi: 3.0.3
+info:
+  title: Analytics Service API
+  description: Inteligencia de negocio y análisis predictivo para condominios
+  version: 1.0.0
+  contact:
+    name: SmartEdify Platform Team
+    email: platform@smartedify.global
+servers:
+  - url: http://localhost:3016
+    description: Development server
+  - url: https://api.smartedify.global/v1/analytics
+    description: Production server
+
+paths:
+  /dashboards:
+    get:
+      summary: Lista de dashboards disponibles
+      tags: [Dashboards]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [governance, financial, operational, predictive]
+        - name: condominium_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de dashboards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dashboard'
+
+  /dashboards/{dashboardId}:
+    get:
+      summary: Obtener dashboard específico con datos
+      tags: [Dashboards]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date_range
+          in: query
+          schema:
+            type: string
+            enum: [last_7_days, last_30_days, last_90_days, last_year, custom]
+        - name: from_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Dashboard con datos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardData'
+
+  /reports:
+    post:
+      summary: Generar reporte personalizado
+      tags: [Reports]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+      responses:
+        '201':
+          description: Reporte generado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+
+    get:
+      summary: Listar reportes generados
+      tags: [Reports]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+      responses:
+        '200':
+          description: Lista de reportes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+
+  /reports/{reportId}:
+    get:
+      summary: Obtener reporte específico
+      tags: [Reports]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalles del reporte
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetails'
+
+  /predictions/{type}:
+    get:
+      summary: Obtener predicciones por tipo
+      tags: [Predictions]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [quorum, delinquency, maintenance_cost, satisfaction]
+        - name: condominium_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: horizon_days
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Predicciones del modelo ML
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prediction'
+
+  /insights:
+    post:
+      summary: Generar insights específicos
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsightRequest'
+      responses:
+        '200':
+          description: Insights generados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsightResponse'
+
+  /kpis:
+    get:
+      summary: Obtener KPIs principales
+      tags: [KPIs]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: condominium_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [current_month, last_month, current_quarter, last_quarter, current_year]
+      responses:
+        '200':
+          description: KPIs principales
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KPIs'
+
+  /participation-analysis:
+    get:
+      summary: Análisis de participación en asambleas
+      tags: [Governance Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: condominium_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: segment_by
+          in: query
+          schema:
+            type: string
+            enum: [resident_type, unit_size, payment_status, age_group]
+      responses:
+        '200':
+          description: Análisis de participación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipationAnalysis'
+
+  /financial-health:
+    get:
+      summary: Análisis de salud financiera
+      tags: [Financial Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: condominium_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Indicadores de salud financiera
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialHealth'
+
+  /maintenance-efficiency:
+    get:
+      summary: Análisis de eficiencia de mantenimiento
+      tags: [Operational Analytics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: condominium_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: asset_type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Métricas de eficiencia de mantenimiento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceEfficiency'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Dashboard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [governance, financial, operational, predictive]
+        widgets:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              type:
+                type: string
+                enum: [chart, table, metric, gauge, map]
+              title:
+                type: string
+              position:
+                type: object
+        is_premium:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    DashboardData:
+      allOf:
+        - $ref: '#/components/schemas/Dashboard'
+        - type: object
+          properties:
+            data:
+              type: object
+              description: Datos específicos del dashboard
+            last_updated:
+              type: string
+              format: date-time
+            refresh_interval:
+              type: integer
+              description: Intervalo de refresco en segundos
+
+    ReportRequest:
+      type: object
+      required: [name, type, parameters]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [participation, financial, maintenance, custom]
+        parameters:
+          type: object
+          properties:
+            condominium_id:
+              type: string
+              format: uuid
+            date_range:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: date
+                to:
+                  type: string
+                  format: date
+            filters:
+              type: object
+            format:
+              type: string
+              enum: [pdf, excel, csv]
+        schedule:
+          type: object
+          properties:
+            frequency:
+              type: string
+              enum: [once, daily, weekly, monthly]
+            next_run:
+              type: string
+              format: date-time
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        file_url:
+          type: string
+          format: uri
+        file_size:
+          type: integer
+
+    ReportDetails:
+      allOf:
+        - $ref: '#/components/schemas/Report'
+        - type: object
+          properties:
+            parameters:
+              type: object
+            summary:
+              type: object
+              properties:
+                total_records:
+                  type: integer
+                key_findings:
+                  type: array
+                  items:
+                    type: string
+            error_message:
+              type: string
+
+    Prediction:
+      type: object
+      properties:
+        type:
+          type: string
+        condominium_id:
+          type: string
+          format: uuid
+        prediction_date:
+          type: string
+          format: date-time
+        horizon_days:
+          type: integer
+        confidence_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        predicted_value:
+          type: number
+        historical_accuracy:
+          type: number
+        factors:
+          type: array
+          items:
+            type: object
+            properties:
+              factor:
+                type: string
+              importance:
+                type: number
+              impact:
+                type: string
+                enum: [positive, negative, neutral]
+        recommendations:
+          type: array
+          items:
+            type: string
+
+    InsightRequest:
+      type: object
+      required: [analysis_type]
+      properties:
+        analysis_type:
+          type: string
+          enum: [correlation, trend, anomaly, segmentation]
+        data_sources:
+          type: array
+          items:
+            type: string
+        parameters:
+          type: object
+        condominium_id:
+          type: string
+          format: uuid
+
+    InsightResponse:
+      type: object
+      properties:
+        analysis_type:
+          type: string
+        insights:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              description:
+                type: string
+              confidence:
+                type: number
+              supporting_data:
+                type: object
+        visualizations:
+          type: array
+          items:
+            type: object
+        recommendations:
+          type: array
+          items:
+            type: string
+
+    KPIs:
+      type: object
+      properties:
+        condominium_id:
+          type: string
+          format: uuid
+        period:
+          type: string
+        governance:
+          type: object
+          properties:
+            average_participation_rate:
+              type: number
+            quorum_achievement_rate:
+              type: number
+            average_voting_time:
+              type: number
+            satisfaction_score:
+              type: number
+        financial:
+          type: object
+          properties:
+            collection_rate:
+              type: number
+            delinquency_rate:
+              type: number
+            budget_variance:
+              type: number
+            cost_per_unit:
+              type: number
+        operational:
+          type: object
+          properties:
+            maintenance_efficiency:
+              type: number
+            asset_availability:
+              type: number
+            response_time_hours:
+              type: number
+            preventive_maintenance_rate:
+              type: number
+        trends:
+          type: object
+          properties:
+            participation_trend:
+              type: string
+              enum: [increasing, decreasing, stable]
+            financial_trend:
+              type: string
+              enum: [improving, declining, stable]
+            operational_trend:
+              type: string
+              enum: [improving, declining, stable]
+
+    ParticipationAnalysis:
+      type: object
+      properties:
+        condominium_id:
+          type: string
+          format: uuid
+        total_assemblies:
+          type: integer
+        average_participation:
+          type: number
+        segments:
+          type: array
+          items:
+            type: object
+            properties:
+              segment_name:
+                type: string
+              segment_value:
+                type: string
+              participation_rate:
+                type: number
+              trend:
+                type: string
+              count:
+                type: integer
+        correlations:
+          type: array
+          items:
+            type: object
+            properties:
+              factor:
+                type: string
+              correlation_strength:
+                type: number
+              description:
+                type: string
+
+    FinancialHealth:
+      type: object
+      properties:
+        condominium_id:
+          type: string
+          format: uuid
+        overall_score:
+          type: number
+          minimum: 0
+          maximum: 100
+        indicators:
+          type: object
+          properties:
+            liquidity_ratio:
+              type: number
+            debt_to_equity:
+              type: number
+            collection_efficiency:
+              type: number
+            budget_adherence:
+              type: number
+        risk_factors:
+          type: array
+          items:
+            type: object
+            properties:
+              factor:
+                type: string
+              risk_level:
+                type: string
+                enum: [low, medium, high, critical]
+              impact:
+                type: string
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              priority:
+                type: string
+                enum: [low, medium, high, urgent]
+              action:
+                type: string
+              expected_impact:
+                type: string
+
+    MaintenanceEfficiency:
+      type: object
+      properties:
+        condominium_id:
+          type: string
+          format: uuid
+        overall_efficiency:
+          type: number
+        by_asset_type:
+          type: array
+          items:
+            type: object
+            properties:
+              asset_type:
+                type: string
+              efficiency_score:
+                type: number
+              total_cost:
+                type: number
+              preventive_ratio:
+                type: number
+              average_response_time:
+                type: number
+        cost_trends:
+          type: object
+          properties:
+            monthly_costs:
+              type: array
+              items:
+                type: object
+                properties:
+                  month:
+                    type: string
+                  cost:
+                    type: number
+        optimization_opportunities:
+          type: array
+          items:
+            type: object
+            properties:
+              opportunity:
+                type: string
+              potential_savings:
+                type: number
+              implementation_effort:
+                type: string
+                enum: [low, medium, high]
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
