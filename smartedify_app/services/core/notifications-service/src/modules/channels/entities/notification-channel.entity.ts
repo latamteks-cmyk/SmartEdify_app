@@ -5,131 +5,132 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-} from 'typeorm';
+} from "typeorm";
 
 export enum ChannelType {
-  EMAIL = 'EMAIL',
-  SMS = 'SMS',
-  PUSH = 'PUSH',
-  WEBHOOK = 'WEBHOOK',
+  EMAIL = "EMAIL",
+  SMS = "SMS",
+  PUSH = "PUSH",
+  WEBHOOK = "WEBHOOK",
 }
 
 export enum ChannelStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  SUSPENDED = 'SUSPENDED',
-  ERROR = 'ERROR',
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  SUSPENDED = "SUSPENDED",
+  ERROR = "ERROR",
 }
 
 export enum ChannelProvider {
   // Email providers
-  SENDGRID = 'SENDGRID',
-  MAILGUN = 'MAILGUN',
-  SES = 'SES',
-  SMTP = 'SMTP',
-  
+  SENDGRID = "SENDGRID",
+  MAILGUN = "MAILGUN",
+  SES = "SES",
+  SMTP = "SMTP",
+
   // SMS providers
-  TWILIO = 'TWILIO',
-  NEXMO = 'NEXMO',
-  AWS_SNS = 'AWS_SNS',
-  
+  TWILIO = "TWILIO",
+  NEXMO = "NEXMO",
+  AWS_SNS = "AWS_SNS",
+
   // Push providers
-  FCM = 'FCM',
-  APNS = 'APNS',
-  
+  FCM = "FCM",
+  APNS = "APNS",
+
   // Webhook
-  HTTP = 'HTTP',
+  HTTP = "HTTP",
 }
 
-@Entity('notification_channels')
-@Index(['tenantId', 'type'])
-@Index(['tenantId', 'status'])
-@Index(['tenantId', 'isDefault'])
+@Entity("notification_channels")
+@Index(["tenantId", "type"])
+@Index(["tenantId", "status"])
+@Index(["tenantId", "isDefault"])
 export class NotificationChannel {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ name: 'tenant_id', type: 'uuid' })
+  @Column({ name: "tenant_id", type: "uuid" })
   tenantId: string;
 
   @Column()
   name: string;
 
-  @Column('text', { nullable: true })
+  @Column("text", { nullable: true })
   description?: string;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: ChannelType,
   })
   type: ChannelType;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: ChannelProvider,
   })
   provider: ChannelProvider;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: ChannelStatus,
     default: ChannelStatus.ACTIVE,
   })
   status: ChannelStatus;
 
-  @Column('jsonb', { name: 'provider_config' })
+  @Column("jsonb", { name: "provider_config" })
   providerConfig: Record<string, any>;
 
-  @Column('jsonb', { name: 'rate_limits', default: {} })
+  @Column("jsonb", { name: "rate_limits", default: {} })
   rateLimits: {
     perMinute?: number;
     perHour?: number;
     perDay?: number;
   };
 
-  @Column({ name: 'is_default', default: false })
+  @Column({ name: "is_default", default: false })
   isDefault: boolean;
 
-  @Column({ name: 'is_fallback', default: false })
+  @Column({ name: "is_fallback", default: false })
   isFallback: boolean;
 
   @Column({ priority: 1 })
   priority: number;
 
-  @Column('jsonb', { name: 'retry_config', default: {} })
+  @Column("jsonb", { name: "retry_config", default: {} })
   retryConfig: {
     maxRetries?: number;
     retryDelay?: number;
     backoffMultiplier?: number;
   };
 
-  @Column('jsonb', { default: {} })
+  @Column("jsonb", { default: {} })
   metadata: Record<string, any>;
 
-  @Column({ name: 'last_used_at', type: 'timestamptz', nullable: true })
+  @Column({ name: "last_used_at", type: "timestamptz", nullable: true })
   lastUsedAt?: Date;
 
-  @Column({ name: 'last_error_at', type: 'timestamptz', nullable: true })
+  @Column({ name: "last_error_at", type: "timestamptz", nullable: true })
   lastErrorAt?: Date;
 
-  @Column({ name: 'last_error_message', nullable: true })
+  @Column({ name: "last_error_message", nullable: true })
   lastErrorMessage?: string;
 
-  @Column({ name: 'success_count', default: 0 })
+  @Column({ name: "success_count", default: 0 })
   successCount: number;
 
-  @Column({ name: 'error_count', default: 0 })
+  @Column({ name: "error_count", default: 0 })
   errorCount: number;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
 
   // Virtual properties
   get isHealthy(): boolean {
-    const errorRate = this.errorCount / (this.successCount + this.errorCount || 1);
+    const errorRate =
+      this.errorCount / (this.successCount + this.errorCount || 1);
     return this.status === ChannelStatus.ACTIVE && errorRate < 0.1;
   }
 

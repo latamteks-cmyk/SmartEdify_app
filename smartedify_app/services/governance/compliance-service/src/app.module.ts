@@ -13,6 +13,7 @@ import { EventsModule } from './events/events.module';
 import { PoliciesModule } from './modules/policies/policies.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { DsarModule } from './modules/dsar/dsar.module';
+import { LlmModule } from './modules/llm/llm.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { DsarModule } from './modules/dsar/dsar.module';
     PoliciesModule,
     ComplianceModule,
     DsarModule,
+    LlmModule,
   ],
 })
 export class AppModule {}
