@@ -1,0 +1,514 @@
+openapi: 3.0.3
+info:
+  title: Streaming Service API
+  description: Gestión de sesiones de video en vivo para asambleas híbridas
+  version: 1.0.0
+  contact:
+    name: SmartEdify Platform Team
+    email: platform@smartedify.global
+servers:
+  - url: http://localhost:3014
+    description: Development server
+  - url: https://api.smartedify.global/v1/streaming
+    description: Production server
+
+paths:
+  /sessions:
+    post:
+      summary: Crear sesión de video
+      tags: [Sessions]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Sesión creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    get:
+      summary: Listar sesiones
+      tags: [Sessions]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assembly_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [scheduled, active, ended]
+      responses:
+        '200':
+          description: Lista de sesiones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Session'
+
+  /sessions/{sessionId}:
+    get:
+      summary: Obtener sesión específica
+      tags: [Sessions]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalles de la sesión
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Actualizar sesión
+      tags: [Sessions]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequest'
+      responses:
+        '200':
+          description: Sesión actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+
+  /sessions/{sessionId}/qr:
+    get:
+      summary: Mostrar QR de asistencia
+      tags: [Attendance]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: QR code para asistencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QRCode'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions/{sessionId}/validate-attendance:
+    post:
+      summary: Validar asistencia
+      tags: [Attendance]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceValidation'
+      responses:
+        '200':
+          description: Asistencia validada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /sessions/{sessionId}/transcript:
+    get:
+      summary: Obtener transcripción en tiempo real
+      tags: [Transcript]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: from_timestamp
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Transcripción de la sesión
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transcript'
+
+  /sessions/{sessionId}/moderate:
+    post:
+      summary: Controles de moderación
+      tags: [Moderation]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationAction'
+      responses:
+        '200':
+          description: Acción de moderación ejecutada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+
+  /sessions/{sessionId}/recording:
+    get:
+      summary: Obtener grabación de la sesión
+      tags: [Recording]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Información de la grabación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recording'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateSessionRequest:
+      type: object
+      required: [assembly_id, title, scheduled_start]
+      properties:
+        assembly_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        scheduled_start:
+          type: string
+          format: date-time
+        scheduled_end:
+          type: string
+          format: date-time
+        mode:
+          type: string
+          enum: [virtual, hybrid, presential]
+          default: hybrid
+        recording_enabled:
+          type: boolean
+          default: true
+        transcription_enabled:
+          type: boolean
+          default: true
+
+    UpdateSessionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [scheduled, active, ended, cancelled]
+        scheduled_start:
+          type: string
+          format: date-time
+        scheduled_end:
+          type: string
+          format: date-time
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assembly_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [scheduled, active, ended, cancelled]
+        mode:
+          type: string
+          enum: [virtual, hybrid, presential]
+        meet_url:
+          type: string
+          format: uri
+        recording_enabled:
+          type: boolean
+        transcription_enabled:
+          type: boolean
+        scheduled_start:
+          type: string
+          format: date-time
+        scheduled_end:
+          type: string
+          format: date-time
+        actual_start:
+          type: string
+          format: date-time
+        actual_end:
+          type: string
+          format: date-time
+        attendees_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    QRCode:
+      type: object
+      properties:
+        qr_token:
+          type: string
+          description: Token QR generado por identity-service
+        qr_image:
+          type: string
+          description: QR code en base64
+        expires_at:
+          type: string
+          format: date-time
+        refresh_interval:
+          type: integer
+          description: Intervalo de refresco en segundos
+
+    AttendanceValidation:
+      type: object
+      required: [method]
+      properties:
+        method:
+          type: string
+          enum: [qr, biometric, sms, email]
+        qr_token:
+          type: string
+          description: Requerido para method=qr
+        biometric_data:
+          type: object
+          description: Requerido para method=biometric
+        verification_code:
+          type: string
+          description: Requerido para method=sms/email
+        manual_registration:
+          type: object
+          description: Para modo presencial
+          properties:
+            user_id:
+              type: string
+              format: uuid
+            moderator_notes:
+              type: string
+
+    AttendanceResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        user_id:
+          type: string
+          format: uuid
+        method_used:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+
+    Transcript:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        segments:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              speaker:
+                type: string
+              text:
+                type: string
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+        language:
+          type: string
+        last_updated:
+          type: string
+          format: date-time
+
+    ModerationAction:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [mute_participant, unmute_participant, give_word, take_word, start_timer, stop_timer, end_session]
+        target_user_id:
+          type: string
+          format: uuid
+        duration_seconds:
+          type: integer
+          description: Para acciones con duración
+        notes:
+          type: string
+
+    ModerationResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        action:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+
+    Recording:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        file_url:
+          type: string
+          format: uri
+        file_size:
+          type: integer
+        duration_seconds:
+          type: integer
+        format:
+          type: string
+        encryption_key_id:
+          type: string
+        hash_verification:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri

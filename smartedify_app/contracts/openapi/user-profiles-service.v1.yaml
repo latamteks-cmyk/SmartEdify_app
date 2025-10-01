@@ -1,0 +1,1568 @@
+openapi: 3.1.0
+info:
+  title: User Profiles Service API
+  description: |
+    Fuente canónica de perfiles de usuario, membresías, roles locales y entitlements.
+    Gestiona relaciones persona ↔ unidad y exposición de permisos efectivos.
+  version: 2.1.0
+  contact:
+    name: SmartEdify Platform Team
+    email: platform@smartedify.global
+  license:
+    name: Proprietary
+    url: https://smartedify.global/license
+
+servers:
+  - url: http://localhost:3002
+    description: Development server
+  - url: https://api.smartedify.global/v1/user-profiles
+    description: Production server
+
+security:
+  - BearerAuth: []
+  - DPoP: []
+
+paths:
+  # === PERFILES ===
+  /me:
+    get:
+      summary: Obtener mi perfil completo
+      description: Retorna perfil + membresías + roles + entitlements del usuario autenticado
+      tags: [Profiles]
+      responses:
+        '200':
+          description: Perfil completo del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteProfile'
+              examples:
+                owner_profile:
+                  summary: Propietario con múltiples roles
+                  value:
+                    profile:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      email: "juan.perez@email.com"
+                      full_name: "Juan Pérez García"
+                      phone: "+51987654321"
+                      status: "ACTIVE"
+                      country_code: "PE"
+                    memberships:
+                      - id: "660e8400-e29b-41d4-a716-446655440001"
+                        condominium_id: "770e8400-e29b-41d4-a716-446655440002"
+                        unit_id: "880e8400-e29b-41d4-a716-446655440003"
+                        relation: "OWNER"
+                        privileges:
+                          voice: true
+                          vote: true
+                          aliquot_percentage: 5.25
+                        status: "ACTIVE"
+                    roles:
+                      - role_name: "PRESIDENTE_JUNTA"
+                        condominium_id: "770e8400-e29b-41d4-a716-446655440002"
+                        permissions: ["assembly.moderate", "finance.approve"]
+                    entitlements:
+                      - service_code: "GOVERNANCE"
+                        entitlement_key: "assembly.create"
+                        condominium_id: "770e8400-e29b-41d4-a716-446655440002"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /profiles:
+    post:
+      summary: Crear nuevo perfil
+      description: Solo administradores pueden crear perfiles
+      tags: [Profiles]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProfileRequest'
+            examples:
+              new_owner:
+                summary: Nuevo propietario
+                value:
+                  email: "maria.gonzalez@email.com"
+                  full_name: "María González López"
+                  phone: "+51987654322"
+                  country_code: "PE"
+      responses:
+        '201':
+          description: Perfil creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /profiles/{profileId}:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    
+    get:
+      summary: Obtener perfil específico
+      tags: [Profiles]
+      responses:
+        '200':
+          description: Detalles del perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Actualizar perfil
+      tags: [Profiles]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /profiles/{profileId}:activate:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    post:
+      summary: Activar perfil
+      tags: [Profile Status]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      responses:
+        '200':
+          description: Perfil activado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusChangeResult'
+
+  /profiles/{profileId}:lock:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    post:
+      summary: Bloquear perfil
+      tags: [Profile Status]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  example: "Actividad sospechosa detectada"
+      responses:
+        '200':
+          description: Perfil bloqueado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusChangeResult'
+
+  /profiles/{profileId}:unlock:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    post:
+      summary: Desbloquear perfil
+      tags: [Profile Status]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      responses:
+        '200':
+          description: Perfil desbloqueado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusChangeResult'
+
+  /profiles/{profileId}:deactivate:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    post:
+      summary: Desactivar perfil
+      tags: [Profile Status]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      responses:
+        '200':
+          description: Perfil desactivado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusChangeResult'
+
+  # === MEMBRESÍAS ===
+  /profiles/{profileId}/memberships:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    
+    get:
+      summary: Listar membresías del perfil
+      tags: [Memberships]
+      parameters:
+        - name: condominium_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, ENDED]
+      responses:
+        '200':
+          description: Lista de membresías
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Membership'
+
+    post:
+      summary: Crear nueva membresía
+      tags: [Memberships]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMembershipRequest'
+            examples:
+              owner_membership:
+                summary: Membresía de propietario
+                value:
+                  condominium_id: "770e8400-e29b-41d4-a716-446655440002"
+                  unit_id: "880e8400-e29b-41d4-a716-446655440003"
+                  relation: "OWNER"
+                  privileges:
+                    voice: true
+                    vote: true
+                    aliquot_percentage: 5.25
+              tenant_membership:
+                summary: Membresía de arrendatario
+                value:
+                  condominium_id: "770e8400-e29b-41d4-a716-446655440002"
+                  unit_id: "880e8400-e29b-41d4-a716-446655440003"
+                  relation: "TENANT"
+                  tenant_type: "ARRENDATARIO"
+                  responsible_profile_id: "550e8400-e29b-41d4-a716-446655440000"
+                  privileges:
+                    voice: true
+                    vote: false
+      responses:
+        '201':
+          description: Membresía creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+
+  /memberships/{membershipId}:
+    parameters:
+      - $ref: '#/components/parameters/MembershipId'
+    
+    patch:
+      summary: Actualizar membresía
+      tags: [Memberships]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMembershipRequest'
+      responses:
+        '200':
+          description: Membresía actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+
+  /memberships/{membershipId}:terminate:
+    parameters:
+      - $ref: '#/components/parameters/MembershipId'
+    post:
+      summary: Terminar membresía
+      tags: [Memberships]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                termination_date:
+                  type: string
+                  format: date-time
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Membresía terminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+
+  /memberships/{membershipId}:transfer:
+    parameters:
+      - $ref: '#/components/parameters/MembershipId'
+    post:
+      summary: Transferir membresía
+      tags: [Memberships]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_profile_id]
+              properties:
+                new_profile_id:
+                  type: string
+                  format: uuid
+                transfer_date:
+                  type: string
+                  format: date-time
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Membresía transferida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResult'
+
+  /memberships/{membershipId}/tenant-config:
+    parameters:
+      - $ref: '#/components/parameters/MembershipId'
+    put:
+      summary: Configurar arrendatario/conviviente
+      tags: [Memberships]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantConfig'
+      responses:
+        '200':
+          description: Configuración actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+
+  # === ROLES ===
+  /roles:
+    get:
+      summary: Listar roles disponibles
+      tags: [Roles]
+      parameters:
+        - name: condominium_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+
+  /profiles/{profileId}/roles:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    put:
+      summary: Asignar roles al perfil
+      tags: [Roles]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [condominium_id, role_assignments]
+              properties:
+                condominium_id:
+                  type: string
+                  format: uuid
+                role_assignments:
+                  type: array
+                  items:
+                    type: object
+                    required: [role_id, action]
+                    properties:
+                      role_id:
+                        type: string
+                        format: uuid
+                      action:
+                        type: string
+                        enum: [GRANT, REVOKE]
+      responses:
+        '200':
+          description: Roles actualizados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleAssignment'
+
+  # === CATÁLOGO Y POLÍTICAS ===
+  /catalog/templates:
+    get:
+      summary: Obtener plantillas de roles por país
+      tags: [Catalog]
+      parameters:
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Z]{2}$'
+            example: "PE"
+      responses:
+        '200':
+          description: Plantillas disponibles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleTemplate'
+
+  /catalog/condominiums/{condominiumId}/activate-template/{templateId}:
+    parameters:
+      - name: condominiumId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: templateId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      summary: Activar plantilla de roles en condominio
+      tags: [Catalog]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      responses:
+        '200':
+          description: Plantilla activada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activated_roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+
+  /catalog/custom-roles:
+    post:
+      summary: Crear rol personalizado
+      tags: [Catalog]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomRoleRequest'
+      responses:
+        '201':
+          description: Rol personalizado creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+
+  # === ENTITLEMENTS ===
+  /profiles/{profileId}/entitlements:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    get:
+      summary: Obtener entitlements del perfil
+      tags: [Entitlements]
+      parameters:
+        - name: condominium_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: service_code
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de entitlements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entitlement'
+
+  /profiles/{profileId}/entitlements:grant:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    post:
+      summary: Otorgar entitlement
+      tags: [Entitlements]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantEntitlementRequest'
+      responses:
+        '201':
+          description: Entitlement otorgado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entitlement'
+
+  /profiles/{profileId}/entitlements:revoke:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    post:
+      summary: Revocar entitlement
+      tags: [Entitlements]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeEntitlementRequest'
+      responses:
+        '200':
+          description: Entitlement revocado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revoked:
+                    type: boolean
+                  revoked_at:
+                    type: string
+                    format: date-time
+
+  # === EVALUACIÓN DE PERMISOS ===
+  /evaluate:
+    post:
+      summary: Evaluar permisos efectivos
+      description: Integra con PDP (compliance-service) y cache para evaluación de permisos
+      tags: [Permissions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionEvaluationRequest'
+            examples:
+              assembly_permission:
+                summary: Evaluar permiso para crear asamblea
+                value:
+                  profile_id: "550e8400-e29b-41d4-a716-446655440000"
+                  condominium_id: "770e8400-e29b-41d4-a716-446655440002"
+                  resource: "assembly"
+                  action: "create"
+                  context:
+                    assembly_type: "extraordinary"
+      responses:
+        '200':
+          description: Resultado de evaluación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionEvaluationResult'
+              examples:
+                allowed:
+                  summary: Permiso otorgado
+                  value:
+                    allowed: true
+                    reason: "User has PRESIDENTE_JUNTA role with assembly.create permission"
+                    effective_permissions:
+                      - "assembly.create"
+                      - "assembly.moderate"
+                    policy_version: "1.2.0"
+                denied:
+                  summary: Permiso denegado
+                  value:
+                    allowed: false
+                    reason: "User lacks required permission: assembly.create"
+                    effective_permissions: []
+                    policy_version: "1.2.0"
+
+  # === BULK OPERATIONS ===
+  /bulk/validate:
+    post:
+      summary: Validar operación bulk
+      tags: [Bulk Operations]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkValidationRequest'
+      responses:
+        '200':
+          description: Validación completada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkValidationResult'
+
+  /bulk/execute:
+    post:
+      summary: Ejecutar operación bulk
+      tags: [Bulk Operations]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkExecutionRequest'
+      responses:
+        '202':
+          description: Operación bulk iniciada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkJobStatus'
+
+  # === EXPORTS ===
+  /exports:
+    get:
+      summary: Generar export de datos
+      tags: [Exports]
+      parameters:
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [csv, json]
+        - name: condominium_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: include_inactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Export generado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportResult'
+            text/csv:
+              schema:
+                type: string
+
+  # === CONSENTS Y DSAR ===
+  /profiles/{profileId}/consents:
+    parameters:
+      - $ref: '#/components/parameters/ProfileId'
+    get:
+      summary: Obtener consents de comunicación
+      tags: [Privacy]
+      responses:
+        '200':
+          description: Lista de consents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommunicationConsent'
+
+    put:
+      summary: Actualizar consents
+      tags: [Privacy]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ConsentUpdate'
+      responses:
+        '200':
+          description: Consents actualizados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommunicationConsent'
+
+  /privacy/data:
+    post:
+      summary: Solicitud DSAR (proxy a Identity/Compliance)
+      tags: [Privacy]
+      security:
+        - BearerAuth: []
+        - DPoP: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DSARRequest'
+      responses:
+        '202':
+          description: Solicitud DSAR procesada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DSARResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT ES256/EdDSA con kid obligatorio
+    DPoP:
+      type: apiKey
+      in: header
+      name: DPoP
+      description: DPoP proof JWT (RFC 9449)
+
+  parameters:
+    ProfileId:
+      name: profileId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+    MembershipId:
+      name: membershipId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: "660e8400-e29b-41d4-a716-446655440001"
+
+  schemas:
+    # === CORE ENTITIES ===
+    Profile:
+      type: object
+      required: [id, tenant_id, email, full_name, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone:
+          type: string
+          pattern: '^\+?[1-9]\d{7,14}$'
+          example: "+51987654321"
+        full_name:
+          type: string
+          maxLength: 140
+        status:
+          type: string
+          enum: [PENDING_VERIFICATION, ACTIVE, LOCKED, INACTIVE]
+        country_code:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          example: "PE"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CompleteProfile:
+      type: object
+      required: [profile, memberships, roles, entitlements]
+      properties:
+        profile:
+          $ref: '#/components/schemas/Profile'
+        memberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleAssignment'
+        entitlements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entitlement'
+
+    Membership:
+      type: object
+      required: [id, tenant_id, profile_id, condominium_id, relation, privileges, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        profile_id:
+          type: string
+          format: uuid
+        condominium_id:
+          type: string
+          format: uuid
+        unit_id:
+          type: string
+          format: uuid
+          nullable: true
+        relation:
+          type: string
+          enum: [OWNER, TENANT, CONVIVIENTE, STAFF, PROVIDER, VISITOR]
+        tenant_type:
+          type: string
+          enum: [ARRENDATARIO, CONVIVIENTE]
+          nullable: true
+        privileges:
+          $ref: '#/components/schemas/MembershipPrivileges'
+        responsible_profile_id:
+          type: string
+          format: uuid
+          nullable: true
+        since:
+          type: string
+          format: date-time
+        until:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [ACTIVE, ENDED]
+          readOnly: true
+
+    MembershipPrivileges:
+      type: object
+      properties:
+        voice:
+          type: boolean
+          description: Derecho a voz en asambleas
+        vote:
+          type: boolean
+          description: Derecho a voto en asambleas
+        aliquot_percentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Porcentaje de alícuota
+        can_reserve:
+          type: boolean
+          description: Puede reservar áreas comunes
+        can_report:
+          type: boolean
+          description: Puede reportar incidencias
+        notification_redirect:
+          type: boolean
+          description: Recibe notificaciones del responsable
+
+    Role:
+      type: object
+      required: [id, tenant_id, condominium_id, name, permissions]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        condominium_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        permissions:
+          type: array
+          items:
+            type: string
+          example: ["assembly.create", "assembly.moderate", "finance.approve"]
+
+    RoleAssignment:
+      type: object
+      required: [profile_id, condominium_id, role_name, permissions]
+      properties:
+        profile_id:
+          type: string
+          format: uuid
+        condominium_id:
+          type: string
+          format: uuid
+        role_name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        granted_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Entitlement:
+      type: object
+      required: [id, tenant_id, profile_id, condominium_id, service_code, entitlement_key]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        profile_id:
+          type: string
+          format: uuid
+        condominium_id:
+          type: string
+          format: uuid
+        service_code:
+          type: string
+          enum: [GOVERNANCE, FINANCE, MAINTENANCE, SECURITY, ANALYTICS]
+        entitlement_key:
+          type: string
+          example: "assembly.create"
+        granted_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    # === REQUEST/RESPONSE SCHEMAS ===
+    CreateProfileRequest:
+      type: object
+      required: [email, full_name]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        full_name:
+          type: string
+          maxLength: 140
+        phone:
+          type: string
+          pattern: '^\+?[1-9]\d{7,14}$'
+        country_code:
+          type: string
+          pattern: '^[A-Z]{2}$'
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          maxLength: 140
+        phone:
+          type: string
+          pattern: '^\+?[1-9]\d{7,14}$'
+        country_code:
+          type: string
+          pattern: '^[A-Z]{2}$'
+
+    CreateMembershipRequest:
+      type: object
+      required: [condominium_id, relation, privileges]
+      properties:
+        condominium_id:
+          type: string
+          format: uuid
+        unit_id:
+          type: string
+          format: uuid
+        relation:
+          type: string
+          enum: [OWNER, TENANT, CONVIVIENTE, STAFF, PROVIDER, VISITOR]
+        tenant_type:
+          type: string
+          enum: [ARRENDATARIO, CONVIVIENTE]
+        privileges:
+          $ref: '#/components/schemas/MembershipPrivileges'
+        responsible_profile_id:
+          type: string
+          format: uuid
+        since:
+          type: string
+          format: date-time
+        until:
+          type: string
+          format: date-time
+
+    UpdateMembershipRequest:
+      type: object
+      properties:
+        privileges:
+          $ref: '#/components/schemas/MembershipPrivileges'
+        until:
+          type: string
+          format: date-time
+
+    TenantConfig:
+      type: object
+      required: [tenant_type, responsible_profile_id, privileges]
+      properties:
+        tenant_type:
+          type: string
+          enum: [ARRENDATARIO, CONVIVIENTE]
+        responsible_profile_id:
+          type: string
+          format: uuid
+        privileges:
+          $ref: '#/components/schemas/MembershipPrivileges'
+
+    PermissionEvaluationRequest:
+      type: object
+      required: [profile_id, condominium_id, resource, action]
+      properties:
+        profile_id:
+          type: string
+          format: uuid
+        condominium_id:
+          type: string
+          format: uuid
+        resource:
+          type: string
+          example: "assembly"
+        action:
+          type: string
+          example: "create"
+        context:
+          type: object
+          additionalProperties: true
+
+    PermissionEvaluationResult:
+      type: object
+      required: [allowed, reason, effective_permissions, policy_version]
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type: string
+        effective_permissions:
+          type: array
+          items:
+            type: string
+        policy_version:
+          type: string
+        cache_hit:
+          type: boolean
+
+    # === CATALOG SCHEMAS ===
+    RoleTemplate:
+      type: object
+      required: [id, name, country_code, permissions]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        country_code:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        permissions:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+
+    CreateCustomRoleRequest:
+      type: object
+      required: [condominium_id, name, permissions]
+      properties:
+        condominium_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        permissions:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+
+    # === ENTITLEMENT SCHEMAS ===
+    GrantEntitlementRequest:
+      type: object
+      required: [condominium_id, service_code, entitlement_key]
+      properties:
+        condominium_id:
+          type: string
+          format: uuid
+        service_code:
+          type: string
+          enum: [GOVERNANCE, FINANCE, MAINTENANCE, SECURITY, ANALYTICS]
+        entitlement_key:
+          type: string
+
+    RevokeEntitlementRequest:
+      type: object
+      required: [condominium_id, service_code, entitlement_key]
+      properties:
+        condominium_id:
+          type: string
+          format: uuid
+        service_code:
+          type: string
+          enum: [GOVERNANCE, FINANCE, MAINTENANCE, SECURITY, ANALYTICS]
+        entitlement_key:
+          type: string
+
+    # === BULK OPERATIONS ===
+    BulkValidationRequest:
+      type: object
+      required: [operation_type, data]
+      properties:
+        operation_type:
+          type: string
+          enum: [CREATE_PROFILES, UPDATE_MEMBERSHIPS, ASSIGN_ROLES]
+        data:
+          type: array
+          maxItems: 10000
+          items:
+            type: object
+
+    BulkValidationResult:
+      type: object
+      required: [valid, errors, warnings]
+      properties:
+        valid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              row:
+                type: integer
+              field:
+                type: string
+              message:
+                type: string
+        warnings:
+          type: array
+          items:
+            type: object
+
+    BulkExecutionRequest:
+      type: object
+      required: [operation_type, data]
+      properties:
+        operation_type:
+          type: string
+          enum: [CREATE_PROFILES, UPDATE_MEMBERSHIPS, ASSIGN_ROLES]
+        data:
+          type: array
+          maxItems: 10000
+          items:
+            type: object
+
+    BulkJobStatus:
+      type: object
+      required: [job_id, status, created_at]
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [QUEUED, PROCESSING, COMPLETED, FAILED]
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        progress:
+          type: object
+          properties:
+            total:
+              type: integer
+            processed:
+              type: integer
+            errors:
+              type: integer
+
+    # === EXPORT SCHEMAS ===
+    ExportResult:
+      type: object
+      required: [export_id, format, created_at, download_url]
+      properties:
+        export_id:
+          type: string
+          format: uuid
+        format:
+          type: string
+          enum: [csv, json]
+        created_at:
+          type: string
+          format: date-time
+        download_url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+        record_count:
+          type: integer
+
+    # === PRIVACY SCHEMAS ===
+    CommunicationConsent:
+      type: object
+      required: [id, tenant_id, profile_id, channel, purpose, allowed]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        profile_id:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum: [EMAIL, SMS, PUSH, WHATSAPP]
+        purpose:
+          type: string
+          enum: [MARKETING, NOTIFICATIONS, LEGAL, EMERGENCY]
+        allowed:
+          type: boolean
+        policy_version:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+
+    ConsentUpdate:
+      type: object
+      required: [channel, purpose, allowed]
+      properties:
+        channel:
+          type: string
+          enum: [EMAIL, SMS, PUSH, WHATSAPP]
+        purpose:
+          type: string
+          enum: [MARKETING, NOTIFICATIONS, LEGAL, EMERGENCY]
+        allowed:
+          type: boolean
+
+    DSARRequest:
+      type: object
+      required: [request_type, profile_id]
+      properties:
+        request_type:
+          type: string
+          enum: [ACCESS, RECTIFICATION, ERASURE, PORTABILITY]
+        profile_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+
+    DSARResponse:
+      type: object
+      required: [request_id, status, created_at]
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [RECEIVED, PROCESSING, COMPLETED, REJECTED]
+        created_at:
+          type: string
+          format: date-time
+        estimated_completion:
+          type: string
+          format: date-time
+
+    # === UTILITY SCHEMAS ===
+    StatusChangeResult:
+      type: object
+      required: [profile_id, previous_status, new_status, changed_at]
+      properties:
+        profile_id:
+          type: string
+          format: uuid
+        previous_status:
+          type: string
+        new_status:
+          type: string
+        changed_at:
+          type: string
+          format: date-time
+        reason:
+          type: string
+
+    TransferResult:
+      type: object
+      required: [old_membership_id, new_membership_id, transferred_at]
+      properties:
+        old_membership_id:
+          type: string
+          format: uuid
+        new_membership_id:
+          type: string
+          format: uuid
+        transferred_at:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            validation_error:
+              summary: Error de validación
+              value:
+                type: "https://smartedify.global/problems/validation-error"
+                title: "Validation Error"
+                status: 400
+                detail: "El campo 'email' debe ser una dirección de correo válida"
+                instance: "/profiles"
+                invalid_params:
+                  - name: "email"
+                    reason: "invalid format"
+
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            missing_token:
+              summary: Token faltante
+              value:
+                type: "https://smartedify.global/problems/unauthorized"
+                title: "Unauthorized"
+                status: 401
+                detail: "Token JWT requerido"
+                instance: "/me"
+
+    Forbidden:
+      description: Acceso prohibido
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    Conflict:
+      description: Conflicto - recurso ya existe
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            email_exists:
+              summary: Email ya existe
+              value:
+                type: "https://smartedify.global/problems/resource-conflict"
+                title: "Resource Conflict"
+                status: 409
+                detail: "Ya existe un perfil con el email 'juan.perez@email.com'"
+                instance: "/profiles"
+
+    TooManyRequests:
+      description: Demasiadas solicitudes
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+      headers:
+        RateLimit-Limit:
+          schema:
+            type: integer
+          description: Límite de requests por ventana
+        RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Requests restantes en la ventana actual
+        RateLimit-Reset:
+          schema:
+            type: integer
+          description: Timestamp cuando se resetea la ventana
+        Retry-After:
+          schema:
+            type: integer
+          description: Segundos para reintentar
+
+    ProblemDetails:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI que identifica el tipo de problema
+        title:
+          type: string
+          description: Resumen legible del problema
+        status:
+          type: integer
+          description: Código de estado HTTP
+        detail:
+          type: string
+          description: Explicación específica del problema
+        instance:
+          type: string
+          format: uri
+          description: URI que identifica la instancia específica del problema
+        invalid_params:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              reason:
+                type: string
+
+tags:
+  - name: Profiles
+    description: Gestión de perfiles de usuario
+  - name: Profile Status
+    description: Cambios de estado de perfiles
+  - name: Memberships
+    description: Gestión de membresías en condominios
+  - name: Roles
+    description: Gestión de roles y asignaciones
+  - name: Catalog
+    description: Catálogo de plantillas y roles personalizados
+  - name: Entitlements
+    description: Gestión de entitlements modulares
+  - name: Permissions
+    description: Evaluación de permisos efectivos
+  - name: Bulk Operations
+    description: Operaciones masivas
+  - name: Exports
+    description: Exportación de datos
+  - name: Privacy
+    description: Consents y DSAR

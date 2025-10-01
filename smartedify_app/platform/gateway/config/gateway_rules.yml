@@ -1,0 +1,81 @@
+groups:
+  - name: gateway.rules
+    rules:
+      # Recording rules para métricas del gateway
+      - record: smartedify:gateway:request_rate_5m
+        expr: rate(envoy_http_downstream_rq_total[5m])
+        labels:
+          service: "gateway"
+      
+      - record: smartedify:gateway:error_rate_5m
+        expr: rate(envoy_http_downstream_rq_xx{envoy_response_code_class="5"}[5m]) / rate(envoy_http_downstream_rq_total[5m])
+        labels:
+          service: "gateway"
+      
+      - record: smartedify:gateway:p95_latency_5m
+        expr: histogram_quantile(0.95, rate(envoy_http_downstream_rq_time_bucket[5m]))
+        labels:
+          service: "gateway"
+
+  - name: gateway.alerts
+    rules:
+      # Alertas críticas
+      - alert: GatewayHighErrorRate
+        expr: smartedify:gateway:error_rate_5m > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: gateway
+        annotations:
+          summary: "Gateway error rate is above 5%"
+          description: "Gateway error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+      
+      - alert: GatewayHighLatency
+        expr: smartedify:gateway:p95_latency_5m > 0.120
+        for: 2m
+        labels:
+          severity: warning
+          service: gateway
+        annotations:
+          summary: "Gateway P95 latency is above 120ms"
+          description: "Gateway P95 latency is {{ $value }}s for the last 5 minutes"
+      
+      - alert: GatewayDown
+        expr: up{job="gateway"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: gateway
+        annotations:
+          summary: "Gateway is down"
+          description: "Gateway has been down for more than 1 minute"
+      
+      - alert: JWKSCacheStale
+        expr: increase(envoy_http_jwt_authn_jwks_fetch_failed_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: gateway
+        annotations:
+          summary: "JWKS cache fetch failures detected"
+          description: "JWKS cache has failed to refresh {{ $value }} times in the last 5 minutes"
+      
+      - alert: DPoPReplayAttack
+        expr: increase(envoy_wasm_dpop_replay_denied_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: gateway
+        annotations:
+          summary: "High number of DPoP replay attacks detected"
+          description: "{{ $value }} DPoP replay attacks detected in the last 5 minutes"
+      
+      - alert: CircuitBreakerOpen
+        expr: envoy_cluster_circuit_breakers_default_cx_open > 0
+        for: 30s
+        labels:
+          severity: warning
+          service: gateway
+        annotations:
+          summary: "Circuit breaker is open"
+          description: "Circuit breaker for cluster {{ $labels.envoy_cluster_name }} is open"

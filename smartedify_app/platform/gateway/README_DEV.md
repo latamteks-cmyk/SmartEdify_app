@@ -33,6 +33,35 @@ http://localhost:9000 (usuario: admin, password: admin123)
 
 Scripts automatizados en `scripts/`:
 
+<<<<<<< HEAD
+- `run_tests.ps1`: Suite completa de pruebas (PowerShell para Windows)
+- `test_gateway.sh`: Endpoints básicos, CORS, headers de seguridad (Linux/Mac)
+- `test_waf.sh`: WAF (verbos, content-type, tamaño)
+- `test_observability.sh`: Métricas Prometheus, logs, trazas
+- `test_resilience.sh`: Circuit breaking, timeouts, retries
+
+### Ejecución
+
+**Windows (PowerShell):**
+```powershell
+# Desde platform/gateway
+.\scripts\run_tests.ps1                    # Todos los tests
+.\scripts\run_tests.ps1 -TestType basic    # Solo tests básicos
+.\scripts\run_tests.ps1 -TestType waf      # Solo WAF
+.\scripts\run_tests.ps1 -TestType observability  # Solo observabilidad
+.\scripts\run_tests.ps1 -TestType resilience     # Solo resiliencia
+```
+
+**Linux/Mac (Bash):**
+```bash
+# Desde platform/gateway
+./scripts/test_gateway.sh
+./scripts/test_waf.sh
+./scripts/test_observability.sh
+./scripts/test_resilience.sh
+```
+
+=======
 - `test_gateway.sh`: Endpoints básicos, CORS, headers de seguridad
 - `test_jwt.sh`: Validación JWT/JWKS (algoritmo, kid, issuer, claims)
 - `test_pkce.sh`: PKCE guard en /authorize
@@ -60,6 +89,7 @@ Pruebas manuales/documentadas:
 
 Consulta los archivos `.md` en `scripts/` para pruebas manuales de observabilidad y WebSocket.
 
+>>>>>>> origin/main
 ## Notas
 - El plugin WASM debe ser reemplazado por el binario real en CI/CD.
 - Las rutas de los servicios backend deben estar disponibles en la red local o mockeadas para pruebas.

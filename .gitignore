@@ -1,5 +1,9 @@
 # Excluir spec-kit-main del control de versiones en futuros PR
 spec-kit-main/
+my-gemini-app/
+.qodo/
+contract/
+apps/
 # Dependencies
 node_modules/
 npm-debug.log*
