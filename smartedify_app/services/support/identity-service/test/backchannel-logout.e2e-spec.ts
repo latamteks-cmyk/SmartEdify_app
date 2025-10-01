@@ -49,16 +49,15 @@ describe('Back-Channel Logout (e2e)', () => {
     });
     const publicJwk = clientKey.toJSON(false);
 
-    // Override the client store to return our test client
+    // Override the client store to return our test client (sync, not async)
     const clientStoreService = app.get<ClientStoreService>(ClientStoreService);
-    const originalFindMethod =
-      clientStoreService.findClientById.bind(clientStoreService);
-    clientStoreService.findClientById = async (id: string) => {
+    const originalFindMethod = clientStoreService.findClientById.bind(clientStoreService);
+    clientStoreService.findClientById = (id: string) => {
       if (id === clientId) {
         return {
           client_id: clientId,
           jwks: { keys: [{ ...publicJwk, kid: keyId }] },
-        } as any;
+        };
       }
       return originalFindMethod(id);
     };
@@ -97,18 +96,22 @@ describe('Back-Channel Logout (e2e)', () => {
       consent_granted: true,
     });
 
+    // Creamos la sesión con todos los campos requeridos y la relación user
     const newSession = sessionRepository.create({
       user: testUser,
       tenant_id: TEST_CONSTANTS.DEFAULT_TENANT_ID,
       device_id: 'test-device',
       cnf_jkt: 'some-jkt',
       not_after: new Date(Date.now() + 1000 * 60 * 60),
+      issued_at: new Date(),
+      created_at: new Date(),
     });
     const savedSession = await sessionRepository.save(newSession);
 
-    // Verify that session was actually saved to database
+    // Verificamos que la sesión fue guardada correctamente
     const sessionCheck = await sessionRepository.findOne({
       where: { id: savedSession.id },
+      relations: ['user'],
     });
     expect(sessionCheck).not.toBeNull();
 
@@ -132,6 +135,7 @@ describe('Back-Channel Logout (e2e)', () => {
 
     const revokedSession = await sessionRepository.findOne({
       where: { id: savedSession.id },
+      relations: ['user'],
     });
     expect(revokedSession).not.toBeNull();
     expect(revokedSession!.revoked_at).not.toBeNull();

@@ -1,0 +1,23 @@
+tenants:
+  tenant-alpha:
+    origins:
+      - https://alpha.smartedify.app
+      - https://console.alpha.smartedify.app
+    allow_methods: "GET, POST, PUT, PATCH, DELETE"
+    allow_headers: "Content-Type, Authorization, DPoP"
+    expose_headers: "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Traceparent, X-Request-Id"
+    allow_credentials: true
+  tenant-beta:
+    origins:
+      - https://beta.smartedify.app
+    allow_methods: "GET, POST, PUT, PATCH, DELETE"
+    allow_headers: "Content-Type, Authorization, DPoP"
+    expose_headers: "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Traceparent, X-Request-Id"
+    allow_credentials: true
+  '*':
+    origins:
+      - https://sandbox.smartedify.app
+    allow_methods: "GET, POST, PUT, PATCH, DELETE"
+    allow_headers: "Content-Type, Authorization, DPoP"
+    expose_headers: "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Traceparent, X-Request-Id"
+    allow_credentials: true

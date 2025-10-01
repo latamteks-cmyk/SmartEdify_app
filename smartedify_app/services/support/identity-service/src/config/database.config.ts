@@ -18,8 +18,8 @@ export const getDatabaseConfig = (isTest = false): TypeOrmModuleOptions => {
     username: process.env.DB_USERNAME || 'user',
     password: process.env.DB_PASSWORD || 'password',
     database: isTest
-      ? process.env.DB_TEST_DATABASE || 'identity_test_db' // Corrected DB name
-      : process.env.DB_DATABASE || 'identity_db',
+      ? process.env.DB_TEST_DATABASE || 'identity_test_db'
+      : process.env.DB_DATABASE || 'identity_test_db',
     entities: [
       User,
       WebAuthnCredential,

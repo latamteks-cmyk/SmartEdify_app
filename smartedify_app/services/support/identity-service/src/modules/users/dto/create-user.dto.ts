@@ -1,3 +1,4 @@
+import { IsIn } from 'class-validator';
 import {
   IsEmail,
   IsNotEmpty,
@@ -9,6 +10,10 @@ import {
 } from 'class-validator';
 
 export class CreateUserDto {
+  @IsString()
+  @IsOptional()
+  @IsIn(['ACTIVE', 'INACTIVE', 'LOCKED'])
+  status?: 'ACTIVE' | 'INACTIVE' | 'LOCKED';
   @IsUUID()
   @IsNotEmpty()
   tenant_id: string;

@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  gateway:
+    build: .
+    image: smartedify/gateway:dev
+    ports:
+      - "8080:8080"
+    environment:
+      - JWKS_TTL_SECONDS=300
+      - JWKS_NEG_CACHE_SECONDS=60
+      - DPOP_IAT_SKEW_SECONDS=10
+      - DPOP_REPLAY_TTL_SECONDS=300
+      - WS_MSGS_PER_SEC=1
+      - CORS_CONFIG=/etc/gateway/cors-tenants.yaml
+      - RATE_LIMIT_CONFIG=/etc/gateway/ratelimit.yaml
+      - WAF_MAX_BODY_BYTES=5242880
+      - MTLS_SPIFFE_TRUST_DOMAIN=smartedify.global
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml:ro
+      - ./config/cors-tenants.yaml:/etc/gateway/cors-tenants.yaml:ro
+      - ./config/ratelimit.yaml:/etc/gateway/ratelimit.yaml:ro
+      - ./plugins/dpop_validator.wasm:/plugins/dpop_validator.wasm:ro
+    depends_on:
+      - rate-limit
+      - spire-server
+      - prometheus
+      - s3
+  rate-limit:
+    image: envoyproxy/ratelimit:latest
+    ports:
+      - "6379:6379"
+  spire-server:
+    image: spiffe/spire-server:1.7.1
+    ports:
+      - "8081:8081"
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+  s3:
+    image: minio/minio:latest
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=admin123
+    command: server /data
+    ports:
+      - "9000:9000"

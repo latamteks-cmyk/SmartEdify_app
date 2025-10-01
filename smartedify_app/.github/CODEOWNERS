@@ -1,0 +1,8 @@
+# CODEOWNERS para revisión obligatoria de PR y cambios críticos
+
+# Servicios fundacionales
+/services/support/identity-service/ @latamteks-cmyk/identity-core
+
+# Infraestructura y políticas globales
+/doc/ @latamteks-cmyk/platform
+/.github/ @latamteks-cmyk/platform

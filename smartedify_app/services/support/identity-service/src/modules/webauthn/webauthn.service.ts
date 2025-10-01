@@ -4,10 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  generateRegistrationOptions,
-  verifyRegistrationResponse,
-  generateAuthenticationOptions,
-  verifyAuthenticationResponse,
+  generateRegistrationOptions as defaultGenerateRegistrationOptions,
+  verifyRegistrationResponse as defaultVerifyRegistrationResponse,
+  generateAuthenticationOptions as defaultGenerateAuthenticationOptions,
+  verifyAuthenticationResponse as defaultVerifyAuthenticationResponse,
 } from '@simplewebauthn/server';
 import type {
   AuthenticatorTransportFuture,
@@ -37,6 +37,11 @@ export class WebauthnService {
     private readonly usersService: UsersService,
     @InjectRepository(WebAuthnCredential)
     private webAuthnCredentialRepository: Repository<WebAuthnCredential>,
+    // Permitir inyección opcional de dependencias WebAuthn para testabilidad
+    private readonly _generateRegistrationOptions: typeof defaultGenerateRegistrationOptions = defaultGenerateRegistrationOptions,
+    private readonly _verifyRegistrationResponse: typeof defaultVerifyRegistrationResponse = defaultVerifyRegistrationResponse,
+    private readonly _generateAuthenticationOptions: typeof defaultGenerateAuthenticationOptions = defaultGenerateAuthenticationOptions,
+    private readonly _verifyAuthenticationResponse: typeof defaultVerifyAuthenticationResponse = defaultVerifyAuthenticationResponse,
   ) {}
 
   private getChallengeKey(type: ChallengeType, subjectId: string): string {
@@ -96,7 +101,7 @@ export class WebauthnService {
       where: { user: { id: user.id } },
     });
 
-    const options = await generateRegistrationOptions({
+  const options = await this._generateRegistrationOptions({
       rpName: this.rpService.getRpName(),
       rpID: this.rpService.getRpId(),
       userID: Buffer.from(user.id.toString()), // <- Changed to Buffer
@@ -135,7 +140,7 @@ export class WebauthnService {
       );
     }
 
-    const verification = await verifyRegistrationResponse({
+  const verification = await this._verifyRegistrationResponse({
       response,
       expectedChallenge: storedChallenge,
       expectedOrigin: this.rpService.getExpectedOrigin(),
@@ -246,7 +251,7 @@ export class WebauthnService {
       }
     }
 
-    const options = await generateAuthenticationOptions({
+  const options = await this._generateAuthenticationOptions({
       rpID: this.rpService.getRpId(),
       userVerification: 'preferred',
       allowCredentials,
@@ -293,7 +298,7 @@ export class WebauthnService {
     }
 
     // Tipos del paquete pueden ir por detrás
-    const verification = await verifyAuthenticationResponse({
+  const verification = await this._verifyAuthenticationResponse({
       response,
       expectedChallenge: storedChallenge,
       expectedOrigin: this.rpService.getExpectedOrigin(),

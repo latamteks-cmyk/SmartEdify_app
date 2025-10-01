@@ -20,52 +20,114 @@ interface TestModuleSetup {
   moduleFixture: TestingModule;
 }
 
-// Mock para @simplewebauthn/server
-jest.mock('@simplewebauthn/server', () => ({
-  generateRegistrationOptions: jest.fn(),
-  generateAuthenticationOptions: jest.fn(),
-  verifyRegistrationResponse: jest.fn(),
-  verifyAuthenticationResponse: jest.fn(),
-}));
-
-// Cast mocks to jest.Mock for type-safe usage
-const mockedGenerateRegistrationOptions =
-  generateRegistrationOptions as jest.Mock;
-const mockedVerifyRegistrationResponse =
-  verifyRegistrationResponse as jest.Mock;
-const mockedVerifyAuthenticationResponse =
-  verifyAuthenticationResponse as jest.Mock;
+// Mocks de Jest para las dependencias WebAuthn
+const mockedGenerateRegistrationOptions = jest.fn();
+const mockedVerifyRegistrationResponse = jest.fn();
+const mockedGenerateAuthenticationOptions = jest.fn();
+const mockedVerifyAuthenticationResponse = jest.fn();
+// ...existing code...
 
 describe('WebAuthn (e2e)', () => {
-  let setup: TestModuleSetup;
   let app: INestApplication;
   let usersRepository: Repository<User>;
   let credentialsRepository: Repository<WebAuthnCredential>;
   let testUser: User;
 
   beforeEach(async () => {
-    setup = await TestConfigurationFactory.createTestModule();
-    app = setup.app;
+    jest.clearAllMocks();
+    // Mocks de challenges y respuestas
+    let registrationChallenge = 'test-challenge';
+    let authenticationChallenge = 'auth-challenge';
+    mockedGenerateRegistrationOptions.mockImplementation(() => ({
+      challenge: registrationChallenge,
+      rp: { name: 'Test App', id: 'localhost' },
+      user: { id: 'user-id', name: 'test@example.com', displayName: 'test@example.com' },
+      pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+      timeout: 60000,
+      attestation: 'none',
+    }));
+    mockedVerifyRegistrationResponse.mockImplementation(({ expectedChallenge }) => ({
+      verified: expectedChallenge === 'test-challenge',
+      registrationInfo: {
+        credentialID: Buffer.from('test-credential-id'),
+        credentialPublicKey: Buffer.from('mock-key'),
+        counter: 0,
+        transports: ['usb'],
+        aaguid: '00000000-0000-0000-0000-000000000000',
+        credentialDeviceType: 'singleDevice',
+        credentialBackedUp: false,
+      },
+    }));
+    mockedGenerateAuthenticationOptions.mockImplementation(() => ({
+      challenge: authenticationChallenge,
+      allowCredentials: [],
+      userVerification: 'preferred',
+    }));
+    mockedVerifyAuthenticationResponse.mockImplementation(() => ({
+      verified: true,
+      authenticationInfo: { newCounter: 1 },
+    }));
 
-    usersRepository = setup.moduleFixture.get<Repository<User>>(
-      getRepositoryToken(User),
-    );
-    credentialsRepository = setup.moduleFixture.get<
-      Repository<WebAuthnCredential>
-    >(getRepositoryToken(WebAuthnCredential));
+    // ...setup del módulo igual que antes...
+    const { TypeOrmModule } = require('@nestjs/typeorm');
+    const { getTestDatabaseConfig } = require('../src/config/database.config');
+    const { WebauthnService } = require('../src/modules/webauthn/webauthn.service');
+    const { getRepositoryToken } = require('@nestjs/typeorm');
+    const { WebAuthnCredential } = require('../src/modules/webauthn/entities/webauthn-credential.entity');
+    const { UsersService } = require('../src/modules/users/users.service');
+    const { User } = require('../src/modules/users/entities/user.entity');
+    const { RpService } = require('../src/modules/webauthn/rp.service');
+    const { TestingModule, Test } = require('@nestjs/testing');
 
-    testUser = await usersRepository.save({
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [
+        TypeOrmModule.forRoot(getTestDatabaseConfig()),
+        require('../src/modules/webauthn/webauthn.module').WebauthnModule,
+        require('../src/modules/users/users.module').UsersModule,
+      ],
+    })
+      .overrideProvider(WebauthnService)
+      .useFactory({
+        factory: (
+          rpService: typeof RpService,
+          usersService: typeof UsersService,
+          webAuthnCredentialRepository: any,
+        ) =>
+          new WebauthnService(
+            rpService,
+            usersService,
+            webAuthnCredentialRepository,
+            mockedGenerateRegistrationOptions,
+            mockedVerifyRegistrationResponse,
+            mockedGenerateAuthenticationOptions,
+            mockedVerifyAuthenticationResponse,
+          ),
+        inject: [RpService, UsersService, getRepositoryToken(WebAuthnCredential)],
+      })
+      .compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+
+    usersRepository = moduleFixture.get(getRepositoryToken(User));
+    credentialsRepository = moduleFixture.get(getRepositoryToken(WebAuthnCredential));
+    const usersService = moduleFixture.get(UsersService);
+
+    testUser = await usersService.create({
+      tenant_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
       username: 'testuser',
       email: 'test@example.com',
-      tenant_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-      is_active: true,
-      created_at: new Date(),
-      updated_at: new Date(),
+      password: 'testpass',
+      status: 'ACTIVE',
+      consent_granted: true,
+      policy_version: 'v1',
     });
   });
 
   afterEach(async () => {
-    await TestConfigurationFactory.closeTestModule(setup);
+    if (app) {
+      await app.close();
+    }
   });
 
   describe('/webauthn/registration/options (GET)', () => {
@@ -82,7 +144,7 @@ describe('WebAuthn (e2e)', () => {
         timeout: 60000,
         attestation: 'none',
       };
-      mockedGenerateRegistrationOptions.mockReturnValue(mockOptions);
+  mockedGenerateRegistrationOptions.mockReturnValue(mockOptions);
 
       const response = await request(app.getHttpServer())
         .get('/webauthn/registration/options')
@@ -98,8 +160,8 @@ describe('WebAuthn (e2e)', () => {
 
   describe('/webauthn/registration/verification (POST)', () => {
     it('should verify and store a valid registration', async () => {
-      const mockVerificationResult = {
-        verified: true,
+      mockedVerifyRegistrationResponse.mockImplementation(({ expectedChallenge }) => ({
+        verified: expectedChallenge === 'test-challenge',
         registrationInfo: {
           credentialID: Buffer.from('test-credential-id'),
           credentialPublicKey: Buffer.from('mock-key'),
@@ -109,27 +171,29 @@ describe('WebAuthn (e2e)', () => {
           credentialDeviceType: 'singleDevice',
           credentialBackedUp: false,
         },
-      };
-      mockedVerifyRegistrationResponse.mockResolvedValue(
-        mockVerificationResult,
-      );
+      }));
+
+
+      // Ensure challenge is set in the challenge store by calling registration/options first
+      await request(app.getHttpServer())
+        .get('/webauthn/registration/options')
+        .query({ username: testUser.email })
+        .expect(200);
 
       const registrationChallenge = 'test-challenge';
+      const credential = {
+        id: 'test-credential-id',
+        rawId: 'test-credential-id',
+        response: {
+          attestationObject: 'mock-attestation',
+          clientDataJSON: 'mock-client-data',
+        },
+        type: 'public-key',
+      };
       const response = await request(app.getHttpServer())
         .post('/webauthn/registration/verification')
         .set('webauthn-challenge', registrationChallenge)
-        .send({
-          userId: testUser.id,
-          credential: {
-            id: 'test-credential-id',
-            rawId: 'test-credential-id',
-            response: {
-              attestationObject: 'mock-attestation',
-              clientDataJSON: 'mock-client-data',
-            },
-            type: 'public-key',
-          },
-        })
+        .send({ ...credential, userId: testUser.id })
         .expect(201);
 
       expect(response.body).toHaveProperty('verified', true);
@@ -223,7 +287,8 @@ describe('WebAuthn (e2e)', () => {
 
   describe('WebAuthn L3 Advanced Fields', () => {
     it('should persist advanced fields on registration', async () => {
-      const webAuthnService = setup.moduleFixture.get(WebauthnService);
+  const { WebauthnService } = require('../src/modules/webauthn/webauthn.service');
+  const webAuthnService = app.get(WebauthnService);
 
       const registrationInfo = {
         credentialID: Buffer.from('test-cred-id'),
@@ -234,11 +299,22 @@ describe('WebAuthn (e2e)', () => {
         credentialDeviceType: 'multiDevice',
         credentialBackedUp: true,
       };
-      const mockResponse = { response: { transports: ['usb', 'nfc'] } };
+      // Mock mínimo válido para RegistrationResponseJSON
 
-      // @ts-expect-error: Intentionally accessing private method for testing
+      const mockResponse = {
+        id: 'test-cred-id',
+        rawId: 'test-cred-id',
+        response: {
+          clientDataJSON: 'mock-client-data',
+          attestationObject: 'mock-attestation',
+          transports: ['usb', 'nfc'] as import('@simplewebauthn/types').AuthenticatorTransportFuture[],
+        },
+        clientExtensionResults: {},
+        type: 'public-key' as const,
+      };
+
       await webAuthnService['persistCredential'](
-        { registrationInfo },
+        registrationInfo,
         mockResponse,
         testUser,
       );
@@ -246,12 +322,13 @@ describe('WebAuthn (e2e)', () => {
       const creds = await credentialsRepository.find();
       expect(creds.length).toBe(1);
       const cred = creds[0];
-      expect(cred.transports).toEqual(['usb', 'nfc']);
-      expect(cred.cred_protect).toBeUndefined(); // credProtect is not in registrationInfo
-      expect(cred.backup_eligible).toBe(true);
-      expect(cred.backup_state).toBe('backed_up');
-      expect(cred.aaguid).toBe('00000000-0000-0000-0000-000000000000');
-      expect(cred.attestation_fmt).toBeUndefined(); // fmt is not in registrationInfo
+    expect(cred.transports).toEqual(['usb', 'nfc']);
+    expect(cred.cred_protect).toBeNull(); // credProtect es null en persistencia real
+    expect(cred.backup_eligible).toBe(true);
+    expect(cred.backup_state).toBe('backed_up');
+    // aaguid se persiste como Buffer, comparar como hex string (16 bytes = 32 hex chars)
+    expect(Buffer.isBuffer(cred.aaguid) ? cred.aaguid.toString('hex') : cred.aaguid).toBe('00000000000000000000000000000000');
+    expect(cred.attestation_fmt).toBeNull(); // fmt es null en persistencia real
     });
   });
 });

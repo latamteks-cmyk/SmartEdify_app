@@ -1,0 +1,7 @@
+# Ignorar archivos de entorno y temporales
+.env
+.env.*
+*.log
+*.tmp
+node_modules/
+scripts/
