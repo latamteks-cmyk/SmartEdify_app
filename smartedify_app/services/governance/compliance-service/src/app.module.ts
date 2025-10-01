@@ -5,7 +5,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TerminusModule } from '@nestjs/terminus';
 
 import { DatabaseConfig } from './config/database.config';
-import { AppConfig } from './config/app.config';
+import AppConfig from './config/app.config';
 
 // Modules
 import { HealthModule } from './health/health.module';

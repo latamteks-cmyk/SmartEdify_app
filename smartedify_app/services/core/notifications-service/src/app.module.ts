@@ -3,33 +3,37 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
-// Configuración
+// Configuration
+import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import redisConfig from './config/redis.config';
-import appConfig from './config/app.config';
+import kafkaConfig from './config/kafka.config';
 
-// Módulos de dominio
-import { ProfilesModule } from './modules/profiles/profiles.module';
-import { CommonModule } from './common/common.module';
+// Modules
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { TemplatesModule } from './modules/templates/templates.module';
+import { ChannelsModule } from './modules/channels/channels.module';
+import { EventsModule } from './modules/events/events.module';
 import { HealthModule } from './health/health.module';
+import { CommonModule } from './common/common.module';
 
-// Entidades
-import { UserProfile } from './modules/profiles/entities/user-profile.entity';
-import { ProfileStatusHistory } from './modules/profiles/entities/profile-status-history.entity';
-import { UserMembership } from './modules/profiles/entities/user-membership.entity';
-import { UserRole } from './modules/profiles/entities/user-role.entity';
-import { UserEntitlement } from './modules/profiles/entities/user-entitlement.entity';
+// Entities
+import { Notification } from './modules/notifications/entities/notification.entity';
+import { NotificationTemplate } from './modules/templates/entities/notification-template.entity';
+import { NotificationChannel } from './modules/channels/entities/notification-channel.entity';
+import { EventSchema } from './modules/events/entities/event-schema.entity';
+import { NotificationHistory } from './modules/notifications/entities/notification-history.entity';
 
 @Module({
   imports: [
-    // Configuración global
+    // Global configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, redisConfig],
+      load: [appConfig, databaseConfig, redisConfig, kafkaConfig],
       envFilePath: ['.env.local', '.env'],
     }),
 
-    // Base de datos
+    // Database
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -40,16 +44,14 @@ import { UserEntitlement } from './modules/profiles/entities/user-entitlement.en
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.name'),
         entities: [
-          UserProfile,
-          ProfileStatusHistory,
-          UserMembership,
-          UserRole,
-          UserEntitlement,
+          Notification,
+          NotificationTemplate,
+          NotificationChannel,
+          EventSchema,
+          NotificationHistory,
         ],
-        synchronize: false, // Usar migraciones en producción
+        synchronize: false,
         logging: configService.get<string>('NODE_ENV') === 'development' ? ['query', 'error'] : ['error'],
-        
-        // SSL en producción
         ssl: configService.get<string>('NODE_ENV') === 'production' ? {
           rejectUnauthorized: false,
         } : false,
@@ -57,21 +59,22 @@ import { UserEntitlement } from './modules/profiles/entities/user-entitlement.en
       inject: [ConfigService],
     }),
 
-    // Event Emitter para eventos internos
+    // Event Emitter
     EventEmitterModule.forRoot({
       wildcard: false,
       delimiter: '.',
       maxListeners: 10,
     }),
 
-    // Módulos compartidos
+    // Shared modules
     CommonModule,
     HealthModule,
 
-    // Módulos de dominio
-    ProfilesModule,
+    // Domain modules
+    NotificationsModule,
+    TemplatesModule,
+    ChannelsModule,
+    EventsModule,
   ],
-  controllers: [],
-  providers: [],
 })
 export class AppModule {}

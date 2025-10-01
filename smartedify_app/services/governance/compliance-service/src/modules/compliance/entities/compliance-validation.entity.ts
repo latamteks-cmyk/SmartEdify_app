@@ -22,23 +22,24 @@ export class ComplianceValidation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('uuid')
+  @Column('uuid', { name: 'tenant_id' })
   @Index()
   tenantId: string;
 
   @Column({
-    type: 'enum',
-    enum: ValidationType,
+    type: 'varchar',
+    length: 50,
+    name: 'validation_type',
   })
-  validationType: ValidationType;
+  validationType: string;
 
-  @Column('uuid')
+  @Column('uuid', { name: 'entity_id' })
   entityId: string; // assemblyId, voteId, etc.
 
-  @Column()
+  @Column({ name: 'is_valid' })
   isValid: boolean;
 
-  @Column('jsonb')
+  @Column('jsonb', { name: 'validation_result' })
   validationResult: {
     isValid: boolean;
     errors?: string[];
@@ -50,9 +51,9 @@ export class ComplianceValidation {
   @Column('jsonb', { default: {} })
   metadata: Record<string, any>;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ length: 255, nullable: true, name: 'validated_by' })
   validatedBy?: string; // user or system
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }
