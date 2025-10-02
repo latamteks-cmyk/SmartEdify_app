@@ -6,27 +6,66 @@ SmartEdify es una plataforma SaaS multi-tenant para la administración, gobernan
 
 ```
 smartedify_app/
-├── apps/                          # Frontend applications
-│   ├── bff/                      # Backend for Frontend
-│   └── portal/                   # User portal application
-├── services/                     # Microservices
-│   └── support/
-│       ├── identity-service/     # OAuth 2.1/OIDC Identity Provider
-│       └── gateway-service/      # API Gateway
-├── contracts/                    # API Contracts
-│   ├── openapi/                 # OpenAPI specifications
-│   └── asyncapi/                # AsyncAPI specifications
-├── infra/                       # Infrastructure
-│   ├── scripts/                 # Deployment scripts
-│   └── docker-compose.test.yml  # Testing environment
-├── config/                      # Configuration templates
-│   ├── environments/            # Environment configurations
-│   └── secrets/                 # Secret templates
-├── docs/                        # Documentation
-│   ├── architecture/            # System architecture
-│   ├── security/               # Security guidelines
-│   └── api/                    # API documentation
-└── .github/                     # CI/CD workflows
+├─ apps/
+│  ├─ web-admin/                # Next.js (SSR/ISR), UI Admin
+│  ├─ web-user/                 # Next.js, UI Usuario
+│  ├─ mobile/                   # Expo/React Native
+│  └─ bff/
+│     ├─ admin/                 # BFF Admin (PKCE, CSRF, cache corto)
+│     ├─ app/                   # BFF Usuario
+│     └─ mobile/                # BFF Móvil
+├─ services/
+│  ├─ core/                     # Servicios fundamentales (Línea 1)
+│  │  ├─ identity-service/      # Puerto 3001 - Gestión de identidad, JWT, RBAC/ABAC
+│  │  ├─ user-profiles-service/ # Puerto 3002 - Perfiles de usuario, roles por condominio
+│  │  ├─ tenancy-service/       # Puerto 3003 - Ciclo de vida de condominios, alícuotas
+│  │  ├─ notifications-service/ # Puerto 3005 - Email, SMS, push, Event Schema Registry
+│  │  └─ documents-service/     # Puerto 3006 - Gestión documental, firma electrónica
+│  ├─ governance/               # Servicios de gobernanza (Línea 2)
+│  │  ├─ governance-service/    # Puerto 3011 - Asambleas, votación, actas con IA
+│  │  ├─ streaming-service/     # Puerto 3014 - Video en vivo, QR, transcripción
+│  │  ├─ compliance-service/    # Puerto 3012 - Motor normativo global, validaciones
+│  │  └─ reservation-service/   # Puerto 3013 - Reservas de áreas comunes
+│  ├─ operations/               # Servicios operativos (Línea 3)
+│  │  ├─ finance-service/       # Puerto 3007 - Cuotas, conciliación, PCGE/NIIF
+│  │  ├─ asset-management-service/ # Puerto 3010 - Inventario, mantenimiento, proveedores
+│  │  ├─ physical-security-service/ # Puerto 3004 - CCTV, control accesos, IoT
+│  │  ├─ payroll-service/       # Puerto 3008 - Nóminas, PLAME, beneficios
+│  │  └─ hr-compliance-service/ # Puerto 3009 - Ciclo empleado, SST, contratos
+│  └─ business/                 # Servicios de negocio (Línea 4)
+│     ├─ marketplace-service/   # Puerto 3015 - Ecosistema servicios premium
+│     └─ analytics-service/     # Puerto 3016 - BI, dashboards, ML predictivo
+├─ platform/
+│  ├─ gateway/                  # Puerto 8080 - WAF, CORS, rate limits, enrutamiento (norte-sur)
+│  ├─ mesh/                     # mTLS, S2S authZ, retries, circuit breaking
+│  ├─ events/                   # AsyncAPI, esquemas, outbox/idempotencia
+│  ├─ observability/            # Otel collectors, dashboards, SLOs
+│  ├─ security/                 # OPA bundles, CSP/HSTS, KMS
+│  └─ shared/                   # libs comunes (tipos, SDKs OpenAPI, tracing)
+├─ contracts/
+│  ├─ openapi/                  # `*-service.v1.yaml` + ejemplos
+│  ├─ asyncapi/                 # eventos por dominio
+│  └─ pacts/                    # tests consumidor-productor (BFF↔servicios)
+├─ infra/
+│  ├─ terraform/
+│  │  ├─ modules/               # vpc, rds, redis, s3, cloudfront, waf, ecs, iam
+│  │  └─ envs/                  # dev, stg, prod
+│  └─ cicd/                     # pipelines, imágenes base, escáneres
+├─ config/
+│  ├─ dev/ stg/ prod/           # feature flags, parámetros no sensibles
+│  └─ secrets/                  # plantillas .env.example (sin secretos)
+├─ qa/
+│  ├─ k6/                       # pruebas de carga
+│  └─ chaos/                    # experimentos de resiliencia
+├─ scripts/                     # bootstrap, codegen, db:*, lint, test
+├─ .github/workflows/           # CI (lint, unit, contract, e2e, seguridad, deploy)
+├─ doc/
+│  ├─ adr/                      # Architecture Decision Records
+│  ├─ diagrams/                 # mermaid/drawio
+│  ├─ runbooks/                 # incident, DR, rotación claves, webhooks
+│  ├─ security/                 # DPIA, amenazas, 29733, retención
+│  └─ product/                  # roadmaps, criterios PMV
+└─ README.md
 ```
 
 ## 🚀 Services
