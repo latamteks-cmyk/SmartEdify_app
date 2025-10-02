@@ -109,6 +109,7 @@ flowchart TB
      REDIS:::platform
      PG:::platform
      S3:::platform
+
     classDef frontend fill:#e1f5fe,stroke:#01579b,color:#000
     classDef bff fill:#f3e5f5,stroke:#4a148c,color:#000
     classDef gateway fill:#e8f5e8,stroke:#1b5e20,color:#000
