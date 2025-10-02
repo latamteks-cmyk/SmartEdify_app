@@ -4,10 +4,10 @@ graph TD
     subgraph Gateway
       Envoy[Envoy Proxy]
       WASM[WASM DPoP]
-      Redis[Redis (anti-replay/rate-limit)]
-      SPIFFE[SPIRE (mTLS)]
+      Redis[Redis 'anti-replay/rate-limit']
+      SPIFFE[SPIRE 'mTLS']
       Prometheus[Prometheus/OTel]
-      S3[S3 (logs WORM)]
+      S3[S3 'logs WORM']
     end
     subgraph Servicios
       Identity[identity-service]
