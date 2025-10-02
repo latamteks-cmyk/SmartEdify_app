@@ -1,0 +1,14 @@
+{
+  "name": "@smartedify/finance-service-simple",
+  "version": "1.0.0",
+  "description": "SmartEdify Finance Service - Simple Mock",
+  "main": "src/main-simple.js",
+  "scripts": {
+    "start": "node src/main-simple.js",
+    "dev": "node src/main-simple.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

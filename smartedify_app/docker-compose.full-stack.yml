@@ -1,0 +1,369 @@
+version: '3.8'
+
+services:
+  # ===================
+  # DATABASES
+  # ===================
+  
+  # PostgreSQL - Main Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: smartedify-postgres
+    environment:
+      POSTGRES_DB: smartedify
+      POSTGRES_USER: smartedify_user
+      POSTGRES_PASSWORD: smartedify_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartedify_user -d smartedify"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartedify-network
+
+  # Redis - Caching and Sessions
+  redis:
+    image: redis:7-alpine
+    container_name: smartedify-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartedify-network
+
+  # ===================
+  # CORE SERVICES
+  # ===================
+
+  # Identity Service
+  identity-service:
+    build:
+      context: ./services/core/identity-service
+      dockerfile: Dockerfile
+    container_name: smartedify-identity-service
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://smartedify_user:smartedify_password@postgres:5432/smartedify_identity?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      DPOP_SECRET: dev-dpop-secret-change-in-production
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - smartedify-network
+    restart: unless-stopped
+
+  # Tenancy Service
+  tenancy-service:
+    build:
+      context: ./services/core/tenancy-service
+      dockerfile: Dockerfile
+    container_name: smartedify-tenancy-service
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      DATABASE_URL: postgresql://smartedify_user:smartedify_password@postgres:5432/smartedify_tenancy?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - smartedify-network
+    restart: unless-stopped
+
+  # Finance Service
+  finance-service:
+    build:
+      context: ./services/operations/finance-service
+      dockerfile: Dockerfile
+    container_name: smartedify-finance-service
+    environment:
+      NODE_ENV: development
+      PORT: 3007
+      DATABASE_URL: postgresql://smartedify_user:smartedify_password@postgres:5432/smartedify_finance?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      
+      # Payment Providers (Test/Mock)
+      STRIPE_SECRET_KEY: sk_test_mock_key
+      STRIPE_WEBHOOK_SECRET: whsec_mock_secret
+      CULQI_SECRET_KEY: sk_test_mock_key
+      MERCADOPAGO_ACCESS_TOKEN: TEST-mock-access-token
+      
+      # CORS
+      CORS_ORIGINS: http://localhost:3100,http://localhost:3000
+    ports:
+      - "3007:3007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - smartedify-network
+    restart: unless-stopped
+
+  # Compliance Service
+  compliance-service:
+    build:
+      context: ./services/governance/compliance-service
+      dockerfile: Dockerfile
+    container_name: smartedify-compliance-service
+    environment:
+      NODE_ENV: development
+      PORT: 3012
+      DATABASE_URL: postgresql://smartedify_user:smartedify_password@postgres:5432/smartedify_compliance?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      
+      # LLM Configuration
+      LLM_BASE_URL: http://llama-cpp:8089
+      EMBEDDINGS_URL: http://embeddings-service:8091
+      
+      # Feature Flags
+      FEATURE_LLM_POLICIES: true
+      FEATURE_COMPLIANCE_VALIDATION: true
+    ports:
+      - "3012:3012"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3012/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - smartedify-network
+    restart: unless-stopped
+
+  # Reservation Service
+  reservation-service:
+    build:
+      context: ./services/operations/reservation-service
+      dockerfile: Dockerfile
+    container_name: smartedify-reservation-service
+    environment:
+      NODE_ENV: development
+      PORT: 3013
+      DATABASE_URL: postgresql://smartedify_user:smartedify_password@postgres:5432/smartedify_reservations?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      
+      # Service Dependencies
+      COMPLIANCE_SERVICE_URL: http://compliance-service:3012
+      FINANCE_SERVICE_URL: http://finance-service:3007
+      
+      # Feature Flags
+      FEATURE_FEES: true
+      FEATURE_CHECK_IN: true
+      FEATURE_COMPLIANCE_VALIDATION: true
+    ports:
+      - "3013:3013"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      compliance-service:
+        condition: service_healthy
+      finance-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3013/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - smartedify-network
+    restart: unless-stopped
+
+  # ===================
+  # LLM SERVICES
+  # ===================
+
+  # Llama.cpp Server
+  llama-cpp:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    container_name: smartedify-llama-cpp
+    environment:
+      - MODEL=/models/model.gguf
+    ports:
+      - "8089:8080"
+    volumes:
+      - ./models:/models:ro
+    command: >
+      --server
+      --host 0.0.0.0
+      --port 8080
+      --model /models/model.gguf
+      --ctx-size 2048
+      --threads 4
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - smartedify-network
+    restart: unless-stopped
+    profiles:
+      - llm
+
+  # Embeddings Service (Mock)
+  embeddings-service:
+    image: nginx:alpine
+    container_name: smartedify-embeddings-service
+    ports:
+      - "8091:80"
+    volumes:
+      - ./scripts/mock-embeddings.conf:/etc/nginx/conf.d/default.conf
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - smartedify-network
+    restart: unless-stopped
+
+  # ===================
+  # WEB APPLICATIONS
+  # ===================
+
+  # Web Admin
+  web-admin:
+    build:
+      context: ./apps/web-admin
+      dockerfile: Dockerfile
+    container_name: smartedify-web-admin
+    environment:
+      NODE_ENV: development
+      PORT: 3100
+      
+      # API Endpoints
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+      NEXT_PUBLIC_IDENTITY_SERVICE_URL: http://localhost:3001
+      NEXT_PUBLIC_TENANCY_SERVICE_URL: http://localhost:3003
+      NEXT_PUBLIC_FINANCE_SERVICE_URL: http://localhost:3007
+      NEXT_PUBLIC_COMPLIANCE_SERVICE_URL: http://localhost:3012
+      NEXT_PUBLIC_RESERVATION_SERVICE_URL: http://localhost:3013
+    ports:
+      - "3100:3100"
+    depends_on:
+      - identity-service
+      - tenancy-service
+      - finance-service
+      - compliance-service
+      - reservation-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - smartedify-network
+    restart: unless-stopped
+
+  # ===================
+  # MONITORING
+  # ===================
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: smartedify-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - smartedify-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: smartedify-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - smartedify-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  smartedify-network:
+    driver: bridge
