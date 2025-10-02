@@ -1,4 +1,4 @@
-# SmartEdify Platform
+# SmartEdify Platform 1.1
 
 Enterprise-grade educational platform with comprehensive identity management, authentication, and authorization capabilities. Built with modern security standards and microservices architecture.
 

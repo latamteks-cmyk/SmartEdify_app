@@ -1,7 +1,7 @@
 {
-  "name": "@smartedify/tenancy-service",
+  "name": "@smartedify/reservation-service",
   "version": "1.0.0",
-  "description": "SmartEdify Tenancy Service - Mock for testing",
+  "description": "SmartEdify Reservation Service - Mock for testing",
   "main": "src/main.js",
   "scripts": {
     "start": "node src/main.js",
@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "axios": "^1.5.0"
   }
 }

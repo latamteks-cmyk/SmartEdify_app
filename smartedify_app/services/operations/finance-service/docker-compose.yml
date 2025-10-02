@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  finance-db:
+    image: postgres:15-alpine
+    container_name: smartedify-finance-db
+    environment:
+      POSTGRES_DB: smartedify_finance
+      POSTGRES_USER: finance_user
+      POSTGRES_PASSWORD: finance_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - finance_db_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finance_user -d smartedify_finance"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finance-network
+
+  # Redis for caching and sessions
+  finance-redis:
+    image: redis:7-alpine
+    container_name: smartedify-finance-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - finance_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finance-network
+
+  # Finance Service
+  finance-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartedify-finance-service
+    environment:
+      NODE_ENV: development
+      PORT: 3007
+      DATABASE_URL: postgresql://finance_user:finance_password@finance-db:5432/smartedify_finance?schema=public
+      REDIS_URL: redis://finance-redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      
+      # Payment Providers (configure with your actual keys)
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_mock}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_mock}
+      CULQI_SECRET_KEY: ${CULQI_SECRET_KEY:-sk_test_mock}
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-TEST-mock}
+      
+      # CORS
+      CORS_ORIGINS: http://localhost:3100,http://localhost:3000
+    ports:
+      - "3007:3007"
+    depends_on:
+      finance-db:
+        condition: service_healthy
+      finance-redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3007/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - finance-network
+    restart: unless-stopped
+
+  # Stripe CLI for webhook testing (optional)
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    container_name: smartedify-stripe-cli
+    environment:
+      STRIPE_API_KEY: ${STRIPE_SECRET_KEY:-sk_test_mock}
+    command: listen --forward-to finance-service:3007/api/v1/payments/webhooks/stripe
+    depends_on:
+      - finance-service
+    networks:
+      - finance-network
+    profiles:
+      - stripe-webhooks
+
+volumes:
+  finance_db_data:
+    driver: local
+  finance_redis_data:
+    driver: local
+
+networks:
+  finance-network:
+    driver: bridge
