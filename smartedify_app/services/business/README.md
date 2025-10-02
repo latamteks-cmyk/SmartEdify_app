@@ -1,6 +1,5 @@
-# Business Services — README
-
-Plataforma de **servicios de negocio** que habilita ingresos premium y analítica avanzada sobre SmartEdify. Incluye `marketplace-service` (3015) y `analytics-service` (3016). Definidos en la capa *business* del monorepo. 
+# Business Services
+Plataforma de **servicios de negocio** que habilita ingresos premium y analítica avanzada sobre SmartEdify. Incluye `marketplace-service` (3015) y `analytics-service` (3016)
 
 ---
 
@@ -179,13 +178,3 @@ graph TD
 Software propietario. Ver guía de *support* y referencia en OpenAPI/AsyncAPI. 
 
 ---
-
-> Puertos y pertenencia a la capa *business* confirmados en la arquitectura del monorepo. 
-
-
-Medical References:
-1. None — DOI: file_0000000092c861fb8a78dc73f86ce579
-2. None — DOI: file_00000000877461f4a0aa04a00833c6d1
-3. None — DOI: file-GxmJn3rarzdJehdikrvA9q
-4. None — DOI: file-D3TKX7kzvvmBd1ZfriYHMQ
-5. None — DOI: file-Bqp3dBmX8ioneCA2xDrZ2N
