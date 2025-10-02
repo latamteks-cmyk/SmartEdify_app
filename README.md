@@ -72,227 +72,255 @@ smartedify_app/
 
 ### Core Services Status
 
-| Servicio | Estado | Completitud | Prioridad | Documentación |
-|----------|--------|-------------|-----------|---------------|
-| **streaming-service** | ✅ Operacional | 100% | Baja | [Análisis Completo](./auditoria/streaming-service/) |
-| **governance-service** | 🔄 Casi completo | 95% | Media | [Análisis](./auditoria/governance-service/) |
-| **finance-service** | ✅ Funcional | 90% | Baja | [Análisis](./auditoria/finance-service/) |
-| **asset-management-service** | ✅ Funcional | 85% | Baja | [Análisis](./auditoria/asset-management-service/) |
-| **user-profiles-service** | 🚧 En desarrollo | 75% | Alta | [Análisis](./auditoria/user-profiles-service/) |
-| **notifications-service** | ❌ No implementado | 0% | **CRÍTICA** | [Análisis Crítico](./auditoria/notifications-service/) |
-| **documents-service** | ❌ No implementado | 0% | **CRÍTICA** | [Análisis Legal](./auditoria/documents-service/) |
+> Nota: `notifications-service` y `documents-service` son bloqueantes P0 para funcionalidades completas de streaming y validez legal de asambleas.
+
+| Servicio                     | Estado                    | Completitud | Prioridad   | Documentación                                          |
+| ---------------------------- | ------------------------- | ----------- | ----------- | ------------------------------------------------------ |
+| **streaming-service**        | ✅ Funcional (dep. notifs) | 90%         | **Media**   | [Análisis Completo](./auditoria/streaming-service/)    |
+| **governance-service**       | 🔄 Casi completo          | 95%         | Media       | [Análisis](./auditoria/governance-service/)            |
+| **finance-service**          | ✅ Funcional               | 90%         | Baja        | [Análisis](./auditoria/finance-service/)               |
+| **asset-management-service** | ✅ Funcional               | 85%         | Baja        | [Análisis](./auditoria/asset-management-service/)      |
+| **user-profiles-service**    | 🚧 En desarrollo          | 75%         | Alta        | [Análisis](./auditoria/user-profiles-service/)         |
+| **notifications-service**    | ❌ No implementado         | 0%          | **CRÍTICA** | [Análisis Crítico](./auditoria/notifications-service/) |
+| **documents-service**        | ❌ No implementado         | 0%          | **CRÍTICA** | [Análisis Legal](./auditoria/documents-service/)       |
 
 ### Identity Service
-Enterprise OAuth 2.1/OIDC identity provider with advanced security features:
-- **Authentication Flows:** Authorization Code + PKCE, Device Flow, Refresh Token Rotation
-- **Security:** DPoP proof of possession, anti-replay protection, automated key rotation
-- **Standards:** FIDO2/WebAuthn, TOTP MFA, GDPR compliance
-- **Multi-tenancy:** Complete tenant isolation with separate cryptographic materials
 
-[📖 Identity Service Documentation](./services/support/identity-service/README.md)
+Proveedor de identidad OAuth **2.1** + **OIDC** con seguridad avanzada:
+
+* **Authentication Flows:** Authorization Code + PKCE, Device Flow, Refresh Token Rotation
+* **Security:** DPoP proof of possession, anti-replay protection, automated key rotation
+* **Standards:** FIDO2/WebAuthn, TOTP MFA, GDPR compliance
+* **Multi-tenancy:** Aislamiento total por tenant con materiales criptográficos separados
+
+📖 Documentación: `./services/core/identity-service/README.md`
 
 ### Gateway Service
-API Gateway with centralized routing, authentication, and rate limiting.
+
+API Gateway con ruteo centralizado, **validación L7 de JWT/DPoP**, CORS y rate limiting. No emite ni valida identidad a nivel de dominio.
 
 ## 📋 Auditoría de Servicios
 
 ### 🎯 Estado General
-- **Servicios auditados:** 7/10 (100% cobertura documental)
-- **Completitud promedio:** 85%
-- **Documentación:** 100% consolidada en [auditoria/](./auditoria/)
+
+* **Servicios auditados:** 7/10 (100% cobertura documental)
+* **Completitud promedio:** 85%
+* **Documentación:** 100% consolidada en [auditoria/](./auditoria/)
 
 ### 🚨 Bloqueantes Críticos Identificados
-1. **notifications-service (0%)** - Bloquea funcionalidad básica de streaming y governance
-2. **documents-service (0%)** - Crítico para validez legal de asambleas
+
+1. **notifications-service (0%)** — Bloquea funcionalidad básica de streaming y governance
+2. **documents-service (0%)** — Crítico para validez legal de asambleas
 
 ### 📊 Acceso a Documentación Completa
-- **Índice maestro:** [auditoria/INDEX.md](./auditoria/INDEX.md)
-- **Análisis cross-service:** [auditoria/cross-service/](./auditoria/cross-service/)
-- **Herramientas de auditoría:** [auditoria/scripts/](./auditoria/scripts/)
-- **Métricas y tendencias:** [auditoria/reports/](./auditoria/reports/)
+
+* **Índice maestro:** [auditoria/INDEX.md](./auditoria/INDEX.md)
+* **Análisis cross-service:** [auditoria/cross-service/](./auditoria/cross-service/)
+* **Herramientas de auditoría:** [auditoria/scripts/](./auditoria/scripts/)
+* **Métricas y tendencias:** [auditoria/reports/](./auditoria/reports/)
 
 ## 🛠️ Technology Stack
 
-- **Backend:** NestJS (Node.js), TypeScript
-- **Database:** PostgreSQL with TypeORM
-- **Authentication:** OAuth 2.1, OIDC, FIDO2/WebAuthn
-- **Security:** DPoP, PKCE, JWT with ES256/EdDSA
-- **Messaging:** Apache Kafka
-- **Monitoring:** Prometheus, OpenTelemetry
-- **Testing:** Jest, Supertest
-- **Infrastructure:** Docker, Docker Compose
+* **Backend:** NestJS (Node.js), TypeScript
+* **Database:** PostgreSQL with TypeORM
+* **Authentication:** OAuth 2.1, OIDC, FIDO2/WebAuthn
+* **Security:** DPoP, PKCE, JWT con ES256/EdDSA
+* **Messaging:** Apache Kafka
+* **Monitoring:** Prometheus, OpenTelemetry
+* **Testing:** Jest, Supertest
+* **Infrastructure:** Docker, Docker Compose
 
 ## 🔐 Security Features
 
 ### Advanced Authentication
-- **OAuth 2.1 Compliance:** Latest security recommendations
-- **DPoP (Distributed Proof of Possession):** Sender-constrained tokens
-- **PKCE Mandatory:** Protection against authorization code interception
-- **Pushed Authorization Requests (PAR):** Enhanced parameter security
+
+* **OAuth 2.1 Compliance:** Recomendaciones de seguridad vigentes
+* **DPoP (Distributed Proof of Possession):** Sender-constrained tokens
+* **PKCE Mandatory:** Protección ante interceptación de authorization code
+* **Pushed Authorization Requests (PAR):** Seguridad de parámetros
 
 ### Cryptographic Security
-- **Automated Key Rotation:** Daily rotation with graceful rollover
-- **Modern Algorithms:** ES256 (ECDSA) and EdDSA support
-- **JWKS Endpoints:** Dynamic key discovery per tenant
-- **Anti-Replay Protection:** DPoP proof validation with configurable TTL
+
+* **Automated Key Rotation:** Rotación diaria con rollover
+* **Modern Algorithms:** ES256 (ECDSA) y EdDSA
+* **JWKS Endpoints:** Descubrimiento dinámico por tenant
+* **Anti-Replay Protection:** Validación DPoP con TTL configurable
 
 ### Multi-Factor Authentication
-- **FIDO2/WebAuthn:** Passwordless authentication with Passkeys
-- **TOTP Support:** Time-based one-time passwords
-- **Contextual Tokens:** QR code-based authentication for specific contexts
+
+* **FIDO2/WebAuthn:** Passkeys
+* **TOTP Support:** OTP basados en tiempo
+* **Contextual Tokens:** Autenticación contextual por QR
 
 ### Compliance & Privacy
-- **GDPR Ready:** Data Subject Access Requests, Right to be forgotten
-- **Audit Trails:** Comprehensive logging for compliance
-- **Session Management:** Global logout coordination
-- **Tenant Isolation:** Complete data and cryptographic separation
+
+* **GDPR Ready:** DSAR, derecho al olvido
+* **Audit Trails:** Trazabilidad completa
+* **Session Management:** Cierre global de sesión
+* **Tenant Isolation:** Separación de datos y claves
 
 ## 📋 Prerequisites
 
-- **Node.js** >= 18.x
-- **npm** >= 8.x
-- **Docker** >= 20.x
-- **PostgreSQL** >= 13.x
-- **Apache Kafka** (optional, for event streaming)
+* **Node.js** >= 18.x
+* **npm** >= 8.x
+* **Docker** >= 20.x
+* **PostgreSQL** >= 13.x
+* **Apache Kafka** (opcional, para eventos)
 
 ## 🚀 Quick Start
 
-### 1. Clone Repository
+> Para pruebas locales, consume `identity-service` directamente en su puerto interno. Vía gateway el prefijo es `/api/v1/identity/*`.
+
+### 1. Clonar repositorio
+
 ```bash
 git clone <repository-url>
 cd smartedify_app
 ```
 
-### 2. Start Identity Service
-```bash
-cd services/support/identity-service
+### 2. Iniciar Identity Service
 
-# Install dependencies
+```bash
+cd services/core/identity-service
+
+# Instalar dependencias
 npm install
 
-# Start test database
+# Base de datos de prueba
 docker-compose -f docker-compose.test.yml up -d
 
-# Run migrations
+# Migraciones
 npm run db:run-migrations
 
-# Start in development mode
+# Desarrollo
 npm run start:dev
 ```
 
-### 3. Verify Installation
+### 3. Verificar instalación (puerto 3001)
+
 ```bash
 # Health check
-curl http://localhost:3000/
+echo "Expect 200" && curl -i http://localhost:3001/
 
 # OIDC discovery
-curl http://localhost:3000/.well-known/openid-configuration?tenant_id=test
+echo "OIDC" && curl http://localhost:3001/.well-known/openid-configuration?tenant_id=test
 
 # Metrics
-curl http://localhost:3000/metrics
+echo "Metrics" && curl http://localhost:3001/metrics
 ```
 
 ## 🧪 Testing Strategy
 
-### Comprehensive Test Coverage
-- **Unit Tests:** Service logic, utilities, and components
-- **Integration Tests:** Database operations and module interactions
-- **E2E Tests:** Complete authentication flows and API endpoints
+### Cobertura integral
 
-### Test Environment
+* **Unit Tests:** lógica de servicios y utilidades
+* **Integration Tests:** base de datos e interacciones de módulos
+* **E2E Tests:** flujos completos de autenticación y endpoints
+
+### Entorno de pruebas
+
 ```bash
-# Start test infrastructure
+# Infra de pruebas
 docker-compose -f docker-compose.test.yml up -d
 
-# Run all tests
+# Ejecutar pruebas
 npm run test
 
-# Run with coverage
+# Coverage
 npm run test:cov
 
-# E2E tests
-npm run test:e2e
+# E2E	npm run test:e2e
 ```
 
 ### Quality Assurance
+
 ```bash
-# Code formatting
+# Formato
 npm run format
 
-# Linting
+# Lint
 npm run lint
 
-# Security audit
+# Auditoría de seguridad
 npm audit
 
-# Complete validation
+# Validación completa
 npm run validate
 ```
 
 ## 📊 Monitoring & Observability
 
-### Metrics Collection
-- **Prometheus Integration:** Comprehensive metrics at `/metrics`
-- **Custom Metrics:** Authentication flows, security events, performance
-- **Health Checks:** Service availability and dependency status
+### Métricas
 
-### Logging Strategy
-- **Structured Logging:** JSON format with correlation IDs
-- **Security Events:** Authentication attempts, token validations, key rotations
-- **Performance Monitoring:** Request latency, database query performance
+* **Prometheus:** `/metrics`
+* **Métricas personalizadas:** flujos de autenticación, eventos de seguridad, performance
+* **Health Checks:** disponibilidad y dependencias
+
+### Logging
+
+* **Estructurado JSON:** con correlation IDs
+* **Eventos de seguridad:** intentos de autenticación, validaciones de token, rotación de claves
+* **Performance:** latencia de request, queries de BD
 
 ### Alerting
-- **Security Alerts:** Failed authentication attempts, replay attacks
-- **Performance Alerts:** High latency, error rates
-- **Operational Alerts:** Service health, database connectivity
+
+* **Security Alerts:** intentos fallidos, replay
+* **Performance Alerts:** alta latencia, tasas de error
+* **Operational Alerts:** salud de servicios, conectividad
 
 ## 🔄 Development Workflow
 
 ### Contracts-First Development
-All APIs must be defined using OpenAPI/AsyncAPI specifications before implementation:
 
-1. **Design API Contract:** Define endpoints in `contracts/openapi/`
-2. **Generate Types:** Use contract to generate TypeScript types
-3. **Implement Service:** Build service following the contract
-4. **Validate Implementation:** Ensure compliance with specification
+1. **Diseñar contrato** en `contracts/openapi/`
+2. **Generar tipos** a partir del contrato
+3. **Implementar servicio** según contrato
+4. **Validar implementación** contra especificación
 
 ### Code Quality Standards
-- **TypeScript Strict Mode:** Full type safety
-- **ESLint Configuration:** Consistent code style
-- **Prettier Integration:** Automated formatting
-- **Pre-commit Hooks:** Quality checks before commit
+
+* **TypeScript Strict Mode**
+* **ESLint**
+* **Prettier**
+* **Pre-commit Hooks**
 
 ### Security Guidelines
-- **OWASP Compliance:** Follow security best practices
-- **Dependency Scanning:** Regular security audits
-- **Secret Management:** No secrets in code
-- **Security Testing:** Automated security test suite
+
+* **OWASP Compliance**
+* **Dependency Scanning**
+* **Secret Management**
+* **Security Testing**
 
 ## 🚀 Deployment
 
 ### Production Deployment
-1. **Environment Configuration:** Set production environment variables
-2. **Database Migration:** Apply schema changes
-3. **Security Verification:** SSL/TLS, secret rotation
-4. **Monitoring Setup:** Metrics, logging, alerting
-5. **Health Checks:** Verify service availability
+
+1. **Configurar entorno**
+2. **Migraciones de base de datos**
+3. **Verificación de seguridad** (SSL/TLS, rotación de llaves)
+4. **Monitoring** (métricas, logging, alerting)
+5. **Health checks**
 
 ### Infrastructure as Code
-- **Docker Containers:** Consistent deployment environments
-- **Environment Templates:** Standardized configuration
-- **CI/CD Pipelines:** Automated testing and deployment
+
+* **Docker** para entornos consistentes
+* **Plantillas de entornos** estandarizadas
+* **CI/CD** con pruebas y despliegue automatizado
 
 ## 🤝 Contributing
 
 ### Development Process
-1. **Fork Repository:** Create feature branch
-2. **Follow Standards:** Code style, testing, documentation
-3. **Quality Checks:** Run validation before PR
-4. **Security Review:** Consider security implications
-5. **Documentation:** Update relevant documentation
+
+1. **Fork** y rama de feature
+2. **Estándares** de código, pruebas, docs
+3. **Quality checks** antes del PR
+4. **Security review**
+5. **Actualizar documentación**
 
 ### Commit Guidelines
-Use conventional commit format:
+
+Usa **Conventional Commits**:
+
 ```
 feat(identity): add WebAuthn support
 fix(auth): resolve DPoP replay issue
@@ -302,12 +330,11 @@ test(e2e): add OAuth flow tests
 
 ## 📄 License
 
-This project is proprietary software. All rights reserved.
+Este proyecto es software propietario. Todos los derechos reservados.
 
 ## 🆘 Support
 
-For technical support:
-- **Documentation:** Check service-specific README files
-- **API Reference:** Review OpenAPI specifications in `contracts/`
-- **Examples:** Examine test files for usage patterns
-- **Issues:** Create GitHub issues for bugs and feature requests
+* **Documentación:** READMEs específicos por servicio
+* **API Reference:** OpenAPI en `contracts/`
+* **Examples:** tests de referencia
+* **Issues:** crear tickets para bugs y features
