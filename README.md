@@ -23,7 +23,7 @@ smartedify_app/
 │  │  └─ documents-service/     # Puerto 3006 - Gestión documental, firma electrónica
 │  ├─ governance/               # Servicios de gobernanza (Línea 2)
 │  │  ├─ governance-service/    # Puerto 3011 - Asambleas, votación, actas con IA
-│  │  ├─ streaming-service/     # Puerto 3014 - Video en vivo, QR, transcripción
+│  │  ├─ streaming-service/     # Puerto 3014 - Video en vivo, escaneo QR, transcripción
 │  │  ├─ compliance-service/    # Puerto 3012 - Motor normativo global, validaciones
 │  │  └─ reservation-service/   # Puerto 3013 - Reservas de áreas comunes
 │  ├─ operations/               # Servicios operativos (Línea 3)
@@ -141,10 +141,12 @@ API Gateway con ruteo centralizado, **validación L7 de JWT/DPoP**, CORS y rate 
 
 ### Cryptographic Security
 
-* **Automated Key Rotation:** Rotación diaria con rollover
+* **Automated Key Rotation:** Rotación automática cada 90 días con rollover de 7 días
 * **Modern Algorithms:** ES256 (ECDSA) y EdDSA
 * **JWKS Endpoints:** Descubrimiento dinámico por tenant
 * **Anti-Replay Protection:** Validación DPoP con TTL configurable
+* **Prohibido HS256; solo ES256 o EdDSA.**
+* **JWKS TTL ≤ 300 s; negative caching 60 s.**
 
 ### Multi-Factor Authentication
 
