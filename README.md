@@ -1,4 +1,4 @@
-# SmartEdify Platform 1.1
+# SmartEdify Platform
 
 SmartEdify es una plataforma SaaS multi-tenant para la administración, gobernanza y operación de comunidades residenciales y comerciales: digitaliza asambleas híbridas con validez legal, centraliza mantenimiento, reservas, seguridad, cobros, comunicaciones y cumplimiento, y ofrece una arquitectura de microservicios con API Gateway y mensajería por eventos (identidad, perfiles, tenancy, activos, gobierno, notificaciones, marketplace, analytics y más); está diseñada para LATAM y Europa con foco en escalabilidad, observabilidad, seguridad y APIs versionadas para integraciones de terceros.
 
