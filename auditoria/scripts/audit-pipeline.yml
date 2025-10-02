@@ -1,0 +1,286 @@
+# SmartEdify Audit Pipeline Configuration
+# Para uso con GitHub Actions, GitLab CI, o Jenkins
+
+name: SmartEdify Audit Pipeline
+
+on:
+  schedule:
+    # Análisis completo diario a las 8:00 AM UTC
+    - cron: '0 8 * * *'
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      audit_mode:
+        description: 'Modo de auditoría'
+        required: true
+        default: 'quick'
+        type: choice
+        options:
+        - quick
+        - full
+        - alerts
+
+env:
+  NODE_VERSION: '18'
+  AUDIT_OUTPUT_DIR: 'audit-reports'
+
+jobs:
+  audit-services:
+    name: Auditoría de Servicios SmartEdify
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Instalar dependencias
+      run: |
+        cd auditoria/scripts
+        npm install --production
+        
+    - name: Crear directorio de reportes
+      run: mkdir -p ${{ env.AUDIT_OUTPUT_DIR }}
+      
+    - name: Ejecutar auditoría rápida (PR/Push)
+      if: github.event_name == 'push' || github.event_name == 'pull_request'
+      run: |
+        cd auditoria/scripts
+        node run-audit-suite.js --mode quick --output-dir ../../${{ env.AUDIT_OUTPUT_DIR }}
+        
+    - name: Ejecutar auditoría completa (Scheduled)
+      if: github.event_name == 'schedule'
+      run: |
+        cd auditoria/scripts
+        node run-audit-suite.js --mode full --output-dir ../../${{ env.AUDIT_OUTPUT_DIR }}
+        
+    - name: Ejecutar auditoría personalizada (Manual)
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        cd auditoria/scripts
+        node run-audit-suite.js --mode ${{ github.event.inputs.audit_mode }} --output-dir ../../${{ env.AUDIT_OUTPUT_DIR }}
+        
+    - name: Verificar alertas críticas
+      id: check_alerts
+      run: |
+        cd auditoria/scripts
+        CRITICAL_ALERTS=$(node generate-metrics.js --format json | jq '.alerts | map(select(.level == "CRITICAL")) | length')
+        echo "critical_alerts=$CRITICAL_ALERTS" >> $GITHUB_OUTPUT
+        if [ "$CRITICAL_ALERTS" -gt 0 ]; then
+          echo "⚠️ Se encontraron $CRITICAL_ALERTS alertas críticas"
+          exit 1
+        fi
+        
+    - name: Subir reportes como artefactos
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: audit-reports-${{ github.run_number }}
+        path: ${{ env.AUDIT_OUTPUT_DIR }}/
+        retention-days: 30
+        
+    - name: Comentar en PR con resultados
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Leer métricas generadas
+          const metricsFile = fs.readdirSync('${{ env.AUDIT_OUTPUT_DIR }}')
+            .find(file => file.startsWith('metrics-') && file.endsWith('.json'));
+            
+          if (metricsFile) {
+            const metrics = JSON.parse(fs.readFileSync(path.join('${{ env.AUDIT_OUTPUT_DIR }}', metricsFile)));
+            
+            const comment = `## 📊 Resultados de Auditoría SmartEdify
+            
+**Completitud Global**: ${metrics.global.avgCompleteness}%
+**Servicios Funcionales**: ${metrics.global.functionalServices}/${metrics.global.totalServices}
+**Alertas Críticas**: ${metrics.alerts.filter(a => a.level === 'CRITICAL').length}
+**Alertas de Advertencia**: ${metrics.alerts.filter(a => a.level === 'WARNING').length}
+
+### Servicios con Issues
+${metrics.alerts.map(alert => `- 🔴 **${alert.service}**: ${alert.message}`).join('\n')}
+
+[Ver reporte completo en artefactos](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+          
+    - name: Notificar a Slack en caso de fallo
+      if: failure() && (github.event_name == 'schedule' || github.event_name == 'push')
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#smartedify-alerts'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+        
+  deploy-dashboard:
+    name: Actualizar Dashboard
+    runs-on: ubuntu-latest
+    needs: audit-services
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Descargar reportes
+      uses: actions/download-artifact@v4
+      with:
+        name: audit-reports-${{ github.run_number }}
+        path: audit-reports/
+        
+    - name: Actualizar dashboard
+      run: |
+        # Copiar métricas más recientes al dashboard
+        LATEST_METRICS=$(ls audit-reports/metrics-*.md | head -1)
+        if [ -f "$LATEST_METRICS" ]; then
+          cp "$LATEST_METRICS" auditoria/dashboard-metricas.md
+        fi
+        
+    - name: Commit y push cambios
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add auditoria/dashboard-metricas.md
+        git diff --staged --quiet || git commit -m "🤖 Actualizar dashboard de auditoría [skip ci]"
+        git push
+        
+  notify-teams:
+    name: Notificar Equipos
+    runs-on: ubuntu-latest
+    needs: audit-services
+    if: always() && (github.event_name == 'schedule')
+    
+    steps:
+    - name: Descargar reportes
+      uses: actions/download-artifact@v4
+      with:
+        name: audit-reports-${{ github.run_number }}
+        path: audit-reports/
+        
+    - name: Enviar reporte por email
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: ${{ secrets.SMTP_SERVER }}
+        server_port: 587
+        username: ${{ secrets.SMTP_USERNAME }}
+        password: ${{ secrets.SMTP_PASSWORD }}
+        subject: "📊 Reporte Diario de Auditoría SmartEdify"
+        to: ${{ secrets.AUDIT_EMAIL_RECIPIENTS }}
+        from: SmartEdify Audit System <audit@smartedify.com>
+        html_body: |
+          <h2>📊 Reporte Diario de Auditoría SmartEdify</h2>
+          <p><strong>Fecha:</strong> ${{ github.event.repository.updated_at }}</p>
+          <p><strong>Commit:</strong> ${{ github.sha }}</p>
+          <p>Los reportes detallados están disponibles en los artefactos de GitHub Actions.</p>
+          <p><a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">Ver Resultados Completos</a></p>
+        attachments: audit-reports/consolidated-report-*.md
+
+# Configuración para GitLab CI
+.gitlab-ci-template: &gitlab-ci
+  image: node:18-alpine
+  before_script:
+    - cd auditoria/scripts
+    - npm install --production
+  artifacts:
+    reports:
+      junit: audit-reports/junit-report.xml
+    paths:
+      - audit-reports/
+    expire_in: 30 days
+  cache:
+    paths:
+      - auditoria/scripts/node_modules/
+
+# Configuración para Jenkins
+.jenkins-pipeline: |
+  pipeline {
+    agent any
+    
+    triggers {
+      cron('0 8 * * *') // Diario a las 8:00 AM
+    }
+    
+    environment {
+      NODE_VERSION = '18'
+      AUDIT_OUTPUT_DIR = 'audit-reports'
+    }
+    
+    stages {
+      stage('Setup') {
+        steps {
+          nodejs(nodeJSInstallationName: 'Node 18') {
+            sh 'cd auditoria/scripts && npm install --production'
+          }
+        }
+      }
+      
+      stage('Audit') {
+        steps {
+          nodejs(nodeJSInstallationName: 'Node 18') {
+            sh '''
+              mkdir -p ${AUDIT_OUTPUT_DIR}
+              cd auditoria/scripts
+              node run-audit-suite.js --mode full --output-dir ../../${AUDIT_OUTPUT_DIR}
+            '''
+          }
+        }
+      }
+      
+      stage('Check Alerts') {
+        steps {
+          script {
+            def criticalAlerts = sh(
+              script: 'cd auditoria/scripts && node generate-metrics.js --format json | jq ".alerts | map(select(.level == \\"CRITICAL\\")) | length"',
+              returnStdout: true
+            ).trim()
+            
+            if (criticalAlerts.toInteger() > 0) {
+              currentBuild.result = 'UNSTABLE'
+              echo "⚠️ Se encontraron ${criticalAlerts} alertas críticas"
+            }
+          }
+        }
+      }
+    }
+    
+    post {
+      always {
+        archiveArtifacts artifacts: 'audit-reports/**/*', fingerprint: true
+        publishHTML([
+          allowMissing: false,
+          alwaysLinkToLastBuild: true,
+          keepAll: true,
+          reportDir: 'audit-reports',
+          reportFiles: 'consolidated-report-*.html',
+          reportName: 'Audit Report'
+        ])
+      }
+      
+      failure {
+        emailext (
+          subject: "🚨 Fallo en Auditoría SmartEdify - Build ${BUILD_NUMBER}",
+          body: "La auditoría de servicios SmartEdify ha fallado. Ver detalles en ${BUILD_URL}",
+          to: "${AUDIT_EMAIL_RECIPIENTS}"
+        )
+      }
+    }
+  }

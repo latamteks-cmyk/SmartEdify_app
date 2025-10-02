@@ -1,0 +1,46 @@
+{
+  "services": {
+    "governance-service": {
+      "priority": "P2",
+      "weight": 1
+    },
+    "streaming-service": {
+      "priority": "P3",
+      "weight": 1
+    },
+    "user-profiles-service": {
+      "priority": "P3",
+      "weight": 1
+    },
+    "notifications-service": {
+      "priority": "P3",
+      "weight": 1
+    },
+    "documents-service": {
+      "priority": "P3",
+      "weight": 1
+    },
+    "finance-service": {
+      "priority": "P3",
+      "weight": 1
+    },
+    "reservation-service": {
+      "priority": "P0",
+      "weight": 2
+    },
+    "asset-management-service": {
+      "priority": "P1",
+      "weight": 1.5
+    }
+  },
+  "thresholds": {
+    "critical": {
+      "completeness": 50,
+      "healthScore": 40
+    },
+    "warning": {
+      "completeness": 80,
+      "healthScore": 70
+    }
+  }
+}
