@@ -1,180 +1,268 @@
-# Business Services
-Plataforma de **servicios de negocio** que habilita ingresos premium y analítica avanzada sobre SmartEdify. Incluye `marketplace-service` (3015) y `analytics-service` (3016)
+# marketplace-service — README
+
+Servicio de **orquestación de marketplace** para proveedores certificados. Capa business. Puerto **3015**.
 
 ---
 
-## 1) Visión
+## 1) Propósito y alcance
 
-* **Marketplace:** orquesta un ecosistema de servicios premium para condominios: proveedores certificados, contratación, revisión legal y asesoría en vivo. 
-* **Analytics:** provee BI, dashboards y modelos predictivos; consume eventos de todos los dominios.  
+* Catálogo de ofertas, órdenes de servicio (OS), ejecución y **informe de servicio**.
+* Flujo financiero: el proveedor **cobranza directa** al cliente. SmartEdify registra **cuenta por cobrar** por el *take rate* y recibe **remesas** periódicas.
+* Sin “asesoría en vivo”. Sin módulo de disputas. Se mide **calidad de servicio**.
 
----
+**No-goals**
 
-## 2) Alcance y límites
-
-**Incluye**
-
-* Marketplace: catálogo, ofertas, órdenes de servicio, conciliación de pagos, mensajería transaccional. 
-* Analytics: ingestión de eventos, almacenamiento analítico, KPIs operativos, reporting y ML. 
-
-**No-Goals**
-
-* Identidad, emisión/validación de QR o MFA → `identity-service`. 
-* Autorización L7, rate limits, DPoP anti-replay → `gateway`. 
+* Identidad, autorización L7, MFA, emisión/validación de tokens.
+* Gestión de políticas globales, PKI, o gobierno cross-servicio.
 
 ---
 
-## 3) Arquitectura
+## 2) Arquitectura
 
 **Patrones**
 
-* SRP por servicio, EDA con Kafka, CQRS en lecturas analíticas, *feature flags*. (alineado con patrones de línea 2/3) 
-* Contracts-first (`contracts/openapi`, `contracts/asyncapi`). 
+* Microservicio REST + EDA. Contracts-first (OpenAPI/AsyncAPI). Outbox + DLQ.
+* Idempotencia en *writes*. Compatibilidad backward de esquemas.
 
-**Diagrama de contexto (Mermaid)**
+**Contexto (Mermaid)**
 
 ```mermaid
 graph TD
-  subgraph Clients
-    A[Admin Web] --> GW
-    U[User Web/Mobile] --> GW
-  end
-  subgraph Platform
-    GW[API Gateway:8080] --> MP[marketplace-service:3015]
-    GW --> AN[analytics-service:3016]
-  end
-  subgraph Core
-    MP --> GOV[governance:3011]
-    MP --> FIN[finance:3007]
-    MP --> AMS[asset-management:3010]
-    MP --> NOTIF[notifications:3005]
-    AN <-- events --> ALL[All domains]
-  end
+  U[Web/Mobile]-->GW[API Gateway]
+  GW-->MP[marketplace-service:3015]
+  MP-->AM[asset-management-service]
+  MP-->FIN[finance-service]
+  MP-->DOC[documents-service]
+  MP-->TEN[tenancy-service]
+  MP-->UP[user-profiles-service]
+  MP-->CMP[compliance-service]
+  MP-->NOTIF[notifications-service]
+  MP-->AN[analytics-service]
 ```
 
-**Integraciones clave**
+---
 
-* Marketplace ↔ Governance, Finance, Asset, Notifications. 
-* Analytics consume eventos de todos los servicios, incl. Governance/Finance/Asset. 
-* Reservation emite eventos hacia Analytics como productor de línea 2. 
+## 3) Dominio
+
+**Entidades**
+
+* `Provider`, `Offer`, `Order`, `WorkOrder` (OS), `ServiceReport`, `Settlement`, `Remittance`, `QualityMetric`.
+
+**Estados clave**
+
+* `Order`: `Placed → Accepted → InProgress → Completed → Closed|Cancelled`.
+* `WorkOrder`: `Issued → Assigned → Executed → Reported → Approved`.
+* `ServiceReport`: `Submitted → Reviewed → Approved|Rejected`.
+* `Settlement`: `Created → Invoiced → RemittanceDue → Remitted → Reconciled|Overdue`.
 
 ---
 
-## 4) Seguridad
+## 4) API REST v1
 
-**Baseline transversal**
+Base path: `/api/v1/marketplace`.
 
-* JWT JWS **ES256/EdDSA**, `kid` obligatorio; **HS256 prohibido**. 
-* PKCE obligatorio en OIDC; validación L7 en gateway. 
-* DPoP en *writes* y en WebSocket handshake; anti-replay con TTL. 
-* JWKS cache TTL ≤ 300 s, *negative caching* 60 s. 
+### Recursos
 
-**Privacidad y cumplimiento**
+* **Providers**: `GET /providers`, `POST /providers`
+* **Offers**: `GET /offers`, `POST /offers`, `PATCH /offers/{id}`, `DELETE /offers/{id}`
+* **Orders**: `POST /orders`, `GET /orders/{id}`, `PATCH /orders/{id}`
+* **WorkOrders (OS)**: `POST /work-orders`, `GET /work-orders/{id}`, `PATCH /work-orders/{id}`
+* **ServiceReports**: `POST /service-reports`, `GET /service-reports/{id}`
+* **Settlements**: `GET /settlements`, `POST /settlements/{id}/invoice`, `POST /settlements/{id}/close`
+* **Remittances**: `GET /remittances`, `POST /remittances/{id}/receive`, `POST /remittances/{id}/reconcile`
+* **Quality**: `POST /quality-metrics`, `GET /quality-metrics?order_id=…`
 
-* DSAR y auditoría WORM delegadas a servicios de núcleo; Analytics evita PII en métricas agregadas. (alineado con lineamientos de plataforma) 
+### Reglas
 
----
-
-## 5) Marketplace-service (3015)
-
-**Dominio**
-
-* Casos: revisión legal de actas, asesoría en vivo, mantenimiento especializado, seguros grupales. 
-* Modelo de ingresos: comisión 5–15%, suscripción premium, certificación de proveedores. 
-
-**Contratos**
-
-* REST `v1` según `contracts/openapi/marketplace-service.v1.yaml`. 
-* Eventos: `OfferCreated`, `OrderPlaced`, `OrderSettled` en `contracts/asyncapi/`. 
-
-**Dependencias**
-
-* `governance-service` para asesoría y revisión de actas. 
-* `finance-service` para órdenes y liquidaciones. 
-* `asset-management-service` para proveedores técnicos. 
-* `notifications-service` para alertas y estado. 
-
-**Operación**
-
-* Autenticación vía gateway; DPoP requerido en mutaciones. 
-* Errores RFC-7807 coherentes con gateway. 
+* **Writes**: requieren DPoP y `Idempotency-Key` (TTL 24 h).
+* **Límites**: documentar `429` y `413` por ruta.
+* **PII**: minimizada por defecto.
+* **Anexos**: subir evidencias a `documents-service` y referenciar por `document_id` + `sha256`.
 
 ---
 
-## 6) Analytics-service (3016)
+## 5) Eventos (AsyncAPI)
 
-**Dominio**
+Tópico base: `marketplace.v1.*`
+Clave de partición: `{tenant_id}.{order_id}`
 
-* Dashboards, reportes ad-hoc, modelos ML, data warehouse. 
-* Casos: predicción de quórum, morosidad, optimización de gastos, satisfacción. 
+* Ofertas: `OfferCreated|OfferUpdated|OfferArchived`
+* Órdenes: `OrderPlaced|OrderAccepted|OrderStarted|OrderCompleted|OrderCancelled`
+* OS: `WorkOrderCreated|WorkOrderAssigned|WorkOrderExecuted`
+* Informes: `ServiceReportSubmitted|ServiceReportApproved|ServiceReportRejected`
+* Liquidación: `SettlementCreated|RemittanceDue|RemittanceReceived|ReconciliationCompleted|RemittanceOverdue`
+* Calidad: `ServiceQualityRated|ServiceQualityKPIUpdated`
 
-**Ingesta y fuentes**
+**Confiabilidad**
 
-* Consumidor universal de eventos de dominio. 
-* Ejemplo de productor: `reservation-service` → `analytics-service`. 
-
-**Contratos**
-
-* Esquemas en `contracts/asyncapi/`; políticas de retención y minimización aplican.  
-
-**Seguridad**
-
-* Acceso solo lectura para *dashboards* por rol; JWT ES256/EdDSA y PKCE a través de BFF. 
+* Outbox transaccional. Reintentos con *exponential backoff + jitter*. DLQ por tópico.
+* De-duplicación por `event_id` + `tenant_id`. Compatibilidad **backward** de esquemas.
 
 ---
 
-## 7) KPIs y métricas
+## 6) Seguridad
 
-* Marketplace: GMV, *take rate*, NPS proveedor, *repeat purchase*. 
-* Analytics: adopción, *engagement* de dashboards, precisión de modelos, ahorros. 
-
----
-
-## 8) Observabilidad
-
-* Prometheus `/metrics`, trazas OTel, logs JSON con *correlation IDs*. 
-* Alertas: seguridad, performance y operación. 
+* JWT JWS **ES256/EdDSA**. `kid` obligatorio. **HS256 prohibido**.
+* JWKS *per tenant*. **TTL ≤ 300 s** y *negative caching* 60 s.
+* DPoP obligatorio en *writes* y firma de *webhooks* salientes.
+* Validación L7 en gateway. *Rate limits* y *quotas* por ruta.
+* Mascaramiento de PII en respuestas y logs.
+* Auditoría WORM para cambios de estado y conciliaciones.
 
 ---
 
-## 9) Desarrollo
+## 7) Multitenancy y permisos
 
-**Stack**
+* Aislamiento por `tenant_id` con **RLS** en base de datos.
+* Resolución de rol efectivo vía `tenancy-service` + `user-profiles-service`.
+* **RBAC + ABAC**:
 
-* Node.js + TypeScript, PostgreSQL, Kafka; OpenAPI/AsyncAPI. 
+  * Roles: `tenant_admin`, `provider_admin`, `provider_agent`, `viewer`.
+  * Atributos: `tenant_id`, `provider_id`, `ownership`, `certified`.
+* Scopes REST:
 
-**Flujo**
-
-* Contracts-first → codegen → implementación → validación. 
-* Estándares: TS strict, ESLint, Prettier, hooks. 
-
----
-
-## 10) Despliegue
-
-* Requisitos: Node 18+, Docker, PostgreSQL 13+, Kafka. 
-* Gateway con JWKS TTL ≤300s, DPoP y PKCE pre-filtro.  
-
----
-
-## 11) Checklist (DoD)
-
-* OpenAPI/AsyncAPI publicados en `contracts/`. 
-* Autenticación: JWT ES256/EdDSA con `kid`; PKCE y DPoP verificados end-to-end.  
-* Observabilidad activa y tableros RED. 
-* Pruebas E2E de flujos principales por servicio. 
+  * `marketplace:providers.read|write`
+  * `marketplace:offers.read|write`
+  * `marketplace:orders.read|write`
+  * `marketplace:reports.read|write`
+  * `marketplace:settlements.read|write`
+  * `marketplace:remittances.read|write`
 
 ---
 
-## 12) Roadmap corto
+## 8) Integraciones
 
-* Marketplace: flujo de certificación y *scorecard* de proveedores, SLA de liquidación. 
-* Analytics: nuevos modelos para quórum y morosidad, *self-service* de reportes. 
+* **Finance**: AR del *take rate* → `Settlement` → `Remittance` y conciliación.
+* **Asset-Management**: alta y certificación de proveedores y servicios.
+* **Documents**: almacenamiento de informes y evidencias firmadas.
+* **Compliance**: políticas de acceso y retención.
+* **Tenancy/User-Profiles**: contexto de tenant y roles efectivos.
+* **Notifications**: estado de órdenes, OS, informes y remesas.
+* **Analytics**: consumo de eventos para KPIs y tableros.
 
 ---
 
-## 13) Licencia y soporte
+## 9) Gobierno de datos
 
-Software propietario. Ver guía de *support* y referencia en OpenAPI/AsyncAPI. 
+* **Clasificación**: `PUBLIC|INTERNAL|SENSITIVE`. PII minimizada.
+* **Retención**: `Order` 24m, `ServiceReport` 36m, `Settlement/Remittance` 60m.
+* **Linaje**: registrar orígenes y transformaciones.
+* **DSAR**: export por `order_id` y `tenant_id` con TTL.
 
 ---
+
+## 10) Observabilidad
+
+* **Métricas RED**: `http_requests_total`, `http_errors_total`, `http_request_duration_ms_bucket`.
+* **Negocio**: `gmv_total`, `take_rate`, `orders_completed`, `remittance_cycle_time`, `overdue_ratio`, `service_quality_score`, `on_time_rate`, `first_time_fix_rate`.
+* **Trazas**: OpenTelemetry con `order_id` y `tenant_id`.
+* **Logs**: JSON con `correlation_id`.
+* **Alertas**: seguridad, performance, conciliación vencida, caída de publicación/consumo.
+
+---
+
+## 11) SLO
+
+* `GET /offers` P95 ≤ **200 ms**.
+* `POST /orders` P95 ≤ **400 ms**.
+* Disponibilidad ≥ **99.9%** mensual.
+* Frescura de conciliación ≤ **24 h**.
+* Error budget con alertas por consumo del 25/50/75/100%.
+
+---
+
+## 12) Operación
+
+* **Despliegue**: IaC, *blue/green* o *canary*.
+* **DB**: migraciones versionadas, *repeatable scripts*, particionado por `tenant_id`, índices compuestos.
+* **Backups**: RPO ≤ 15 min, RTO ≤ 1 h.
+* **Runbooks**: incidentes de conciliación, reenvío de eventos, *partial reconciliation*, reversos.
+* **Cuotas**: límites por cliente y proveedor, *backpressure* en consumidores.
+
+---
+
+## 13) Seguridad de *webhooks* a proveedores
+
+* Firma HMAC-based con `t` y `v1` en cabecera.
+* Reintentos con backoff e idempotencia.
+* Rotación de secretos y escáner de entrega.
+
+---
+
+## 14) Contratos
+
+* **OpenAPI v1**
+
+  * `contracts/openapi/marketplace-service.v1.yaml`
+  * Ejemplos por estado (`OrderPlaced`, `OrderCompleted`, `ServiceReportApproved`).
+* **AsyncAPI v1**
+
+  * `contracts/asyncapi/marketplace-service.v1.yaml`
+  * Esquemas versionados. Política **backward**.
+* **Mocks**: Prism para REST. *Testcontainers* + Kafka para eventos.
+
+---
+
+## 15) Pruebas
+
+* **Unitarias**: dominio y validaciones.
+* **Contrato**: Dredd/Schemathesis para REST. Consumidor/productor en AsyncAPI.
+* **E2E**: `Order → WorkOrder → ServiceReport → Settlement → Remittance`.
+* **Datos sintéticos**: Faker/SDV con restricciones de negocio.
+* **Chaos EDA**: duplicados, *out-of-order*, *poison pills*, DLQ.
+
+---
+
+## 16) Ejemplos
+
+### Crear orden
+
+```http
+POST /api/v1/marketplace/orders
+Idempotency-Key: 7d2c-...
+Authorization: Bearer <JWT>
+DPoP: <proof>
+
+{
+  "tenant_id": "t-001",
+  "offer_id": "off-123",
+  "provider_id": "prov-77",
+  "requested_at": "2025-10-02T10:00:00Z"
+}
+```
+
+### Evento de liquidación
+
+```json
+{
+  "event_id": "evt-9ab",
+  "type": "SettlementCreated",
+  "occurred_at": "2025-10-02T12:00:00Z",
+  "tenant_id": "t-001",
+  "order_id": "ord-555",
+  "provider_id": "prov-77",
+  "amount_total": 120.00,
+  "take_rate_percent": 12.5,
+  "amount_due_smartedify": 15.00,
+  "currency": "USD"
+}
+```
+
+---
+
+## 17) Checklist de *Definition of Done*
+
+* OpenAPI/AsyncAPI v1 publicados con ejemplos válidos.
+* RLS por `tenant_id` activa. Matriz de permisos y **scopes** por recurso.
+* DPoP en *writes* y `Idempotency-Key` operativos.
+* Outbox, DLQ y políticas de compatibilidad activas.
+* SLO y tableros en producción. Runbooks y backups listos.
+* Pruebas unitarias, contrato, E2E y chaos EDA pasando en CI.
+
+---
+
+## 18) Roadmap corto
+
+* Escrow opcional por proveedor.
+* Scorecard de calidad y certificación dinámica.
+* Auto-remesas con conciliación continua y *exception handling*.
