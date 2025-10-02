@@ -31,6 +31,18 @@ smartedify_app/
 
 ## 🚀 Services
 
+### Core Services Status
+
+| Servicio | Estado | Completitud | Prioridad | Documentación |
+|----------|--------|-------------|-----------|---------------|
+| **streaming-service** | ✅ Operacional | 100% | Baja | [Análisis Completo](./auditoria/streaming-service/) |
+| **governance-service** | 🔄 Casi completo | 95% | Media | [Análisis](./auditoria/governance-service/) |
+| **finance-service** | ✅ Funcional | 90% | Baja | [Análisis](./auditoria/finance-service/) |
+| **asset-management-service** | ✅ Funcional | 85% | Baja | [Análisis](./auditoria/asset-management-service/) |
+| **user-profiles-service** | 🚧 En desarrollo | 75% | Alta | [Análisis](./auditoria/user-profiles-service/) |
+| **notifications-service** | ❌ No implementado | 0% | **CRÍTICA** | [Análisis Crítico](./auditoria/notifications-service/) |
+| **documents-service** | ❌ No implementado | 0% | **CRÍTICA** | [Análisis Legal](./auditoria/documents-service/) |
+
 ### Identity Service
 Enterprise OAuth 2.1/OIDC identity provider with advanced security features:
 - **Authentication Flows:** Authorization Code + PKCE, Device Flow, Refresh Token Rotation
@@ -42,6 +54,23 @@ Enterprise OAuth 2.1/OIDC identity provider with advanced security features:
 
 ### Gateway Service
 API Gateway with centralized routing, authentication, and rate limiting.
+
+## 📋 Auditoría de Servicios
+
+### 🎯 Estado General
+- **Servicios auditados:** 7/10 (100% cobertura documental)
+- **Completitud promedio:** 85%
+- **Documentación:** 100% consolidada en [auditoria/](./auditoria/)
+
+### 🚨 Bloqueantes Críticos Identificados
+1. **notifications-service (0%)** - Bloquea funcionalidad básica de streaming y governance
+2. **documents-service (0%)** - Crítico para validez legal de asambleas
+
+### 📊 Acceso a Documentación Completa
+- **Índice maestro:** [auditoria/INDEX.md](./auditoria/INDEX.md)
+- **Análisis cross-service:** [auditoria/cross-service/](./auditoria/cross-service/)
+- **Herramientas de auditoría:** [auditoria/scripts/](./auditoria/scripts/)
+- **Métricas y tendencias:** [auditoria/reports/](./auditoria/reports/)
 
 ## 🛠️ Technology Stack
 
