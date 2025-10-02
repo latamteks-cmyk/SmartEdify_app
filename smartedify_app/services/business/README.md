@@ -1,179 +1,191 @@
-📘 Business Services — marketplace-service (3015) y analytics-service (3016)
+# Business Services — README
 
-Servicios de negocio orientados a monetización y toma de decisiones: un Marketplace para contratar servicios premium y un Analytics para BI/ML y reporting. Ambos se integran con identidad, cumplimiento, gobernanza, reservas y operaciones.
+Plataforma de **servicios de negocio** que habilita ingresos premium y analítica avanzada sobre SmartEdify. Incluye `marketplace-service` (3015) y `analytics-service` (3016). Definidos en la capa *business* del monorepo. 
 
-🧭 Alcance
+---
 
-marketplace-service (3015): catálogo de servicios, gestión de solicitudes y cotizaciones, adjudicación, órdenes de trabajo externas, asesoría en vivo, revisión legal de actas y servicios de mantenimiento especializados. No emite identidad ni reglas legales. Orquesta con finanzas, documentos y governance.
+## 1) Visión
 
-analytics-service (3016): datasets multi-tenant, ETL, dashboards, métricas RED, modelos predictivos y explicabilidad. Consumidor de eventos de streaming, governance, reservations y asset management. Sin acceso directo a PII sin resolución previa de políticas.
+* **Marketplace:** orquesta un ecosistema de servicios premium para condominios: proveedores certificados, contratación, revisión legal y asesoría en vivo. 
+* **Analytics:** provee BI, dashboards y modelos predictivos; consume eventos de todos los dominios.  
 
-🏗️ Arquitectura
+---
+
+## 2) Alcance y límites
+
+**Incluye**
+
+* Marketplace: catálogo, ofertas, órdenes de servicio, conciliación de pagos, mensajería transaccional. 
+* Analytics: ingestión de eventos, almacenamiento analítico, KPIs operativos, reporting y ML. 
+
+**No-Goals**
+
+* Identidad, emisión/validación de QR o MFA → `identity-service`. 
+* Autorización L7, rate limits, DPoP anti-replay → `gateway`. 
+
+---
+
+## 3) Arquitectura
+
+**Patrones**
+
+* SRP por servicio, EDA con Kafka, CQRS en lecturas analíticas, *feature flags*. (alineado con patrones de línea 2/3) 
+* Contracts-first (`contracts/openapi`, `contracts/asyncapi`). 
+
+**Diagrama de contexto (Mermaid)**
+
+```mermaid
 graph TD
-  subgraph Gateway 8080
-    GW[API Gateway]
+  subgraph Clients
+    A[Admin Web] --> GW
+    U[User Web/Mobile] --> GW
   end
-
-  subgraph Business
-    MKT[marketplace-service 3015]
-    ANL[analytics-service 3016]
+  subgraph Platform
+    GW[API Gateway:8080] --> MP[marketplace-service:3015]
+    GW --> AN[analytics-service:3016]
   end
-
   subgraph Core
-    ID[identity 3001]
-    UP[user-profiles 3002]
-    TEN[tenancy 3003]
-    CMP[compliance 3012]
-    GOV[governance 3011]
-    STR[streaming 3014]
-    RSV[reservation 3013]
-    DOC[documents 3006]
-    FIN[finance 3007]
-    AMS[asset-management 3010]
-    NOT[notifications 3005]
+    MP --> GOV[governance:3011]
+    MP --> FIN[finance:3007]
+    MP --> AMS[asset-management:3010]
+    MP --> NOTIF[notifications:3005]
+    AN <-- events --> ALL[All domains]
   end
+```
 
-  GW-->MKT
-  GW-->ANL
+**Integraciones clave**
 
-  MKT<-->FIN
-  MKT<-->DOC
-  MKT<-->AMS
-  MKT<-->GOV
-  MKT-->NOT
-  MKT-->CMP
-  MKT<--JWT/DPoP-->ID
-  MKT-->UP
-  MKT-->TEN
+* Marketplace ↔ Governance, Finance, Asset, Notifications. 
+* Analytics consume eventos de todos los servicios, incl. Governance/Finance/Asset. 
+* Reservation emite eventos hacia Analytics como productor de línea 2. 
 
-  ANL<-events- STR
-  ANL<-events- GOV
-  ANL<-events- RSV
-  ANL<-events- AMS
-  ANL<--JWT-->ID
-  ANL-->CMP
+---
 
+## 4) Seguridad
 
-Ruteo vía gateway con validación de JWT ES256/EdDSA, DPoP, mTLS interno y políticas de rate-limit. Prefijos:
-/api/v1/marketplace/* y /api/v1/analytics/*.
+**Baseline transversal**
 
-Delegación estricta: identidad y QR contextuales en identity; tokens QR solo se muestran/escanean desde front o integraciones como streaming, se validan en identity.
+* JWT JWS **ES256/EdDSA**, `kid` obligatorio; **HS256 prohibido**. 
+* PKCE obligatorio en OIDC; validación L7 en gateway. 
+* DPoP en *writes* y en WebSocket handshake; anti-replay con TTL. 
+* JWKS cache TTL ≤ 300 s, *negative caching* 60 s. 
 
-🔒 Seguridad y cumplimiento
+**Privacidad y cumplimiento**
 
-Algoritmos: solo ES256/EdDSA. HS256 prohibido en docs y ejemplos. Header kid obligatorio.
+* DSAR y auditoría WORM delegadas a servicios de núcleo; Analytics evita PII en métricas agregadas. (alineado con lineamientos de plataforma) 
 
-JWKS: TTL ≤ 300 s y negative caching 60 s. Soportar rollover 7 días con 2 claves activas.
+---
 
-DPoP: obligatorio en escrituras. Anti-replay distribuido. Handshake para WS cuando aplique.
+## 5) Marketplace-service (3015)
 
-Runtime compliance: todas las decisiones normativas y de retención se evalúan en compliance-service; Analytics minimiza PII por defecto y documenta linaje y retención.
+**Dominio**
 
-🔌 Integraciones clave
+* Casos: revisión legal de actas, asesoría en vivo, mantenimiento especializado, seguros grupales. 
+* Modelo de ingresos: comisión 5–15%, suscripción premium, certificación de proveedores. 
 
-identity-service: autenticación OIDC, tokens PoP, sesiones, QR contextuales; no almacenar plantillas biométricas.
+**Contratos**
 
-governance-service: marketplace habilita revisión legal de actas y asesoría en vivo; analytics consume participación, quórum y resultados de votación.
+* REST `v1` según `contracts/openapi/marketplace-service.v1.yaml`. 
+* Eventos: `OfferCreated`, `OrderPlaced`, `OrderSettled` en `contracts/asyncapi/`. 
 
-streaming-service: sesiones en vivo; marketplace coordina asesoría técnica/legal, usando tokens contextuales validados por identity.
+**Dependencias**
 
-reservation-service: analytics consume uso de amenidades, no-shows y check-ins.
+* `governance-service` para asesoría y revisión de actas. 
+* `finance-service` para órdenes y liquidaciones. 
+* `asset-management-service` para proveedores técnicos. 
+* `notifications-service` para alertas y estado. 
 
-asset-management-service: marketplace gestiona cotizaciones y adjudicación; analytics usa métricas de OT, consumos y vendor scorecard.
+**Operación**
 
-user-profiles / tenancy: fuente de perfiles, membresías, roles y estructura de unidades/áreas; determinan ámbito y permisos efectivos.
+* Autenticación vía gateway; DPoP requerido en mutaciones. 
+* Errores RFC-7807 coherentes con gateway. 
 
-finance / documents / notifications: pagos, contratos/actas y comunicaciones transaccionales.
+---
 
-📦 Dominios y contratos
-marketplace-service
+## 6) Analytics-service (3016)
 
-Catálogo: servicios legal_review, live_advisory, maintenance_pro, diagnostics, etc. Fuentes: proveedores de AMS y terceros.
+**Dominio**
 
-Solicitudes y cotizaciones: crear SOS a proveedores sugeridos, seleccionar oferta, emitir OC y OT técnica cuando aplique.
+* Dashboards, reportes ad-hoc, modelos ML, data warehouse. 
+* Casos: predicción de quórum, morosidad, optimización de gastos, satisfacción. 
 
-Asesoría en vivo: agenda y unión a sesión de streaming; autorización efectiva por identity y política activa por compliance.
+**Ingesta y fuentes**
 
-Revisión de actas: intake de borrador desde governance, dictamen y sello de validez con evidencias en documents.
+* Consumidor universal de eventos de dominio. 
+* Ejemplo de productor: `reservation-service` → `analytics-service`. 
 
-Eventos (AsyncAPI):
-MarketplaceRequestCreated.v1, QuoteReceived.v1, QuoteAwarded.v1, PurchaseOrderIssued.v1, LiveAdvisoryStarted.v1, LegalReviewCompleted.v1.
+**Contratos**
 
-analytics-service
+* Esquemas en `contracts/asyncapi/`; políticas de retención y minimización aplican.  
 
-Ingesta por eventos: transcripciones, asistencia, resultados de votación, reservas, OTs, finanzas resumidas.
+**Seguridad**
 
-Datasets y linaje: versionado, retención por política, auditoría WORM. PII minimizada y acceso sujeto a evaluate de compliance.
+* Acceso solo lectura para *dashboards* por rol; JWT ES256/EdDSA y PKCE a través de BFF. 
 
-Dashboards: participación, quórum, tiempos de sesión, utilización de áreas, mantenimiento y proveedores.
+---
 
-ML: predicción de quórum y tiempos/consumos estándar; explicabilidad requerida.
+## 7) KPIs y métricas
 
-🛣️ Rutas del Gateway
+* Marketplace: GMV, *take rate*, NPS proveedor, *repeat purchase*. 
+* Analytics: adopción, *engagement* de dashboards, precisión de modelos, ahorros. 
 
-/api/v1/marketplace/* → marketplace-service:3015
+---
 
-/api/v1/analytics/* → analytics-service:3016
-Con validación JWT/DPoP, mTLS interno y WAF.
+## 8) Observabilidad
 
-📚 API y contratos
+* Prometheus `/metrics`, trazas OTel, logs JSON con *correlation IDs*. 
+* Alertas: seguridad, performance y operación. 
 
-OpenAPI 3.1 por servicio en contracts/openapi/*. Versionado v1. Idempotencia en POST críticos. Errores RFC 7807.
+---
 
-Eventos registrados en el Schema Registry de notificaciones; claves por tenant_id y entidad de dominio.
+## 9) Desarrollo
 
-🛡️ Políticas de datos
+**Stack**
 
-Retención y borrado: governed por compliance; DSAR orquestado cross-service; crypto-erase cuando aplique.
+* Node.js + TypeScript, PostgreSQL, Kafka; OpenAPI/AsyncAPI. 
 
-Acceso a PII en Analytics: sólo tras resolución de políticas/consents; preferir agregados o seudonimización.
+**Flujo**
 
-📈 Observabilidad y SLOs
+* Contracts-first → codegen → implementación → validación. 
+* Estándares: TS strict, ESLint, Prettier, hooks. 
 
-Métricas (Prometheus):
+---
 
-Marketplace: requests_total{route}, quotes_received_total, awards_total, live_advisory_minutes_total, legal_reviews_completed_total.
+## 10) Despliegue
 
-Analytics: ingest_events_total{source}, pipeline_latency_p95_seconds, dashboards_views_total, models_trained_total.
+* Requisitos: Node 18+, Docker, PostgreSQL 13+, Kafka. 
+* Gateway con JWKS TTL ≤300s, DPoP y PKCE pre-filtro.  
 
-SLOs: P95 API ≤ 150 ms; error 5xx < 0.5%; pipelines P95 ≤ 5 min; dashboards P95 ≤ 200 ms.
+---
 
-Trazas: W3C con tenant_id, condominium_id, actor, policy_id/version.
+## 11) Checklist (DoD)
 
-Logs: JSON, WORM, sin PII.
+* OpenAPI/AsyncAPI publicados en `contracts/`. 
+* Autenticación: JWT ES256/EdDSA con `kid`; PKCE y DPoP verificados end-to-end.  
+* Observabilidad activa y tableros RED. 
+* Pruebas E2E de flujos principales por servicio. 
 
-🔐 Lineamientos de implementación
+---
 
-AuthN/Z: OIDC con PKCE obligatorio, JWT con kid, DPoP en write, cache JWKS ≤ 300 s.
+## 12) Roadmap corto
 
-Delegación de QR y biometría: emitir/validar solo en identity; clientes escanean/muestran.
+* Marketplace: flujo de certificación y *scorecard* de proveedores, SLA de liquidación. 
+* Analytics: nuevos modelos para quórum y morosidad, *self-service* de reportes. 
 
-Compliance-first: todas las decisiones normativas, consents, retención y DSAR vía compliance; fail-closed.
+---
 
-Multi-tenant: RLS activo, FKs compuestas y aislamiento por tenant_id en toda tabla con datos de cliente.
+## 13) Licencia y soporte
 
-🚀 Desarrollo local
+Software propietario. Ver guía de *support* y referencia en OpenAPI/AsyncAPI. 
 
-Ramas y contratos contracts-first; generar SDKs desde OpenAPI.
+---
 
-Semillas mínimas: tenants/condominios de tenancy, perfiles/roles de user-profiles, proveedores/amenidades de asset-management/tenancy.
+> Puertos y pertenencia a la capa *business* confirmados en la arquitectura del monorepo. 
 
-✅ Definition of Done
 
-OpenAPI publicado con ejemplos y matriz de errores RFC 7807.
-
-Rate-limits y WAF efectivos en gateway; WS con DPoP cuando aplique.
-
-Métricas, trazas y dashboards RED listos; linaje y retención documentados en Analytics.
-
-Flujos E2E validados:
-
-Marketplace: solicitud → cotizaciones → adjudicación → OC/OT → cierre con evidencias.
-
-Analytics: ingesta eventos (streaming/governance/reservations/asset) → dataset versionado → dashboard.
-
-🧭 No-goals
-
-Marketplace no firma actas ni decide validez legal. Eso es governance + compliance + documents.
-
-Analytics no expone PII directa ni actúa como fuente canónica de identidad o estructuras. Eso es identity/user-profiles/tenancy.
+Medical References:
+1. None — DOI: file_0000000092c861fb8a78dc73f86ce579
+2. None — DOI: file_00000000877461f4a0aa04a00833c6d1
+3. None — DOI: file-GxmJn3rarzdJehdikrvA9q
+4. None — DOI: file-D3TKX7kzvvmBd1ZfriYHMQ
+5. None — DOI: file-Bqp3dBmX8ioneCA2xDrZ2N
