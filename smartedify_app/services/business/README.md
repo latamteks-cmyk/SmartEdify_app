@@ -1,4 +1,4 @@
-# marketplace-service — README
+# marketplace-service
 
 Servicio de **orquestación de marketplace** para proveedores certificados. Capa business. Puerto **3015**.
 
