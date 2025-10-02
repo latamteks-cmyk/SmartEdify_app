@@ -1,0 +1,16 @@
+{
+  "level": "info",
+  "format": "json",
+  "outputs": [
+    {
+      "type": "file",
+      "path": "../logs/audit.log",
+      "maxSize": "10MB",
+      "maxFiles": 5
+    },
+    {
+      "type": "console",
+      "colorize": true
+    }
+  ]
+}

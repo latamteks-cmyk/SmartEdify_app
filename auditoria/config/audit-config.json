@@ -1,0 +1,35 @@
+{
+  "schedule": {
+    "full": "0 8 * * *",
+    "quick": "0 */4 * * *",
+    "alerts": "*/5 * * * *"
+  },
+  "notifications": {
+    "email": {
+      "enabled": false,
+      "smtp": {
+        "host": "smtp.smartedify.com",
+        "port": 587,
+        "secure": false
+      },
+      "recipients": [
+        "dev-team@smartedify.com"
+      ]
+    },
+    "slack": {
+      "enabled": false,
+      "webhook": "",
+      "channel": "#smartedify-alerts"
+    }
+  },
+  "cache": {
+    "enabled": true,
+    "ttl": 3600,
+    "maxSize": "100MB"
+  },
+  "retention": {
+    "reports": 30,
+    "history": 90,
+    "logs": 7
+  }
+}

@@ -1,0 +1,19 @@
+[
+  [
+    "reservation-service-CRITICAL",
+    {
+      "level": "CRITICAL",
+      "service": "reservation-service",
+      "message": "Reservation Service requiere atención inmediata",
+      "completeness": 30,
+      "issues": [
+        "Requiere reimplementación completa con NestJS",
+        "Sin base de datos persistente",
+        "Sin multi-tenancy",
+        "Sin seguridad robusta"
+      ],
+      "timestamp": 1759373272958,
+      "sent": true
+    }
+  ]
+]

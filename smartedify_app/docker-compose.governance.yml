@@ -1,0 +1,221 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: smartedify_governance
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./services/governance/compliance-service/src/database/migrations:/docker-entrypoint-initdb.d/compliance
+      - ./services/governance/reservation-service/src/database/migrations:/docker-entrypoint-initdb.d/reservation
+    ports:
+      - "5432:5432"
+    command: >
+      postgres -c shared_preload_libraries=vector
+               -c log_statement=all
+               -c log_destination=stderr
+               -c logging_collector=on
+
+  # Vector Database Extension Setup
+  postgres-vector:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: compliance_rag
+    volumes:
+      - vector_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Llama.cpp server for local LLM
+  llama:
+    image: ghcr.io/ggerganov/llama.cpp:full
+    command: ["./server", "-m", "/models/llama3-instruct.Q4_K_M.gguf", "-c", "4096", "-ngl", "1", "-fa"]
+    volumes:
+      - ./models:/models
+    ports:
+      - "8089:8080"
+    environment:
+      GGML_LOG_LEVEL: info
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: ["gpu"]
+
+  # Text Embeddings Inference
+  embeddings:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
+    environment:
+      MODEL_ID: intfloat/multilingual-e5-small
+    ports:
+      - "8091:80"
+
+  # Compliance Service
+  compliance-service:
+    build:
+      context: ./services/governance/compliance-service
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 3012
+      
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: dev
+      DB_PASSWORD: devpass
+      DB_NAME: smartedify_governance
+      
+      # Vector Database
+      VECTOR_DB_URL: postgres://dev:devpass@postgres-vector:5432/compliance_rag
+      
+      # LLM Services
+      LLM_BASE_URL: http://llama:8080
+      EMBEDDINGS_URL: http://embeddings:80
+      
+      # JWT
+      JWT_SECRET: dev-jwt-secret-key-compliance
+      
+      # Observability
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      METRICS_ENABLED: true
+      TRACING_ENABLED: true
+      
+    ports:
+      - "3012:3012"
+    depends_on:
+      - postgres
+      - postgres-vector
+      - redis
+      - llama
+      - embeddings
+    volumes:
+      - ./services/governance/compliance-service/src:/app/src
+    restart: unless-stopped
+
+  # Reservation Service
+  reservation-service:
+    build:
+      context: ./services/governance/reservation-service
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 3013
+      
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: dev
+      DB_PASSWORD: devpass
+      DB_NAME: smartedify_governance
+      
+      # External Services
+      COMPLIANCE_SERVICE_URL: http://compliance-service:3012
+      COMPLIANCE_TIMEOUT_MS: 2000
+      COMPLIANCE_CIRCUIT_BREAKER_THRESHOLD: 5
+      
+      IDENTITY_SERVICE_URL: http://identity-service:3001
+      FINANCE_SERVICE_URL: http://finance-service:3007
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:3005
+      
+      # JWT & DPoP
+      JWT_SECRET: dev-jwt-secret-key-reservation
+      DPOP_SECRET: dev-dpop-secret-key
+      
+      # Feature Flags
+      FEATURE_WAITLIST: true
+      FEATURE_FEES: true
+      FEATURE_CHECK_IN: true
+      FEATURE_BIOMETRIC_CHECK_IN: false
+      
+      # Rate Limiting
+      RATE_LIMIT_RESERVATION_CREATE_USER: 30
+      RATE_LIMIT_RESERVATION_CREATE_TENANT: 300
+      RATE_LIMIT_AVAILABILITY_USER: 120
+      
+      # Observability
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      METRICS_ENABLED: true
+      TRACING_ENABLED: true
+      
+    ports:
+      - "3013:3013"
+    depends_on:
+      - postgres
+      - redis
+      - compliance-service
+    volumes:
+      - ./services/governance/reservation-service/src:/app/src
+    restart: unless-stopped
+
+  # OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics
+    depends_on:
+      - jaeger
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources
+
+volumes:
+  postgres_data:
+  vector_data:
+  redis_data:
+  grafana_data:
+
+networks:
+  default:
+    name: smartedify_governance
+    driver: bridge
