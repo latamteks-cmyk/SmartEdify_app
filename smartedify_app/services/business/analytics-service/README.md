@@ -143,11 +143,3 @@ components:
 
 Software propietario. Ver contratos en `contracts/`. 
 
-
-Medical References:
-1. None — DOI: file_0000000092c861fb8a78dc73f86ce579
-2. None — DOI: file_0000000010006243898b608c4752fc36
-3. None — DOI: file-GyjxMqdTv2s5DLGEFeedhR
-4. None — DOI: file-D3TKX7kzvvmBd1ZfriYHMQ
-5. None — DOI: file-GxmJn3rarzdJehdikrvA9q
-6. None — DOI: file_00000000877461f4a0aa04a00833c6d1
