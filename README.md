@@ -1,10 +1,22 @@
-# SmartEdify Platform
+# SmartEdify Platform — README
 
-SmartEdify es una plataforma SaaS multi-tenant para la administración, gobernanza y operación de comunidades residenciales y comerciales: digitaliza asambleas híbridas con validez legal, centraliza mantenimiento, reservas, seguridad, cobros, comunicaciones y cumplimiento, y ofrece una arquitectura de microservicios con API Gateway y mensajería por eventos (identidad, perfiles, tenancy, activos, gobierno, notificaciones, marketplace, analytics y más); está diseñada para LATAM y Europa con foco en escalabilidad, observabilidad, seguridad y APIs versionadas para integraciones de terceros.
+> Plataforma SaaS multi‑tenant para administración, gobernanza y operación de comunidades residenciales y comerciales en LATAM y Europa. Digitaliza asambleas híbridas con validez legal, centraliza mantenimiento, reservas, seguridad, cobros, comunicaciones y cumplimiento. Arquitectura de microservicios con API Gateway y mensajería por eventos. Foco en escalabilidad, observabilidad, seguridad y APIs versionadas para integraciones de terceros.
 
-## 🏗️ Architecture
+---
 
-```
+## 1) Visión general
+
+**Objetivo**: operar comunidades con trazabilidad legal y eficiencia operativa.
+
+**Dominios**: identidad, perfiles, tenancy, activos, gobernanza, notificaciones, finanzas, seguridad física, marketplace y analítica.
+
+**Regiones**: LATAM y UE con parámetros locales de cumplimiento (GDPR y equivalentes regionales).
+
+---
+
+## 2) Arquitectura (mapa del repo y detalle)
+
+```text
 smartedify_app/
 ├─ apps/
 │  ├─ web-admin/                # Next.js (SSR/ISR), UI Admin
@@ -68,275 +80,225 @@ smartedify_app/
 └─ README.md
 ```
 
-## 🚀 Services
+> La arquitectura se mantiene completa al estilo original, ya alineada con buenas prácticas de modularidad y separación de responsabilidades. No se detectan cambios requeridos.
 
-### Core Services Status
+---
 
-> Nota: `notifications-service` y `documents-service` son bloqueantes P0 para funcionalidades completas de streaming y validez legal de asambleas.
+## 3) Tecnología base
 
-| Servicio                     | Estado                    | Completitud | Prioridad   | Documentación                                          |
-| ---------------------------- | ------------------------- | ----------- | ----------- | ------------------------------------------------------ |
-| **streaming-service**        | ✅ Funcional (dep. notifs) | 90%         | **Media**   | [Análisis Completo](./auditoria/streaming-service/)    |
-| **governance-service**       | 🔄 Casi completo          | 95%         | Media       | [Análisis](./auditoria/governance-service/)            |
-| **finance-service**          | ✅ Funcional               | 90%         | Baja        | [Análisis](./auditoria/finance-service/)               |
-| **asset-management-service** | ✅ Funcional               | 85%         | Baja        | [Análisis](./auditoria/asset-management-service/)      |
-| **user-profiles-service**    | 🚧 En desarrollo          | 75%         | Alta        | [Análisis](./auditoria/user-profiles-service/)         |
-| **notifications-service**    | ❌ No implementado         | 0%          | **CRÍTICA** | [Análisis Crítico](./auditoria/notifications-service/) |
-| **documents-service**        | ❌ No implementado         | 0%          | **CRÍTICA** | [Análisis Legal](./auditoria/documents-service/)       |
+* **Backend**: NestJS (Node.js) • TypeScript
+* **DB**: PostgreSQL + TypeORM • RLS multi‑tenant
+* **Mensajería**: Apache Kafka
+* **Infra**: Docker • Docker Compose • Terraform • Envoy (Gateway)
+* **Testing**: Jest • Supertest
+* **Observabilidad**: OpenTelemetry • Prometheus • Grafana
 
-### Identity Service
+---
 
-Proveedor de identidad OAuth **2.1** + **OIDC** con seguridad avanzada:
+## 4) Seguridad
 
-* **Authentication Flows:** Authorization Code + PKCE, Device Flow, Refresh Token Rotation
-* **Security:** DPoP proof of possession, anti-replay protection, automated key rotation
-* **Standards:** FIDO2/WebAuthn, TOTP MFA, GDPR compliance
-* **Multi-tenancy:** Aislamiento total por tenant con materiales criptográficos separados
+### 4.1 Autenticación y flujo OIDC
 
-📖 Documentación: `./services/core/identity-service/README.md`
+* OAuth 2.1 + OIDC • `authorization_code + PKCE` obligatorio • Device Flow.
+* DPoP PoP en writes y WS handshake.
+* Refresh rotation con reuse detection.
 
-### Gateway Service
+### 4.2 Criptografía
 
-API Gateway con ruteo centralizado, **validación L7 de JWT/DPoP**, CORS y rate limiting. No emite ni valida identidad a nivel de dominio.
+* JWT `ES256/EdDSA` con `kid` obligatorio.
+* **Prohibido** `HS256`.
+* Rotación automática de claves cada **90 días** con **7 días** de rollover.
+* JWKS por tenant • TTL ≤ 300 s • negative caching 60 s.
 
-## 📋 Auditoría de Servicios
+### 4.3 MFA y privacidad
 
-### 🎯 Estado General
+* WebAuthn/Passkeys • TOTP.
+* GDPR‑ready: DSAR, derecho al olvido, retención por política.
 
-* **Servicios auditados:** 7/10 (100% cobertura documental)
-* **Completitud promedio:** 85%
-* **Documentación:** 100% consolidada en [auditoria/](./auditoria/)
+### 4.4 Aislamiento multi‑tenant
 
-### 🚨 Bloqueantes Críticos Identificados
+* RLS activo y FKs compuestas donde aplica.
 
-1. **notifications-service (0%)** — Bloquea funcionalidad básica de streaming y governance
-2. **documents-service (0%)** — Crítico para validez legal de asambleas
+---
 
-### 📊 Acceso a Documentación Completa
+## 5) Prerrequisitos
 
-* **Índice maestro:** [auditoria/INDEX.md](./auditoria/INDEX.md)
-* **Análisis cross-service:** [auditoria/cross-service/](./auditoria/cross-service/)
-* **Herramientas de auditoría:** [auditoria/scripts/](./auditoria/scripts/)
-* **Métricas y tendencias:** [auditoria/reports/](./auditoria/reports/)
+* Node.js ≥ 18 • npm ≥ 8
+* Docker ≥ 20
+* PostgreSQL ≥ 13
+* Kafka (opcional para eventos locales)
 
-## 🛠️ Technology Stack
+---
 
-* **Backend:** NestJS (Node.js), TypeScript
-* **Database:** PostgreSQL with TypeORM
-* **Authentication:** OAuth 2.1, OIDC, FIDO2/WebAuthn
-* **Security:** DPoP, PKCE, JWT con ES256/EdDSA
-* **Messaging:** Apache Kafka
-* **Monitoring:** Prometheus, OpenTelemetry
-* **Testing:** Jest, Supertest
-* **Infrastructure:** Docker, Docker Compose
+## 6) Quick Start
 
-## 🔐 Security Features
-
-### Advanced Authentication
-
-* **OAuth 2.1 Compliance:** Recomendaciones de seguridad vigentes
-* **DPoP (Distributed Proof of Possession):** Sender-constrained tokens
-* **PKCE Mandatory:** Protección ante interceptación de authorization code
-* **Pushed Authorization Requests (PAR):** Seguridad de parámetros
-
-### Cryptographic Security
-
-* **Automated Key Rotation:** Rotación automática cada 90 días con rollover de 7 días
-* **Modern Algorithms:** ES256 (ECDSA) y EdDSA
-* **JWKS Endpoints:** Descubrimiento dinámico por tenant
-* **Anti-Replay Protection:** Validación DPoP con TTL configurable
-* **Prohibido HS256; solo ES256 o EdDSA.**
-* **JWKS TTL ≤ 300 s; negative caching 60 s.**
-
-### Multi-Factor Authentication
-
-* **FIDO2/WebAuthn:** Passkeys
-* **TOTP Support:** OTP basados en tiempo
-* **Contextual Tokens:** Autenticación contextual por QR
-
-### Compliance & Privacy
-
-* **GDPR Ready:** DSAR, derecho al olvido
-* **Audit Trails:** Trazabilidad completa
-* **Session Management:** Cierre global de sesión
-* **Tenant Isolation:** Separación de datos y claves
-
-## 📋 Prerequisites
-
-* **Node.js** >= 18.x
-* **npm** >= 8.x
-* **Docker** >= 20.x
-* **PostgreSQL** >= 13.x
-* **Apache Kafka** (opcional, para eventos)
-
-## 🚀 Quick Start
-
-> Para pruebas locales, consume `identity-service` directamente en su puerto interno. Vía gateway el prefijo es `/api/v1/identity/*`.
-
-### 1. Clonar repositorio
+### 6.1 Entorno mínimo local
 
 ```bash
+# 1) Clonar
 git clone <repository-url>
 cd smartedify_app
-```
 
-### 2. Iniciar Identity Service
+# 2) Variables ejemplo
+cp config/secrets/.env.example .env
 
-```bash
-cd services/core/identity-service
+# 3) Infra dev mínima (Postgres, Redis, Kafka opcional)
+docker compose -f infra/dev/docker-compose.yml up -d
 
-# Instalar dependencias
+# 4) Instalar dependencias raíz y shared
 npm install
 
-# Base de datos de prueba
-docker-compose -f docker-compose.test.yml up -d
-
-# Migraciones
+# 5) Levantar Identity (servicio base para pruebas)
+cd services/core/identity-service
+npm install
 npm run db:run-migrations
-
-# Desarrollo
 npm run start:dev
 ```
 
-### 3. Verificar instalación (puerto 3001)
+### 6.2 Verificación
 
 ```bash
-# Health check
-echo "Expect 200" && curl -i http://localhost:3001/
-
-# OIDC discovery
-echo "OIDC" && curl http://localhost:3001/.well-known/openid-configuration?tenant_id=test
-
-# Metrics
-echo "Metrics" && curl http://localhost:3001/metrics
+curl -i http://localhost:3001/                      # health
+curl http://localhost:3001/.well-known/openid-configuration?tenant_id=test
+curl http://localhost:3001/metrics                  # Prometheus
 ```
 
-## 🧪 Testing Strategy
+> Para otros servicios, ver sus READMEs en `services/*/*/README.md`.
 
-### Cobertura integral
+---
 
-* **Unit Tests:** lógica de servicios y utilidades
-* **Integration Tests:** base de datos e interacciones de módulos
-* **E2E Tests:** flujos completos de autenticación y endpoints
+## 7) Testing y QA
 
-### Entorno de pruebas
+### 7.1 Estrategia
+
+* Unit • Integration • E2E (flujos OIDC, DPoP, multi‑tenant).
+* Contract testing: OpenAPI y Pacts (BFF↔servicios).
+
+### 7.2 Comandos
 
 ```bash
-# Infra de pruebas
-docker-compose -f docker-compose.test.yml up -d
-
-# Ejecutar pruebas
 npm run test
-
-# Coverage
 npm run test:cov
-
-# E2E	npm run test:e2e
+npm run test:e2e
+npm run validate    # lint, format, audit, contracts
 ```
 
-### Quality Assurance
+### 7.3 Performance/Resiliencia
 
-```bash
-# Formato
-npm run format
+* k6 en `qa/k6/` • chaos en `qa/chaos/`.
 
-# Lint
-npm run lint
+---
 
-# Auditoría de seguridad
-npm audit
+## 8) Observabilidad
 
-# Validación completa
-npm run validate
-```
+* Métricas Prometheus en `/metrics`.
+* Trazas OTel con `tenant_id`, `trace_id`.
+* Dashboards RED por servicio.
+* Alertas: seguridad (replay/DPoP), latencia, errores, dependencias.
 
-## 📊 Monitoring & Observability
+---
 
-### Métricas
+## 9) Flujo de desarrollo
 
-* **Prometheus:** `/metrics`
-* **Métricas personalizadas:** flujos de autenticación, eventos de seguridad, performance
-* **Health Checks:** disponibilidad y dependencias
+### 9.1 Contracts‑first
 
-### Logging
+1. Diseñar contrato en `contracts/openapi/`
+2. Generar tipos/SDKs
+3. Implementar
+4. Validar contra spec y pacts
 
-* **Estructurado JSON:** con correlation IDs
-* **Eventos de seguridad:** intentos de autenticación, validaciones de token, rotación de claves
-* **Performance:** latencia de request, queries de BD
+### 9.2 Calidad
 
-### Alerting
+* TypeScript strict • ESLint • Prettier • pre‑commit hooks.
+* Escaneo de dependencias • secretos gestionados.
 
-* **Security Alerts:** intentos fallidos, replay
-* **Performance Alerts:** alta latencia, tasas de error
-* **Operational Alerts:** salud de servicios, conectividad
+---
 
-## 🔄 Development Workflow
+## 10) Despliegue
 
-### Contracts-First Development
+### 10.1 Producción
 
-1. **Diseñar contrato** en `contracts/openapi/`
-2. **Generar tipos** a partir del contrato
-3. **Implementar servicio** según contrato
-4. **Validar implementación** contra especificación
+1. Configurar entorno.
+2. Migraciones DB.
+3. Verificación de seguridad (TLS, rotación llaves).
+4. Observabilidad activa.
+5. Health checks.
 
-### Code Quality Standards
+### 10.2 IaC y CI/CD
 
-* **TypeScript Strict Mode**
-* **ESLint**
-* **Prettier**
-* **Pre-commit Hooks**
+* Terraform módulos `infra/terraform/modules/` • entornos en `infra/terraform/envs/`.
+* Pipelines CI en `.github/workflows/` con stages: lint → unit → contract → e2e → seguridad → deploy.
 
-### Security Guidelines
+---
 
-* **OWASP Compliance**
-* **Dependency Scanning**
-* **Secret Management**
-* **Security Testing**
+## 11) Contribución
 
-## 🚀 Deployment
+### 11.1 Proceso
 
-### Production Deployment
+1. Fork y rama feature.
+2. Estándares de código, pruebas, docs.
+3. Checks verdes antes del PR.
+4. Security review.
+5. Actualizar documentación.
 
-1. **Configurar entorno**
-2. **Migraciones de base de datos**
-3. **Verificación de seguridad** (SSL/TLS, rotación de llaves)
-4. **Monitoring** (métricas, logging, alerting)
-5. **Health checks**
+### 11.2 Convenciones de commit (Conventional Commits)
 
-### Infrastructure as Code
-
-* **Docker** para entornos consistentes
-* **Plantillas de entornos** estandarizadas
-* **CI/CD** con pruebas y despliegue automatizado
-
-## 🤝 Contributing
-
-### Development Process
-
-1. **Fork** y rama de feature
-2. **Estándares** de código, pruebas, docs
-3. **Quality checks** antes del PR
-4. **Security review**
-5. **Actualizar documentación**
-
-### Commit Guidelines
-
-Usa **Conventional Commits**:
-
-```
+```text
 feat(identity): add WebAuthn support
 fix(auth): resolve DPoP replay issue
 docs(readme): update API documentation
 test(e2e): add OAuth flow tests
 ```
 
-## 📄 License
+> Considerar CODEOWNERS y estrategia de ramas (`main`, `release/*`, `hotfix/*`).
 
-Este proyecto es software propietario. Todos los derechos reservados.
+---
 
-## 🆘 Support
+## 12) PMV (Producto Mínimo Viable)
 
-* **Documentación:** READMEs específicos por servicio
-* **API Reference:** OpenAPI en `contracts/`
-* **Examples:** tests de referencia
-* **Issues:** crear tickets para bugs y features
+**Definición acordada del PMV**
+
+**Servicios al 100% (alcance funcional completo):**
+
+* **governance-service** *(incluye videoconferencias y todas las funciones definidas para asambleas híbridas)*.
+* **asset-management-service** *(gestión de activos, mantenimiento, OTs, proveedores; versión build-freeze)*.
+* **reservation-service** *(reservas de áreas comunes, check‑in, políticas y cobros opcionales).*
+
+> Nota de arquitectura: se mantiene la separación de responsabilidades técnica. La videoconferencia está implementada por `streaming-service`, pero queda **operativamente integrada** y **paquetizada** dentro del alcance de `governance-service` para el PMV (contratos y flujos end‑to‑end sin exponer detalles al usuario final).
+
+**Servicios de soporte (parciales) requeridos por el PMV:**
+
+* **identity-service**: OIDC + OAuth 2.1 con PKCE, DPoP, rotación de claves, logout global.
+* **user-profiles-service**: perfiles, membresías y roles locales esenciales para voz/voto y permisos de reserva.
+* **tenancy-service**: modelo estructural (tenants, condominios, unidades) requerido por governance/reservations/asset.
+* **compliance-service**: evaluación de políticas mínimas en tiempo de ejecución; DSAR y retención básica.
+* **gateway-service**: validación L7 JWT/DPoP, CORS y rate‑limit por tenant.
+* **notifications-service (mínimo viable)**: envío SMTP/SMS y registro de esquemas de eventos necesarios para QR/recordatorios.
+* **documents-service (mínimo viable)**: almacenamiento de evidencias y actas con **firma electrónica básica** para validez legal.
+
+**Criterios de aceptación PMV (DoD):**
+
+1. **Asamblea híbrida E2E**: Convocatoria → verificación de quórum → videoconferencia integrada → votación → acta firmada y distribuida.
+2. **Reservas E2E**: creación → evaluación de políticas → pago opcional → check‑in (QR) → auditoría sin PII pública.
+3. **Asset E2E**: incidencia → clasificación → OT (técnico o soft) → cierre → notificación → métricas básicas.
+4. **Seguridad**: JWT ES256/EdDSA con `kid`, DPoP en writes, PKCE obligatorio; JWKS TTL ≤ 300 s.
+5. **Multi‑tenant**: RLS activo y pruebas negativas de cruce de datos.
+6. **Observabilidad**: métricas RED y trazas OTel por servicio; tableros mínimos en Grafana.
+7. **Legal**: política de retención y DSAR operativa; actas con firma electrónica básica disponible.
+
+**Exclusiones PMV:** payroll, hr‑compliance, marketplace, analytics avanzados.
+
+---
+
+## 13) Riesgos y dependencias críticas
+
+* **P0**: `notifications-service` y `documents-service` pendientes. Riesgo para streaming y validez legal. Plan: priorizar MVP notificac.
+* **Rotación de claves/JWKS**: TTL ≤ 300 s y rollover 7 días. Validadores deben honrar `kid`.
+* **Compliance runtime**: fallback seguro `fail‑closed` cuando no haya política.
+
+---
+
+## 14) Licencia y soporte
+
+* **Licencia**: Software propietario. Todos los derechos reservados.
+* **Soporte**: READMEs por servicio • OpenAPI en `contracts/` • ejemplos en tests • issues en el tracker.
