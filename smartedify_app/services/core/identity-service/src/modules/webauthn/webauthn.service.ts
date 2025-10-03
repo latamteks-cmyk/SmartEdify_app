@@ -2,6 +2,8 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
+  Inject,
 } from '@nestjs/common';
 import {
   generateRegistrationOptions as defaultGenerateRegistrationOptions,
@@ -38,9 +40,17 @@ export class WebauthnService {
     @InjectRepository(WebAuthnCredential)
     private webAuthnCredentialRepository: Repository<WebAuthnCredential>,
     // Permitir inyección opcional de dependencias WebAuthn para testabilidad
+    @Optional()
+    @Inject('WEBAUTHN_GENERATE_REG_OPTIONS')
     private readonly _generateRegistrationOptions: typeof defaultGenerateRegistrationOptions = defaultGenerateRegistrationOptions,
+    @Optional()
+    @Inject('WEBAUTHN_VERIFY_REG_RESPONSE')
     private readonly _verifyRegistrationResponse: typeof defaultVerifyRegistrationResponse = defaultVerifyRegistrationResponse,
+    @Optional()
+    @Inject('WEBAUTHN_GENERATE_AUTH_OPTIONS')
     private readonly _generateAuthenticationOptions: typeof defaultGenerateAuthenticationOptions = defaultGenerateAuthenticationOptions,
+    @Optional()
+    @Inject('WEBAUTHN_VERIFY_AUTH_RESPONSE')
     private readonly _verifyAuthenticationResponse: typeof defaultVerifyAuthenticationResponse = defaultVerifyAuthenticationResponse,
   ) {}
 

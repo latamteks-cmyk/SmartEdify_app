@@ -5,6 +5,12 @@ import { WebAuthnCredential } from './entities/webauthn-credential.entity';
 import { Repository } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { RpService } from './rp.service';
+import {
+  generateRegistrationOptions as defaultGenerateRegistrationOptions,
+  verifyRegistrationResponse as defaultVerifyRegistrationResponse,
+  generateAuthenticationOptions as defaultGenerateAuthenticationOptions,
+  verifyAuthenticationResponse as defaultVerifyAuthenticationResponse,
+} from '@simplewebauthn/server';
 
 describe('WebauthnService (unit)', () => {
   let service: WebauthnService;
@@ -18,7 +24,11 @@ describe('WebauthnService (unit)', () => {
         {
           provide: UsersService,
           useValue: {
-            findByEmail: async () => ({
+            findByEmail: jest.fn().mockResolvedValue({
+              id: 'user-id',
+              email: 'test@test.com',
+            }),
+            findById: jest.fn().mockResolvedValue({
               id: 'user-id',
               email: 'test@test.com',
             }),
@@ -29,10 +39,13 @@ describe('WebauthnService (unit)', () => {
           useValue: {
             create: jest.fn((dto) => dto),
             save: jest.fn(async (dto) => dto),
+            find: jest.fn().mockResolvedValue([]),
+            findOne: jest.fn().mockResolvedValue(null),
           },
         },
       ],
     }).compile();
+    
     service = module.get<WebauthnService>(WebauthnService);
     repo = module.get<Repository<WebAuthnCredential>>(
       getRepositoryToken(WebAuthnCredential),

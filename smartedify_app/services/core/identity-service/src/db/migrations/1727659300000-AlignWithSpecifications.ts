@@ -324,8 +324,8 @@ export class AlignWithSpecifications1727659300000
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_refresh_tokens_tenant"`);
 
     // Restaurar campos eliminados (esto es complejo y puede requerir intervención manual)
-    console.log(
-      'WARNING: Rollback may require manual intervention to restore deleted columns and data',
-    );
+    // console.log(
+    //   'WARNING: Rollback may require manual intervention to restore deleted columns and data',
+    // );
   }
 }

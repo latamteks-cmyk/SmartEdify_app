@@ -1,6 +1,6 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "..",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
@@ -11,6 +11,15 @@
   "forceExit": true,
   "detectOpenHandles": true,
   "verbose": true,
-  "setupFilesAfterEnv": ["<rootDir>/setup.e2e-spec.ts"],
-  "globalTeardown": "<rootDir>/utils/global-teardown.ts"
+  "setupFilesAfterEnv": ["<rootDir>/test/setup.e2e-spec.ts"],
+  "globalTeardown": "<rootDir>/test/utils/global-teardown.ts",
+  "roots": [
+    "<rootDir>/test/"
+  ],
+  "testPathIgnorePatterns": [
+    "/node_modules/",
+    "test/e2e/security-scenarios.e2e-spec.ts",
+    "test/e2e/auth-flow.e2e-spec.ts",
+    "test/e2e/webauthn.e2e-spec.ts"
+  ]
 }

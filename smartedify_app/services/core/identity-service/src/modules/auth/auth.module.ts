@@ -15,6 +15,7 @@ import { RefreshToken } from '../tokens/entities/refresh-token.entity';
 import { JtiStoreService } from './store/jti-store.service';
 import { DpopReplayProof } from './entities/dpop-replay-proof.entity';
 import { ClientsModule } from '../clients/clients.module';
+import { RateLimitingModule } from '../rate-limiting/rate-limiting.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ClientsModule } from '../clients/clients.module';
     SessionsModule,
     KeysModule,
     ClientsModule,
+    RateLimitingModule,
   ],
   providers: [
     AuthService,

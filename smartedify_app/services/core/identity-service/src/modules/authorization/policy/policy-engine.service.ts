@@ -15,6 +15,9 @@ type PolicyFunction = (user: User, resource: Resource) => boolean;
 
 @Injectable()
 export class PolicyEngineService {
+  // Optional external evaluator (e.g., OPA/Cedar adapter)
+  private externalEvaluator?: (policyName: string, user: Record<string, unknown>, resource: Record<string, unknown>) => boolean;
+
   private policies: Record<string, PolicyFunction> = {
     'document:read': (user: User, resource: Resource) => {
       // Allow if the user is an admin or if the user is the owner of the document
@@ -28,11 +31,23 @@ export class PolicyEngineService {
     },
   };
 
+  registerExternalEvaluator(evaluator: (policyName: string, user: Record<string, unknown>, resource: Record<string, unknown>) => boolean) {
+    this.externalEvaluator = evaluator;
+  }
+
   evaluatePolicy(
     policyName: string,
     user: Record<string, unknown>,
     resource: Record<string, unknown>,
   ): boolean {
+    // Delegate to external evaluator if configured
+    if (this.externalEvaluator) {
+      try {
+        return this.externalEvaluator(policyName, user, resource);
+      } catch {
+        // Fall through to built-in policies on error
+      }
+    }
     const policy = this.policies[policyName];
     if (policy) {
       return policy(user as unknown as User, resource as unknown as Resource);

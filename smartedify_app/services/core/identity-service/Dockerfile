@@ -1,42 +1,43 @@
-# Multi-stage build for Identity Service
+# Stage 1: Build the application
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and install dependencies
 COPY package*.json ./
-
-# Install dependencies
-RUN npm install && npm cache clean --force
+RUN npm install
 
 # Copy source code
 COPY . .
 
-# Production stage
+# Build the application
+RUN npm run build
+
+# Stage 2: Production image
 FROM node:18-alpine AS production
 
 WORKDIR /app
 
-# Install dumb-init and curl for health checks
+# Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init curl
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nestjs -u 1001
+# Create a non-root user for security
+RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 
-# Copy application
-COPY --from=builder --chown=nestjs:nodejs /app ./
+# Copy only necessary files from builder stage
+COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 
-# Switch to non-root user
+# Switch to the non-root user
 USER nestjs
 
-# Expose port
+# Expose the application port
 EXPOSE 3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Health check to ensure the service is running
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:3001/health || exit 1
 
-# Start the application
+# Start the application using dumb-init
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "src/main.js"]
+CMD ["node", "dist/main"]

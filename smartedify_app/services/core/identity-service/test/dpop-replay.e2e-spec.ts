@@ -208,7 +208,7 @@ describe('DPoP Anti-Replay (e2e)', () => {
       });
 
     expect(response.status).toBe(401);
-    expect(response.body.message).toBe('DPoP proof expired');
+    expect(response.body.detail).toBe('DPoP proof expired');
   });
 
   it('should prevent replay across different nodes using the shared backend', async () => {
