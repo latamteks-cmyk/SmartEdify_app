@@ -1,10 +1,263 @@
-# SmartEdify Platform
+<<<<<<< HEAD
+# SmartEdify Global Platform
 
-SmartEdify es una plataforma SaaS multi-tenant para la administración, gobernanza y operación de comunidades residenciales y comerciales: digitaliza asambleas híbridas con validez legal, centraliza mantenimiento, reservas, seguridad, cobros, comunicaciones y cumplimiento, y ofrece una arquitectura de microservicios con API Gateway y mensajería por eventos (identidad, perfiles, tenancy, activos, gobierno, notificaciones, marketplace, analytics y más); está diseñada para LATAM y Europa con foco en escalabilidad, observabilidad, seguridad y APIs versionadas para integraciones de terceros.
+> **Plataforma SaaS global de gobernanza y gestión comunitaria**  
+> Digitalización, automatización y validez legal para condominios en Latinoamérica y Europa
 
-## 🏗️ Architecture
+Repositorio monolítico para la plataforma SmartEdify v2.0. Arquitectura de microservicios modular, multi-tenant y multi-país, alineada al [SCOPE v2.0](./referencias/SCOPE.md) y las políticas descritas en [`doc/POLICY_INDEX.md`](./doc/POLICY_INDEX.md).
 
+## 🏗️ Arquitectura General
+
+**14 microservicios** organizados por líneas funcionales + plataforma + aplicaciones frontend.
+
+### Estructura del Directorio
+
+```text
+smartedify_app/
+├─ services/                    # 14 Microservicios (Puertos 3001-3016)
+│  ├─ core/                     # Servicios fundamentales
+│  │  ├─ identity-service/      # 3001 - JWT ES256/EdDSA, RBAC/ABAC, MFA
+│  │  ├─ user-profiles-service/ # 3002 - Perfiles, roles por condominio
+│  │  ├─ tenancy-service/       # 3003 - Multi-tenant, alícuotas, RLS
+│  │  ├─ notifications-service/ # 3005 - Email/SMS/Push, Event Schema Registry
+│  │  └─ documents-service/     # 3006 - Gestión documental, firma electrónica
+│  ├─ governance/               # Gobernanza democrática digital
+│  │  ├─ governance-service/    # 3011 - Asambleas, votación, actas IA (MCP)
+│  │  ├─ compliance-service/    # 3012 - Motor normativo global, DSAR
+│  │  ├─ reservation-service/   # 3013 - Reservas áreas comunes
+│  │  └─ streaming-service/     # 3014 - Video híbrido, QR, transcripción
+│  ├─ operations/               # Operaciones diarias
+│  │  ├─ physical-security-service/ # 3004 - CCTV, biometría, IoT
+│  │  ├─ finance-service/       # 3007 - Cuotas, PCGE/NIIF, conciliación
+│  │  ├─ payroll-service/       # 3008 - Nóminas, PLAME, beneficios
+│  │  ├─ hr-compliance-service/ # 3009 - RRHH, SST, contratos
+│  │  └─ asset-management-service/ # 3010 - Mantenimiento predictivo
+│  └─ business/                 # Nuevos modelos de negocio
+│     ├─ marketplace-service/   # 3015 - Servicios premium, comisiones
+│     └─ analytics-service/     # 3016 - BI, ML predictivo, dashboards
+├─ platform/                    # Infraestructura transversal
+│  ├─ gateway/                  # 8080 - WAF, mTLS, rate limits, observabilidad
+│  ├─ mesh/                     # Service mesh, circuit breaking, retries
+│  ├─ events/                   # Apache Kafka, AsyncAPI, Event Sourcing
+│  ├─ observability/            # Prometheus, Grafana, OTel, logs WORM
+│  ├─ security/                 # SPIFFE/SPIRE, OPA, KMS, CSP/HSTS
+│  └─ shared/                   # SDKs, tipos comunes, librerías
+├─ apps/                        # Aplicaciones frontend
+│  ├─ web-admin/                # Next.js SSR - Portal administradores
+│  ├─ web-user/                 # Next.js - Portal propietarios
+│  ├─ mobile/                   # React Native - App móvil
+│  └─ bff/                      # Backend for Frontend (PKCE, agregación)
+├─ contracts/                   # API-First Design
+│  ├─ openapi/                  # Contratos REST por servicio
+│  ├─ asyncapi/                 # Esquemas de eventos por dominio
+│  └─ pacts/                    # Contract testing (Pact)
+├─ infra/                       # Infrastructure as Code
+│  ├─ terraform/                # AWS/Multi-cloud, módulos reutilizables
+│  └─ cicd/                     # Pipelines, imágenes base, security scans
+├─ config/                      # Configuración por entorno
+├─ qa/                          # Testing y chaos engineering
+├─ doc/                         # Documentación técnica y ADRs
+└─ scripts/                     # Automatización y tooling
 ```
+
+├─ platform/
+│ ├─ gateway/ # WAF, CORS, rate limits (norte-sur)
+│ ├─ mesh/ # mTLS, S2S authZ, retries, circuit breaking
+│ ├─ events/ # AsyncAPI, esquemas, outbox/idempotencia
+│ ├─ observability/ # Otel collectors, dashboards, SLOs
+│ ├─ security/ # OPA bundles, CSP/HSTS, KMS
+│ └─ shared/ # libs comunes (tipos, SDKs OpenAPI, tracing)
+├─ contracts/
+│ ├─ openapi/ # `*-service.v1.yaml` + ejemplos
+│ ├─ asyncapi/ # eventos por dominio
+│ └─ pacts/ # tests consumidor-productor (BFF↔servicios)
+├─ infra/
+│ ├─ terraform/
+│ │ ├─ modules/ # vpc, rds, redis, s3, cloudfront, waf, ecs, iam
+│ │ └─ envs/ # dev, stg, prod
+│ └─ cicd/ # pipelines, imágenes base, escáneres
+├─ config/
+│ ├─ dev/ stg/ prod/ # feature flags, parámetros no sensibles
+│ └─ secrets/ # plantillas .env.example (sin secretos)
+├─ qa/
+│ ├─ k6/ # pruebas de carga
+│ └─ chaos/ # experimentos de resiliencia
+├─ scripts/ # bootstrap, codegen, db:\*, lint, test
+├─ .github/workflows/ # CI (lint, unit, contract, e2e, seguridad, deploy)
+├─ doc/
+│ ├─ adr/ # Architecture Decision Records
+│ ├─ diagrams/ # mermaid/drawio
+│ ├─ runbooks/ # incident, DR, rotación claves, webhooks
+│ ├─ security/ # DPIA, amenazas, 29733, retención
+│ └─ product/ # roadmaps, criterios PMV
+└─ README.md
+
+````
+
+## 🚀 Características Principales
+
+### Gobernanza Democrática Digital
+- **Asambleas híbridas** con validez legal adaptable multi-país (PMV: Perú)
+- **Votación ponderada** por alícuotas con auditoría criptográfica
+- **Transcripción IA** y generación automática de actas (MCP)
+- **QR contextuales** para asistencia + biometría/SMS como alternativas
+
+### Multi-Tenant Global
+- **Shared Database, Shared Schema** con RLS por `condominium_id`
+- **Motor de compliance** adaptable por país y tipo de propiedad
+- **Localización** completa (i18n, monedas, formatos legales)
+
+### Seguridad Enterprise
+- **JWT asimétrico** (ES256/EdDSA) con `kid` obligatorio, PKCE
+- **DPoP** (RFC 9449) para anti-replay distribuido
+- **mTLS interno** con SPIFFE/SPIRE
+- **DSAR automatizado** con crypto-erase cross-service
+
+### Observabilidad Completa
+- **Métricas** Prometheus con alertas SLO/SLA
+- **Trazas distribuidas** OpenTelemetry
+- **Logs WORM** a S3 con Object Lock para auditoría
+- **Dashboards** Grafana para RED metrics
+
+## 🛠️ Stack Tecnológico
+
+| Capa | Tecnología | Propósito |
+|------|------------|-----------|
+| **Frontend** | React, Next.js, React Native | UIs web y móvil |
+| **Backend** | Node.js, NestJS, TypeScript | Microservicios |
+| **API Gateway** | Envoy Proxy + WASM | Seguridad, routing, observabilidad |
+| **Bases de Datos** | PostgreSQL + RLS | Multi-tenant por servicio |
+| **Mensajería** | Apache Kafka | Event-driven architecture |
+| **Cache** | Redis | Sessions, rate limiting, anti-replay |
+| **Storage** | AWS S3 | Documentos, videos, logs WORM |
+| **Observabilidad** | Prometheus, Grafana, OTel | Métricas, logs, trazas |
+| **Seguridad** | SPIFFE/SPIRE, OPA | mTLS, políticas de autorización |
+| **Infraestructura** | Docker, Kubernetes, Terraform | Containerización, IaC |
+
+## 🏃‍♂️ Quick Start
+
+### Prerrequisitos
+- Node.js 20+
+- Docker & Docker Compose
+- PostgreSQL 15+
+- Redis 7+
+
+### Desarrollo Local
+
+```bash
+# 1. Clonar repositorio
+git clone https://github.com/smartedify/smartedify_app.git
+cd smartedify_app
+
+# 2. Levantar plataforma (Gateway + dependencias)
+cd platform/gateway
+docker compose up -d
+
+# 3. Ejecutar tests del gateway
+./scripts/run_tests.ps1  # Windows
+./scripts/test_gateway.sh  # Linux/Mac
+
+# 4. Levantar servicios core
+cd ../../services/core/identity-service
+npm install && npm run dev
+
+# 5. Acceder a las aplicaciones
+# - Gateway: http://localhost:8080
+# - Admin UI: http://localhost:4000
+# - User UI: http://localhost:3000
+# - Prometheus: http://localhost:9090
+# - Grafana: http://localhost:3001
+````
+
+### Validar Contratos API
+
+```bash
+# Instalar Spectral
+npm install -g @stoplight/spectral-cli
+
+# Validar todos los contratos OpenAPI
+spectral lint contracts/openapi/*.yaml --ruleset .spectral.yml
+```
+
+## 📋 Roadmap y Estado
+
+### ✅ Completado (v2.0)
+
+- [x] Arquitectura de microservicios con 14 servicios
+- [x] Gateway con mTLS, WAF, rate limiting, observabilidad
+- [x] Contratos OpenAPI para servicios principales
+- [x] Pipeline CI/CD con testing automatizado
+- [x] Eventos AsyncAPI para governance
+- [x] Documentación técnica completa
+
+### 🚧 En Desarrollo
+
+- [ ] Implementación de servicios nuevos (streaming, marketplace, analytics)
+- [ ] Plugin DPoP real (reemplazar placeholder WASM)
+- [ ] Integración con Google Meet API
+- [ ] Modelos ML para analytics predictivo
+
+### 📅 Próximas Fases
+
+- **Q1 2025**: Lanzamiento Perú (PMV)
+- **Q2 2025**: Expansión Chile y Colombia
+- **Q3 2025**: México y España
+- **2026**: Brasil y resto de LATAM
+- **2027**: Mercado Europeo (GDPR)
+
+## 🤝 Contribución
+
+### Flujo de Desarrollo
+
+1. **Fork** del repositorio
+2. **Branch** desde `develop`: `feature/nueva-funcionalidad`
+3. **Commits** siguiendo [Conventional Commits](https://conventionalcommits.org/)
+4. **Tests** y validación de contratos
+5. **Pull Request** con template completo
+6. **Review** por CODEOWNERS correspondientes
+
+### Políticas y Convenciones
+
+- **API-First**: Contratos OpenAPI antes de implementación
+- **Security-First**: Validación de seguridad en cada PR
+- **Contract Testing**: Pact para integración BFF↔Services
+- **Event-Driven**: AsyncAPI para comunicación asíncrona
+
+Ver [`doc/POLICY_INDEX.md`](./doc/POLICY_INDEX.md) para políticas completas.
+
+## 📚 Documentación
+
+| Documento                                        | Descripción                          |
+| ------------------------------------------------ | ------------------------------------ |
+| [`SCOPE.md`](./referencias/SCOPE.md)             | Especificación técnica completa v2.0 |
+| [`doc/POLICY_INDEX.md`](./doc/POLICY_INDEX.md)   | Índice de políticas y convenciones   |
+| [`MIGRATION_SUMMARY.md`](./MIGRATION_SUMMARY.md) | Resumen de migración a v2.0          |
+| [`doc/diagrams/`](./doc/diagrams/)               | Diagramas de arquitectura            |
+| [`doc/adr/`](./doc/adr/)                         | Architecture Decision Records        |
+| [`doc/security/`](./doc/security/)               | Políticas de seguridad               |
+| [`doc/runbooks/`](./doc/runbooks/)               | Guías operacionales                  |
+
+## 🛡️ Seguridad
+
+Para reportar vulnerabilidades de seguridad, consulta [`SECURITY.md`](./SECURITY.md).
+
+## 📄 Licencia
+
+© 2025 SmartEdify Global. Todos los derechos reservados.
+
+---
+
+> **SmartEdify**: Convirtiendo la gobernanza comunitaria en una experiencia digital transparente, segura y legalmente válida. 🏢✨
+=======
+ 
+
+# SmartEdify Monorepo
+
+Repositorio monolítico para la plataforma SmartEdify. Sigue una arquitectura modular, multi-servicio y multi-frontend, alineada a las políticas y convenciones descritas en `POLICY_INDEX.md`.
+
+## Estructura del directorio principal
+
+```text
 smartedify_app/
 ├─ apps/
 │  ├─ web-admin/                # Next.js (SSR/ISR), UI Admin
@@ -15,28 +268,26 @@ smartedify_app/
 │     ├─ app/                   # BFF Usuario
 │     └─ mobile/                # BFF Móvil
 ├─ services/
-│  ├─ core/                     # Servicios fundamentales (Línea 1)
-│  │  ├─ identity-service/      # Puerto 3001 - Gestión de identidad, JWT, RBAC/ABAC
-│  │  ├─ user-profiles-service/ # Puerto 3002 - Perfiles de usuario, roles por condominio
-│  │  ├─ tenancy-service/       # Puerto 3003 - Ciclo de vida de condominios, alícuotas
-│  │  ├─ notifications-service/ # Puerto 3005 - Email, SMS, push, Event Schema Registry
-│  │  └─ documents-service/     # Puerto 3006 - Gestión documental, firma electrónica
-│  ├─ governance/               # Servicios de gobernanza (Línea 2)
-│  │  ├─ governance-service/    # Puerto 3011 - Asambleas, votación, actas con IA
-│  │  ├─ streaming-service/     # Puerto 3014 - Video en vivo, escaneo QR, transcripción
-│  │  ├─ compliance-service/    # Puerto 3012 - Motor normativo global, validaciones
-│  │  └─ reservation-service/   # Puerto 3013 - Reservas de áreas comunes
-│  ├─ operations/               # Servicios operativos (Línea 3)
-│  │  ├─ finance-service/       # Puerto 3007 - Cuotas, conciliación, PCGE/NIIF
-│  │  ├─ asset-management-service/ # Puerto 3010 - Inventario, mantenimiento, proveedores
-│  │  ├─ physical-security-service/ # Puerto 3004 - CCTV, control accesos, IoT
-│  │  ├─ payroll-service/       # Puerto 3008 - Nóminas, PLAME, beneficios
-│  │  └─ hr-compliance-service/ # Puerto 3009 - Ciclo empleado, SST, contratos
-│  └─ business/                 # Servicios de negocio (Línea 4)
-│     ├─ marketplace-service/   # Puerto 3015 - Ecosistema servicios premium
-│     └─ analytics-service/     # Puerto 3016 - BI, dashboards, ML predictivo
+│  ├─ pmv/                      # Línea 1 (Assembly, Reservation, Maintenance)
+│  │  ├─ assembly-service/
+│  │  ├─ reservation-service/
+│  │  └─ maintenance-service/
+│  ├─ support/                  # Línea 2 (fundacionales)
+│  │  ├─ auth-service/
+│  │  ├─ user-service/
+│  │  ├─ tenants-service/
+│  │  ├─ document-service/
+│  │  ├─ communication-service/
+│  │  └─ finance-service/
+│  └─ complementary/            # Línea 3 (complementarios)
+│     ├─ payments-service/
+│     ├─ compliance-service/
+│     ├─ payroll-service/
+│     ├─ certification-service/
+│     ├─ support-bot-service/
+│     └─ facility-security-service/
 ├─ platform/
-│  ├─ gateway/                  # Puerto 8080 - WAF, CORS, rate limits, enrutamiento (norte-sur)
+│  ├─ gateway/                  # WAF, CORS, rate limits (norte-sur)
 │  ├─ mesh/                     # mTLS, S2S authZ, retries, circuit breaking
 │  ├─ events/                   # AsyncAPI, esquemas, outbox/idempotencia
 │  ├─ observability/            # Otel collectors, dashboards, SLOs
@@ -68,275 +319,20 @@ smartedify_app/
 └─ README.md
 ```
 
-## 🚀 Services
+## Políticas y convenciones
 
-### Core Services Status
+- Todas las normas, plantillas y convenciones están centralizadas en [`doc/POLICY_INDEX.md`](../doc/POLICY_INDEX.md).
+- Cambios a la estructura, políticas o convenciones requieren PR, revisión de CODEOWNERS y actualización del índice.
+- Cada carpeta relevante debe tener su propio README.md y/o documentación específica.
 
-> Nota: `notifications-service` y `documents-service` son bloqueantes P0 para funcionalidades completas de streaming y validez legal de asambleas.
+## Gobierno y calidad
 
-| Servicio                     | Estado                    | Completitud | Prioridad   | Documentación                                          |
-| ---------------------------- | ------------------------- | ----------- | ----------- | ------------------------------------------------------ |
-| **streaming-service**        | ✅ Funcional (dep. notifs) | 90%         | **Media**   | [Análisis Completo](./auditoria/streaming-service/)    |
-| **governance-service**       | 🔄 Casi completo          | 95%         | Media       | [Análisis](./auditoria/governance-service/)            |
-| **finance-service**          | ✅ Funcional               | 90%         | Baja        | [Análisis](./auditoria/finance-service/)               |
-| **asset-management-service** | ✅ Funcional               | 85%         | Baja        | [Análisis](./auditoria/asset-management-service/)      |
-| **user-profiles-service**    | 🚧 En desarrollo          | 75%         | Alta        | [Análisis](./auditoria/user-profiles-service/)         |
-| **notifications-service**    | ❌ No implementado         | 0%          | **CRÍTICA** | [Análisis Crítico](./auditoria/notifications-service/) |
-| **documents-service**        | ❌ No implementado         | 0%          | **CRÍTICA** | [Análisis Legal](./auditoria/documents-service/)       |
+- Versionado SemVer, releases y ramas documentadas en `/VERSIONING.md` y `/RELEASE_PROCESS.md`.
+- Seguridad, privacidad y operación documentadas en `/SECURITY.md`, `/doc/security/` y `/doc/runbooks/`.
+- Calidad y pruebas: ver `/doc/policies/`, `/qa/`, `/contracts/` y `/platform/events/`.
 
-### Identity Service
+---
 
-Proveedor de identidad OAuth **2.1** + **OIDC** con seguridad avanzada:
+> Para detalles, consulta el índice de políticas y la documentación de cada dominio.
 
-* **Authentication Flows:** Authorization Code + PKCE, Device Flow, Refresh Token Rotation
-* **Security:** DPoP proof of possession, anti-replay protection, automated key rotation
-* **Standards:** FIDO2/WebAuthn, TOTP MFA, GDPR compliance
-* **Multi-tenancy:** Aislamiento total por tenant con materiales criptográficos separados
-
-📖 Documentación: `./services/core/identity-service/README.md`
-
-### Gateway Service
-
-API Gateway con ruteo centralizado, **validación L7 de JWT/DPoP**, CORS y rate limiting. No emite ni valida identidad a nivel de dominio.
-
-## 📋 Auditoría de Servicios
-
-### 🎯 Estado General
-
-* **Servicios auditados:** 7/10 (100% cobertura documental)
-* **Completitud promedio:** 85%
-* **Documentación:** 100% consolidada en [auditoria/](./auditoria/)
-
-### 🚨 Bloqueantes Críticos Identificados
-
-1. **notifications-service (0%)** — Bloquea funcionalidad básica de streaming y governance
-2. **documents-service (0%)** — Crítico para validez legal de asambleas
-
-### 📊 Acceso a Documentación Completa
-
-* **Índice maestro:** [auditoria/INDEX.md](./auditoria/INDEX.md)
-* **Análisis cross-service:** [auditoria/cross-service/](./auditoria/cross-service/)
-* **Herramientas de auditoría:** [auditoria/scripts/](./auditoria/scripts/)
-* **Métricas y tendencias:** [auditoria/reports/](./auditoria/reports/)
-
-## 🛠️ Technology Stack
-
-* **Backend:** NestJS (Node.js), TypeScript
-* **Database:** PostgreSQL with TypeORM
-* **Authentication:** OAuth 2.1, OIDC, FIDO2/WebAuthn
-* **Security:** DPoP, PKCE, JWT con ES256/EdDSA
-* **Messaging:** Apache Kafka
-* **Monitoring:** Prometheus, OpenTelemetry
-* **Testing:** Jest, Supertest
-* **Infrastructure:** Docker, Docker Compose
-
-## 🔐 Security Features
-
-### Advanced Authentication
-
-* **OAuth 2.1 Compliance:** Recomendaciones de seguridad vigentes
-* **DPoP (Distributed Proof of Possession):** Sender-constrained tokens
-* **PKCE Mandatory:** Protección ante interceptación de authorization code
-* **Pushed Authorization Requests (PAR):** Seguridad de parámetros
-
-### Cryptographic Security
-
-* **Automated Key Rotation:** Rotación automática cada 90 días con rollover de 7 días
-* **Modern Algorithms:** ES256 (ECDSA) y EdDSA
-* **JWKS Endpoints:** Descubrimiento dinámico por tenant
-* **Anti-Replay Protection:** Validación DPoP con TTL configurable
-* **Prohibido HS256; solo ES256 o EdDSA.**
-* **JWKS TTL ≤ 300 s; negative caching 60 s.**
-
-### Multi-Factor Authentication
-
-* **FIDO2/WebAuthn:** Passkeys
-* **TOTP Support:** OTP basados en tiempo
-* **Contextual Tokens:** Autenticación contextual por QR
-
-### Compliance & Privacy
-
-* **GDPR Ready:** DSAR, derecho al olvido
-* **Audit Trails:** Trazabilidad completa
-* **Session Management:** Cierre global de sesión
-* **Tenant Isolation:** Separación de datos y claves
-
-## 📋 Prerequisites
-
-* **Node.js** >= 18.x
-* **npm** >= 8.x
-* **Docker** >= 20.x
-* **PostgreSQL** >= 13.x
-* **Apache Kafka** (opcional, para eventos)
-
-## 🚀 Quick Start
-
-> Para pruebas locales, consume `identity-service` directamente en su puerto interno. Vía gateway el prefijo es `/api/v1/identity/*`.
-
-### 1. Clonar repositorio
-
-```bash
-git clone <repository-url>
-cd smartedify_app
-```
-
-### 2. Iniciar Identity Service
-
-```bash
-cd services/core/identity-service
-
-# Instalar dependencias
-npm install
-
-# Base de datos de prueba
-docker-compose -f docker-compose.test.yml up -d
-
-# Migraciones
-npm run db:run-migrations
-
-# Desarrollo
-npm run start:dev
-```
-
-### 3. Verificar instalación (puerto 3001)
-
-```bash
-# Health check
-echo "Expect 200" && curl -i http://localhost:3001/
-
-# OIDC discovery
-echo "OIDC" && curl http://localhost:3001/.well-known/openid-configuration?tenant_id=test
-
-# Metrics
-echo "Metrics" && curl http://localhost:3001/metrics
-```
-
-## 🧪 Testing Strategy
-
-### Cobertura integral
-
-* **Unit Tests:** lógica de servicios y utilidades
-* **Integration Tests:** base de datos e interacciones de módulos
-* **E2E Tests:** flujos completos de autenticación y endpoints
-
-### Entorno de pruebas
-
-```bash
-# Infra de pruebas
-docker-compose -f docker-compose.test.yml up -d
-
-# Ejecutar pruebas
-npm run test
-
-# Coverage
-npm run test:cov
-
-# E2E	npm run test:e2e
-```
-
-### Quality Assurance
-
-```bash
-# Formato
-npm run format
-
-# Lint
-npm run lint
-
-# Auditoría de seguridad
-npm audit
-
-# Validación completa
-npm run validate
-```
-
-## 📊 Monitoring & Observability
-
-### Métricas
-
-* **Prometheus:** `/metrics`
-* **Métricas personalizadas:** flujos de autenticación, eventos de seguridad, performance
-* **Health Checks:** disponibilidad y dependencias
-
-### Logging
-
-* **Estructurado JSON:** con correlation IDs
-* **Eventos de seguridad:** intentos de autenticación, validaciones de token, rotación de claves
-* **Performance:** latencia de request, queries de BD
-
-### Alerting
-
-* **Security Alerts:** intentos fallidos, replay
-* **Performance Alerts:** alta latencia, tasas de error
-* **Operational Alerts:** salud de servicios, conectividad
-
-## 🔄 Development Workflow
-
-### Contracts-First Development
-
-1. **Diseñar contrato** en `contracts/openapi/`
-2. **Generar tipos** a partir del contrato
-3. **Implementar servicio** según contrato
-4. **Validar implementación** contra especificación
-
-### Code Quality Standards
-
-* **TypeScript Strict Mode**
-* **ESLint**
-* **Prettier**
-* **Pre-commit Hooks**
-
-### Security Guidelines
-
-* **OWASP Compliance**
-* **Dependency Scanning**
-* **Secret Management**
-* **Security Testing**
-
-## 🚀 Deployment
-
-### Production Deployment
-
-1. **Configurar entorno**
-2. **Migraciones de base de datos**
-3. **Verificación de seguridad** (SSL/TLS, rotación de llaves)
-4. **Monitoring** (métricas, logging, alerting)
-5. **Health checks**
-
-### Infrastructure as Code
-
-* **Docker** para entornos consistentes
-* **Plantillas de entornos** estandarizadas
-* **CI/CD** con pruebas y despliegue automatizado
-
-## 🤝 Contributing
-
-### Development Process
-
-1. **Fork** y rama de feature
-2. **Estándares** de código, pruebas, docs
-3. **Quality checks** antes del PR
-4. **Security review**
-5. **Actualizar documentación**
-
-### Commit Guidelines
-
-Usa **Conventional Commits**:
-
-```
-feat(identity): add WebAuthn support
-fix(auth): resolve DPoP replay issue
-docs(readme): update API documentation
-test(e2e): add OAuth flow tests
-```
-
-## 📄 License
-
-Este proyecto es software propietario. Todos los derechos reservados.
-
-## 🆘 Support
-
-* **Documentación:** READMEs específicos por servicio
-* **API Reference:** OpenAPI en `contracts/`
-* **Examples:** tests de referencia
-* **Issues:** crear tickets para bugs y features
+>>>>>>> origin/main
