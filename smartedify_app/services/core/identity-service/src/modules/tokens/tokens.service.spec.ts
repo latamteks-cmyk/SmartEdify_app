@@ -60,6 +60,7 @@ describe('TokensService', () => {
     kid: 'test-key',
     jti: 'jti-123',
     family_id: 'family-123',
+    tenant_id: mockUser.tenant_id,
     parent_id: null,
     replaced_by_id: null,
     used_at: null,
@@ -169,7 +170,11 @@ describe('TokensService', () => {
         mockUser.tenant_id,
       );
       expect(mockRefreshTokenRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ kid: 'test-key', jti: expect.any(String) }),
+        expect.objectContaining({
+          kid: 'test-key',
+          jti: expect.any(String),
+          tenant_id: mockUser.tenant_id,
+        }),
       );
 
       const verification = await jwtVerify(token, publicKey, {

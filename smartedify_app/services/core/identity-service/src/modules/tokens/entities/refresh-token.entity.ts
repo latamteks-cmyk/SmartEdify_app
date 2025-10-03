@@ -52,6 +52,9 @@ export class RefreshToken {
   @Column('uuid')
   session_id: string;
 
+  @Column('uuid')
+  tenant_id: string;
+
   @Column()
   scope: string;
 

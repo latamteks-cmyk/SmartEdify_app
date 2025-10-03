@@ -87,6 +87,7 @@ export class TokensService {
       client_id: resolvedClientId,
       device_id: resolvedDeviceId,
       session_id: resolvedSessionId,
+      tenant_id: user.tenant_id,
       scope: resolvedScope,
       expires_at: new Date((now + expiresInSeconds) * 1000),
     });
