@@ -4,14 +4,13 @@ import {
   Post,
   Query,
   Body,
-  BadRequestException,
-  UnauthorizedException,
   Headers,
   UseGuards,
   Req,
   HttpCode,
   HttpStatus,
   Res,
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { TokenIntrospectionResponse } from './auth.service';
@@ -19,6 +18,15 @@ import { ClientAuthGuard } from './guards/client-auth.guard'; // Corrected impor
 import type { Request } from 'express';
 import type { ParPayload } from './store/par-store.service';
 import type { Response } from 'express'; // Import Response as type
+import { Rfc7807Exception } from '../../exceptions/rfc7807.exception';
+import { UseGuards as UseInterceptors } from '@nestjs/common';
+import { RateLimitingGuard } from '../rate-limiting/guards/rate-limiting.guard';
+import { 
+  AuthenticationRateLimit, 
+  TokenEndpointRateLimit, 
+  IntrospectionRateLimit,
+  StandardRateLimit
+} from '../rate-limiting/decorators/rate-limit.decorator';
 
 // OAuth2 Token Request Body interface according to RFC 6749 and RFC 7636 (PKCE)
 interface TokenRequestBody {
@@ -32,15 +40,20 @@ interface TokenRequestBody {
 }
 
 @Controller()
+@UseGuards(RateLimitingGuard)
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(private readonly authService: AuthService) {}
 
   @Post('oauth/par')
   @HttpCode(HttpStatus.CREATED)
+  @AuthenticationRateLimit()
   pushedAuthorizationRequest(@Body() payload: ParPayload) {
     if (!payload.code_challenge || !payload.code_challenge_method) {
-      throw new BadRequestException(
+      throw Rfc7807Exception.badRequest(
         'PKCE parameters are required in PAR payload',
+        '/oauth/par'
       );
     }
     return this.authService.pushedAuthorizationRequest(payload);
@@ -48,12 +61,14 @@ export class AuthController {
 
   @Post('oauth/device_authorization')
   @HttpCode(HttpStatus.OK)
+  @StandardRateLimit()
   deviceAuthorization() {
     // In a real implementation, the client would be authenticated here
     return this.authService.deviceAuthorizationRequest();
   }
 
   @Get('authorize')
+  @StandardRateLimit()
   authorize(
     @Res() res: Response,
     @Query('redirect_uri') redirect_uri?: string,
@@ -62,52 +77,33 @@ export class AuthController {
     @Query('code_challenge') code_challenge?: string,
     @Query('code_challenge_method') code_challenge_method?: string,
   ) {
-    console.log('🚀 Authorize Debug:', {
-      redirect_uri: redirect_uri || 'MISSING',
-      scope: scope || 'MISSING',
-      request_uri: request_uri || 'not provided',
-      code_challenge: code_challenge?.substring(0, 10) + '...' || 'MISSING',
-      code_challenge_method: code_challenge_method || 'MISSING',
-    });
-
     // Handle PAR flow: if request_uri is provided, get params from storage
     if (request_uri) {
-      console.log('🔍 PAR Debug: Looking up request_uri:', request_uri);
       const parData = this.authService.getStoredPARRequest(request_uri);
-      console.log('📦 PAR Debug: Retrieved data:', parData);
       if (!parData) {
-        throw new BadRequestException('Invalid or expired request_uri');
+        throw Rfc7807Exception.badRequest('Invalid or expired request_uri', '/authorize');
       }
       // Use PAR parameters
       redirect_uri = parData.redirect_uri;
       scope = parData.scope;
       code_challenge = parData.code_challenge;
       code_challenge_method = parData.code_challenge_method;
-      console.log('✅ PAR Debug: Updated params:', {
-        redirect_uri,
-        scope,
-        code_challenge,
-        code_challenge_method,
-      });
     }
 
     // Enforce PKCE for all non-PAR requests
     if (!request_uri && (!code_challenge || !code_challenge_method)) {
-      throw new BadRequestException(
+      throw Rfc7807Exception.badRequest(
         'PKCE parameters (code_challenge, code_challenge_method) are required',
+        '/authorize'
       );
     }
 
     if (!redirect_uri) {
-      console.log('❌ Missing redirect_uri after PAR processing');
-      throw new BadRequestException('redirect_uri is required');
+      throw Rfc7807Exception.badRequest('redirect_uri is required', '/authorize');
     }
     if (!scope) {
-      console.log('❌ Missing scope after PAR processing');
-      throw new BadRequestException('scope is required');
+      throw Rfc7807Exception.badRequest('scope is required', '/authorize');
     }
-
-    console.log('✅ Final validation passed:', { redirect_uri, scope });
 
     const mockUserId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
@@ -116,10 +112,6 @@ export class AuthController {
       code_challenge_method: code_challenge_method!,
       userId: mockUserId,
       scope: scope,
-    });
-
-    console.log('🔐 Generated auth code:', {
-      code: code.substring(0, 10) + '...',
     });
 
     // For PAR requests (testing mode), return JSON instead of redirect
@@ -131,16 +123,12 @@ export class AuthController {
     redirectUrl.searchParams.append('code', code);
     // redirectUrl.searchParams.append('state', state); // If state was implemented
 
-    console.log(
-      '🔄 Redirecting to:',
-      redirectUrl.toString().substring(0, 100) + '...',
-    );
-
     res.redirect(redirectUrl.toString());
   }
 
   @Post('oauth/token')
   @HttpCode(HttpStatus.OK)
+  @TokenEndpointRateLimit()
   async token(
     @Body('grant_type') grant_type: string,
     @Body() body: TokenRequestBody,
@@ -150,26 +138,17 @@ export class AuthController {
     const httpMethod = req.method;
     const httpUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
 
-    console.log('🚀 Token Debug - Request received:', {
-      grant_type,
-      has_dpop: !!dpopProof,
-      has_code: !!body.code,
-      has_code_verifier: !!body.code_verifier,
-      has_refresh_token: !!body.refresh_token,
-    });
-
     // Validar DPoP primero para todos los grant types - esta verificación básica
     if (!dpopProof) {
-      throw new UnauthorizedException('DPoP proof is required');
+      throw Rfc7807Exception.unauthorized('DPoP proof is required', '/oauth/token');
     }
 
     if (grant_type === 'authorization_code') {
-      console.log('🔍 Processing authorization_code grant...');
-
       // Validar parámetros requeridos
       if (!body.code || !body.code_verifier) {
-        throw new BadRequestException(
+        throw Rfc7807Exception.badRequest(
           'code and code_verifier are required for authorization_code grant',
+          '/oauth/token'
         );
       }
 
@@ -184,19 +163,15 @@ export class AuthController {
           httpUrl,
         );
 
-      console.log('✅ Token Exchange Success:', {
-        access_token: access_token ? 'present' : 'missing',
-        refresh_token: refresh_token ? 'present' : 'missing',
-      });
-
       return { access_token, refresh_token, token_type: 'DPoP' };
     } else if (grant_type === 'refresh_token') {
       if (!body.refresh_token) {
-        throw new BadRequestException('refresh_token is required');
+        throw Rfc7807Exception.badRequest('refresh_token is required', '/oauth/token');
       }
       if (!dpopProof) {
-        throw new BadRequestException(
+        throw Rfc7807Exception.badRequest(
           'DPoP proof is required for refresh token flow',
+          '/oauth/token'
         );
       }
       const [access_token, new_refresh_token] =
@@ -213,26 +188,29 @@ export class AuthController {
       };
     } else if (grant_type === 'urn:ietf:params:oauth:grant-type:device_code') {
       if (!body.device_code) {
-        throw new BadRequestException('device_code is required');
+        throw Rfc7807Exception.badRequest('device_code is required', '/oauth/token');
       }
-      // This will be implemented next
-      // return this.authService.exchangeDeviceCodeForTokens(body.device_code as string);
-      throw new BadRequestException(
-        'device_code grant type not yet implemented',
-      );
+      const [access_token, refresh_token] = 
+        await this.authService.exchangeDeviceCodeForTokens(body.device_code as string);
+      return {
+        access_token,
+        refresh_token,
+        token_type: 'DPoP', // Device flow should typically return DPoP tokens as well
+      };
     } else {
-      throw new BadRequestException('Invalid grant_type');
+      throw Rfc7807Exception.badRequest('Invalid grant_type', '/oauth/token');
     }
   }
 
   @Post('oauth/revoke')
   @HttpCode(HttpStatus.OK)
+  @StandardRateLimit()
   async revoke(
     @Body('token') token: string,
     @Body('token_type_hint') token_type_hint?: string,
   ) {
     if (!token) {
-      throw new BadRequestException('token is required');
+      throw Rfc7807Exception.badRequest('token is required', '/oauth/revoke');
     }
     await this.authService.revokeToken(token, token_type_hint);
     return {};
@@ -240,7 +218,16 @@ export class AuthController {
 
   @Post('oauth/introspect')
   @UseGuards(ClientAuthGuard)
-  introspect(@Body('token') token: string): TokenIntrospectionResponse {
+  @IntrospectionRateLimit()
+  async introspect(@Body('token') token: string): Promise<TokenIntrospectionResponse> {
     return this.authService.introspect(token);
+  }
+
+  @Post('oauth/device_authorization')
+  @HttpCode(HttpStatus.OK)
+  @StandardRateLimit()
+  deviceAuthorizationRequest() {
+    // In a real implementation, the client would be authenticated here
+    return this.authService.deviceAuthorizationRequest();
   }
 }

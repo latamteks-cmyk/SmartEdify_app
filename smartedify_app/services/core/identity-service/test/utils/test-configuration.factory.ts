@@ -33,6 +33,7 @@ import { DpopReplayProof } from '../../src/modules/auth/entities/dpop-replay-pro
 import { MetricsModule } from '../../src/modules/metrics/metrics.module';
 import { KafkaModule } from '../../src/modules/kafka/kafka.module';
 import { JobsModule } from '../../src/modules/jobs/jobs.module';
+import { RateLimitingService } from '../../src/modules/rate-limiting/rate-limiting.service';
 import { ComplianceJob } from '../../src/modules/compliance/entities/compliance-job.entity';
 import { ComplianceJobService as ComplianceJobServiceEntity } from '../../src/modules/compliance/entities/compliance-job-service.entity';
 
@@ -81,7 +82,24 @@ export class TestConfigurationFactory {
             KafkaModule,
             JobsModule,
           ],
-        }).compile();
+        })
+          .overrideProvider(RateLimitingService)
+          .useValue({
+            checkRateLimit: async () => ({
+              totalRequests: 0,
+              remainingRequests: 100,
+              resetTime: new Date(Date.now() + 60000),
+              isRateLimited: false,
+            }),
+            resetRateLimit: async () => undefined,
+            getRateLimitInfo: async () => ({
+              totalRequests: 0,
+              remainingRequests: 100,
+              resetTime: new Date(Date.now() + 60000),
+              isRateLimited: false,
+            }),
+          })
+          .compile();
 
         const app = moduleFixture.createNestApplication();
         await app.init();

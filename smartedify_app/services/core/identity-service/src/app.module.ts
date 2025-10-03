@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { KeysModule } from './modules/keys/keys.module';
@@ -17,11 +18,12 @@ import { MfaModule } from './modules/mfa/mfa.module';
 import { OidcDiscoveryModule } from './modules/oidc-discovery/oidc-discovery.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
+import { HttpExceptionFilter } from './filters/http-exception.filter';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-  TypeOrmModule.forRoot(getDatabaseConfig(process.env.NODE_ENV === 'test')),
+    TypeOrmModule.forRoot(getDatabaseConfig(process.env.NODE_ENV === 'test')),
     KeysModule,
     UsersModule,
     SessionsModule,
@@ -37,6 +39,16 @@ import { PrivacyModule } from './modules/privacy/privacy.module';
     PrivacyModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_PIPE,
+      useClass: ValidationPipe,
+    },
+  ],
 })
 export class AppModule {}

@@ -125,7 +125,7 @@ describe('DPoP Validation (e2e)', () => {
       })
       .expect(401)
       .then((response: request.Response) => {
-        expect(response.body.message).toBe('DPoP proof is required');
+        expect(response.body.detail).toBe('DPoP proof is required');
       });
   });
 
@@ -144,7 +144,7 @@ describe('DPoP Validation (e2e)', () => {
       })
       .expect(401)
       .then((response: request.Response) => {
-        expect(response.body.message).toBe('Invalid DPoP proof');
+        expect(response.body.detail).toBe('Invalid DPoP proof');
       });
   });
 
@@ -162,7 +162,7 @@ describe('DPoP Validation (e2e)', () => {
       })
       .expect(401)
       .then((response: request.Response) => {
-        expect(response.body.message).toBe('Invalid DPoP htm claim');
+        expect(response.body.detail).toBe('Invalid DPoP htm claim');
       });
   });
 
@@ -183,7 +183,7 @@ describe('DPoP Validation (e2e)', () => {
       })
       .expect(401)
       .then((response: request.Response) => {
-        expect(response.body.message).toBe('Invalid DPoP htu claim');
+        expect(response.body.detail).toBe('Invalid DPoP htu claim');
       });
   });
 

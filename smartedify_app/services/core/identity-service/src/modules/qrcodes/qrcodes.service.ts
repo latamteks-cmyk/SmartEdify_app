@@ -7,9 +7,8 @@ import { KeyManagementService } from '../keys/services/key-management.service';
 export class QrcodesService {
   constructor(private readonly keyManagementService: KeyManagementService) {}
 
-  async generateQrCode(payload: Record<string, unknown>): Promise<string> {
-    const signingKeyEntity =
-      await this.keyManagementService.getActiveSigningKey('default');
+  async generateQrCode(tenantId: string, payload: Record<string, unknown>): Promise<string> {
+    const signingKeyEntity = await this.keyManagementService.getActiveSigningKey(tenantId);
     const key = await jose.JWK.asKey(signingKeyEntity.private_key_pem, 'pem');
 
     const options = {
@@ -52,13 +51,6 @@ export class QrcodesService {
 
       const verifier = jose.JWS.createVerify(publicKey);
       const verified = await verifier.verify(token);
-
-      // Ensure the kid from the verified header matches the one used for lookup
-      if ((verified.protected as { kid?: string }).kid !== kid) {
-        // Explicit cast for type inference workaround
-        throw new Error('JWS header kid mismatch');
-      }
-
       return JSON.parse(verified.payload.toString()) as Record<string, unknown>;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);

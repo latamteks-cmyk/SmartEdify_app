@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PolicyEngineService } from './policy/policy-engine.service';
 
 @Injectable()
 export class AuthorizationService {
+  private readonly logger = new Logger(AuthorizationService.name);
+
   constructor(private readonly policyEngine: PolicyEngineService) {}
 
   checkPolicy(
@@ -14,7 +16,7 @@ export class AuthorizationService {
     try {
       return this.policyEngine.evaluatePolicy(policyName, user, resource);
     } catch (error) {
-      console.error('Policy evaluation failed:', error);
+      this.logger.error('Policy evaluation failed:', error);
       return false;
     }
   }

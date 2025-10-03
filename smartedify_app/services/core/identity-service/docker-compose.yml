@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  identity-db:
+    image: postgres:15-alpine
+    container_name: identity_db_real
+    environment:
+      POSTGRES_DB: identity_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432" # Use a different port to avoid conflict with test DB
+    volumes:
+      - identity_db_data:/var/lib/postgresql/data
+      - ./testing/seed.sql:/docker-entrypoint-initdb.d/seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d identity_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  identity-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: identity_service_app
+    ports:
+      - "3001:3001"
+    depends_on:
+      identity-db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=identity-db
+      - DB_PORT=5432
+      - DB_USERNAME=user
+      - DB_PASSWORD=password
+      - DB_DATABASE=identity_db
+      - NODE_ENV=development
+
+volumes:
+  identity_db_data:

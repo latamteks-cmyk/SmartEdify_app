@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   Inject,
   forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -17,6 +18,8 @@ import { importPKCS8, SignJWT } from 'jose';
 
 @Injectable()
 export class TokensService {
+  private readonly logger = new Logger(TokensService.name);
+
   constructor(
     @InjectRepository(RefreshToken)
     private refreshTokensRepository: Repository<RefreshToken>,
@@ -109,7 +112,7 @@ export class TokensService {
 
     // DETECTION OF REUSE: If token was already used, it's a potential attack
     if (oldRefreshToken.used_at) {
-      console.warn(
+      this.logger.warn(
         `Refresh token reuse detected for family: ${oldRefreshToken.family_id}`,
       );
       // Revoke entire token family when reuse is detected
@@ -223,7 +226,7 @@ export class TokensService {
         revoked_reason: reason,
       },
     );
-    console.log(`Revoked token family: ${familyId} due to: ${reason}`);
+    this.logger.log(`Revoked token family: ${familyId} due to: ${reason}`);
   }
 
   /**
@@ -260,7 +263,7 @@ export class TokensService {
       );
 
       if (notBeforeTime && issuedAt < notBeforeTime) {
-        console.warn(
+        this.logger.warn(
           `Access token rejected: issued before last logout. UserId: ${userId}, TenantId: ${tenantId}, IssuedAt: ${issuedAt.toISOString()}, NotBefore: ${notBeforeTime.toISOString()}`,
         );
         return false;
@@ -270,7 +273,7 @@ export class TokensService {
       // For now, we return true if not_before validation passes
       return true;
     } catch (error) {
-      console.error(`Error validating access token for user ${userId}:`, error);
+      this.logger.error(`Error validating access token for user ${userId}:`, error);
       return false;
     }
   }
@@ -308,7 +311,7 @@ export class TokensService {
       );
 
       if (notBeforeTime && refreshToken.created_at < notBeforeTime) {
-        console.warn(
+        this.logger.warn(
           `Refresh token rejected: created before last logout. UserId: ${user.id}, TenantId: ${user.tenant_id}, TokenCreatedAt: ${refreshToken.created_at.toISOString()}, NotBefore: ${notBeforeTime.toISOString()}`,
         );
         throw new UnauthorizedException(

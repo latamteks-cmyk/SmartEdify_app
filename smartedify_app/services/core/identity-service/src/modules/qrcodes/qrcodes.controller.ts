@@ -39,7 +39,7 @@ export class QrcodesController {
       // cnf: {} // TODO: Add Proof-of-Possession if needed
     };
 
-    const qrCodeDataUrl = await this.qrcodesService.generateQrCode(payload);
+    const qrCodeDataUrl = await this.qrcodesService.generateQrCode(request.audience, payload);
     return {
       qr_code: qrCodeDataUrl,
       token: payload, // Return token info for debugging

@@ -1,0 +1,29 @@
+###
+# OIDC Discovery
+# @name getOidcConfig
+GET http://localhost:3001/.well-known/openid-configuration?tenant_id=a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+
+###
+# Get JWKS
+# @name getJwks
+GET http://localhost:3001/.well-known/jwks.json?tenant_id=a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+
+###
+# Create a new user
+# @name createUser
+POST http://localhost:3001/users
+Content-Type: application/json
+
+{
+  "tenant_id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "username": "testuser_{{$randomInt}}",
+  "email": "test_{{$randomInt}}@example.com",
+  "password": "Password123!",
+  "consent_granted": true,
+  "policy_version": "v1.0"
+}
+
+###
+# Health Check
+# @name healthCheck
+GET http://localhost:3001/health

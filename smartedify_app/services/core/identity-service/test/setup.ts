@@ -1,5 +1,21 @@
-// Jest setup file
-jest.setTimeout(10000);
+// Test setup file (TypeORM DataSource)
+import { DataSource } from 'typeorm';
+import { testDbConfig } from './utils/test-data';
+
+let dataSource: DataSource;
+
+beforeAll(async () => {
+  // Set up test database connection using DataSource (TypeORM >= 0.3)
+  dataSource = new DataSource(testDbConfig as any);
+  await dataSource.initialize();
+});
+
+afterAll(async () => {
+  // Close database connection
+  if (dataSource && dataSource.isInitialized) {
+    await dataSource.destroy();
+  }
+});
 
 // Mock console methods to reduce noise in tests
 global.console = {
