@@ -3,7 +3,11 @@ spec-kit-main/
 my-gemini-app/
 .qodo/
 contract/
+# Excluir apps excepto web-admin
 apps/
+!apps/web-admin/
+smartedify_app/apps/
+!smartedify_app/apps/web-admin/
 # Dependencies
 node_modules/
 npm-debug.log*
