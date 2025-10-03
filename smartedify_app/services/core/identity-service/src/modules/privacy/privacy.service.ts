@@ -34,7 +34,7 @@ export class PrivacyService {
       tenant_id: request.tenant_id,
       affected_services: request.include_services || [
         'governance-service',
-        'user-profile-service',
+        'user-profiles-service',
         'asset-management-service',
       ],
       result_callback_url: undefined, // Se puede agregar si se necesita webhook
@@ -67,7 +67,7 @@ export class PrivacyService {
       affected_services: [
         'sessions-service', // Incluir para revocar sesiones automáticamente
         'governance-service',
-        'user-profile-service',
+        'user-profiles-service',
         'asset-management-service',
       ],
       result_callback_url: undefined, // Se puede agregar si se necesita webhook
@@ -91,10 +91,10 @@ export class PrivacyService {
     try {
       // Validar que el usuario existe y pertenece al tenant
       // Primero intentar validar localmente en identity-service
-      // Si no existe localmente, validar contra user-profile-service
+      // Si no existe localmente, validar contra user-profiles-service
       const response = await firstValueFrom(
         this.httpService.get(
-          `http://user-profile-service:3002/api/v1/user-profiles/${user_id}`,
+          `http://user-profiles-service:3002/api/v1/user-profiles/${user_id}`,
           {
             headers: {
               'X-Tenant-ID': tenant_id,

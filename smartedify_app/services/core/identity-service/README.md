@@ -26,7 +26,7 @@ Proveedor central de identidad, autenticación, autorización y sesiones multi-t
 
 - **Cobertura:** Todos los flujos críticos y de seguridad (WebAuthn, DPoP, rotación de claves, revocación, PAR, tenant isolation, métricas, device flow) pasan correctamente.
 - **Tests negativos:** Los únicos tests que fallan están diseñados para validar respuestas 401 ante autenticación de cliente inválida en `/oauth/introspect`. Estos no afectan la funcionalidad principal ni la seguridad del sistema.
-- **Alineamiento:** El servicio y los datos de prueba están alineados con los últimos specs de `identity-service.md`, `user-profile-service.md` y `tenancy-service.md`.
+- **Alineamiento:** El servicio y los datos de prueba están alineados con los últimos specs de `identity-service.md`, `user-profiles-service.md` y `tenancy-service.md`.
 
 ## Diagrama de contexto (ver especificación)
 

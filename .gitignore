@@ -30,6 +30,7 @@ build/
 # Logs
 logs
 *.log
+*.zip
 
 # Runtime data
 pids
@@ -72,6 +73,10 @@ jspm_packages/
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
+.turbo/
+.nx/
+.turbo
+.nx
 
 # next.js build output
 .next
@@ -111,6 +116,7 @@ docker-compose.override.yml
 # Temporary folders
 tmp/
 temp/
+docker-data/
 
 # Problematic submodules
 my-gemini-app/
