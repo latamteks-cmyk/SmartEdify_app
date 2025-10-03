@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@smartedify/*": [
+        "smartedify_app/services/*/*/src",
+        "smartedify_app/services/*/*/*/src",
+        "smartedify_app/apps/*/src"
+      ]
+    }
+  },
+  "include": [
+    "smartedify_app/services/**/*.ts",
+    "smartedify_app/apps/**/*.ts",
+    "smartedify_app/apps/**/*.tsx"
+  ]
+}

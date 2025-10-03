@@ -8,7 +8,7 @@ export class AlignWithSpecifications1727659300000
   public async up(queryRunner: QueryRunner): Promise<void> {
     // 1. CORREGIR TABLA USERS - Alinear con identity-service.md v3.3
 
-    // Eliminar campos que van a user-profile-service
+    // Eliminar campos que van a user-profiles-service
     await queryRunner.query(
       `ALTER TABLE "users" DROP COLUMN IF EXISTS "first_name"`,
     );

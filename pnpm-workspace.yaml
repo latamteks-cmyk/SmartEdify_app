@@ -1,0 +1,6 @@
+packages:
+  - "smartedify_app/apps/**"
+  - "smartedify_app/services/**"
+  - "smartedify_app/platform/**"
+  - "smartedify_app/packages/**"
+  - "smartedify_app/scripts/**"
