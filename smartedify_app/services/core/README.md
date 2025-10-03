@@ -1,4 +1,3 @@
-<<<<<<< HEAD:smartedify_app/services/core/README.md
 # Core Services
 
 Servicios fundamentales que proporcionan la base para toda la plataforma SmartEdify.
@@ -27,34 +26,21 @@ Servicios fundamentales que proporcionan la base para toda la plataforma SmartEd
 
 ### documents-service (Puerto 3006)
 - **Alcance**: Gestión de documentos legales, almacenamiento, firma electrónica
-- **Responsabilidades**: Generación desde plantillas, actas, contratos, integración con Llama.pe
+- **Responsabilidades**: Generación desde plantillas, actas, contratos, integraciones externas
 - **Seguridad**: Cifrado AES-256, hash de verificación, auditoría inmutable
 
 ## Dependencias
 
 Estos servicios son la base del sistema y son consumidos por servicios de otras capas:
-- `governance/` depende de core para identidad y perfiles
-- `operations/` depende de core para tenancy y documentos
-- `business/` depende de core para notificaciones y perfiles
+- `governance/` depende de core para identidad y perfiles.
+- `operations/` depende de core para tenancy y documentos.
+- `business/` depende de core para notificaciones y perfiles.
 
 ## Patrones Comunes
 
-- **Multi-tenant**: Todos implementan aislamiento por `condominium_id`
-- **Event-driven**: Publican eventos de dominio vía Kafka
-- **API-first**: Contratos OpenAPI versionados
-- **Observabilidad**: Métricas, logs y trazas estándar
-=======
-# support/
+- **Multi-tenant**: Todos implementan aislamiento por `condominium_id` con RLS activo.
+- **Event-driven**: Publican eventos de dominio vía Kafka.
+- **API-first**: Contratos OpenAPI versionados.
+- **Observabilidad**: Métricas, logs y trazas estándar.
 
-Servicios fundacionales de la plataforma SmartEdify (línea 2):
-- auth-service
-- user-service
-- tenants-service
-- document-service
-- communication-service
-- finance-service
-
-Proveen capacidades esenciales de identidad, usuarios, documentos y comunicación.
-
-Consulta las políticas globales en [doc/POLICY_INDEX.md](../../doc/POLICY_INDEX.md).
->>>>>>> origin/main:smartedify_app/services/support/README.md
+Consulta políticas globales y lineamientos en [../../doc/POLICY_INDEX.md](../../doc/POLICY_INDEX.md).

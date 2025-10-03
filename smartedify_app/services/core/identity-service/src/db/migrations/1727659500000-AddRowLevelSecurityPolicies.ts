@@ -29,37 +29,28 @@ export class AddRowLevelSecurityPolicies1727659500000
     await queryRunner.query(
       `ALTER TABLE "signing_keys" ENABLE ROW LEVEL SECURITY`,
     );
+    await queryRunner.query(
+      `ALTER TABLE "dpop_replay_proofs" ENABLE ROW LEVEL SECURITY`,
+    );
 
-    // 2. CREATE POLICY FUNCTIONS
+    // 2. CREATE CONTEXT FUNCTION
 
-    // Create function to check tenant access for current user
     await queryRunner.query(`
-      CREATE OR REPLACE FUNCTION check_tenant_access(target_tenant_id UUID)
-      RETURNS BOOLEAN AS $$
+      CREATE OR REPLACE FUNCTION app_current_tenant()
+      RETURNS UUID
+      LANGUAGE plpgsql
+      STABLE
+      AS $$
       DECLARE
-        current_tenant_id UUID;
+        tenant_setting TEXT;
       BEGIN
-        -- In a real implementation, this would check the current user's tenant permissions
-        -- For now, we'll assume the tenant_id is passed in the session or JWT
-        -- This is a simplified version that would be expanded in production
-        RETURN TRUE;
+        tenant_setting := current_setting('app.tenant_id', true);
+        IF tenant_setting IS NULL OR tenant_setting = '' THEN
+          RETURN NULL;
+        END IF;
+        RETURN tenant_setting::uuid;
       END;
-      $$ LANGUAGE plpgsql SECURITY DEFINER;
-    `);
-
-    // Create function to check user access for current user
-    await queryRunner.query(`
-      CREATE OR REPLACE FUNCTION check_user_access(target_user_id UUID)
-      RETURNS BOOLEAN AS $$
-      DECLARE
-        current_user_id UUID;
-      BEGIN
-        -- In a real implementation, this would check if the current user can access the target user
-        -- For now, we'll assume the user_id is passed in the session or JWT
-        -- This is a simplified version that would be expanded in production
-        RETURN TRUE;
-      END;
-      $$ LANGUAGE plpgsql SECURITY DEFINER;
+      $$;
     `);
 
     // 3. CREATE RLS POLICIES FOR USERS TABLE
@@ -69,7 +60,7 @@ export class AddRowLevelSecurityPolicies1727659500000
       CREATE POLICY "users_tenant_isolation"
       ON "users"
       FOR ALL
-      USING (check_tenant_access(tenant_id));
+      USING (tenant_id = app_current_tenant());
     `);
 
     // Force policy for all users table operations
@@ -84,7 +75,7 @@ export class AddRowLevelSecurityPolicies1727659500000
       CREATE POLICY "sessions_tenant_isolation"
       ON "sessions"
       FOR ALL
-      USING (check_tenant_access(tenant_id));
+      USING (tenant_id = app_current_tenant());
     `);
 
     // Force policy for all sessions table operations
@@ -99,7 +90,7 @@ export class AddRowLevelSecurityPolicies1727659500000
       CREATE POLICY "refresh_tokens_tenant_isolation"
       ON "refresh_tokens"
       FOR ALL
-      USING (check_tenant_access(tenant_id));
+      USING (tenant_id = app_current_tenant());
     `);
 
     // Force policy for all refresh_tokens table operations
@@ -114,7 +105,7 @@ export class AddRowLevelSecurityPolicies1727659500000
       CREATE POLICY "webauthn_credentials_tenant_isolation"
       ON "webauthn_credentials"
       FOR ALL
-      USING (check_tenant_access((SELECT tenant_id FROM users WHERE id = user_id)));
+      USING ((SELECT tenant_id FROM users WHERE id = user_id) = app_current_tenant());
     `);
 
     // Force policy for all webauthn_credentials table operations
@@ -129,7 +120,7 @@ export class AddRowLevelSecurityPolicies1727659500000
       CREATE POLICY "revocation_events_tenant_isolation"
       ON "revocation_events"
       FOR ALL
-      USING (check_tenant_access(tenant_id));
+      USING (tenant_id = app_current_tenant());
     `);
 
     // Force policy for all revocation_events table operations
@@ -144,7 +135,7 @@ export class AddRowLevelSecurityPolicies1727659500000
       CREATE POLICY "consent_audits_tenant_isolation"
       ON "consent_audits"
       FOR ALL
-      USING (check_tenant_access((SELECT tenant_id FROM users WHERE id = user_id)));
+      USING ((SELECT tenant_id FROM users WHERE id = user_id) = app_current_tenant());
     `);
 
     // Force policy for all consent_audits table operations
@@ -159,12 +150,23 @@ export class AddRowLevelSecurityPolicies1727659500000
       CREATE POLICY "signing_keys_tenant_isolation"
       ON "signing_keys"
       FOR ALL
-      USING (check_tenant_access(tenant_id));
+      USING (tenant_id = app_current_tenant());
     `);
 
     // Force policy for all signing_keys table operations
     await queryRunner.query(`
       ALTER TABLE "signing_keys" FORCE ROW LEVEL SECURITY;
+    `);
+
+    await queryRunner.query(`
+      CREATE POLICY "dpop_replay_proofs_tenant_isolation"
+      ON "dpop_replay_proofs"
+      FOR ALL
+      USING (tenant_id = app_current_tenant());
+    `);
+
+    await queryRunner.query(`
+      ALTER TABLE "dpop_replay_proofs" FORCE ROW LEVEL SECURITY;
     `);
 
     // 10. GRANT NECESSARY PERMISSIONS
@@ -204,11 +206,15 @@ export class AddRowLevelSecurityPolicies1727659500000
     await queryRunner.query(
       `CREATE INDEX IF NOT EXISTS "IDX_signing_keys_tenant_rls" ON "signing_keys" ("tenant_id")`,
     );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_dpop_replay_proofs_tenant_rls" ON "dpop_replay_proofs" ("tenant_id")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // 1. DROP INDEXES CREATED FOR RLS PERFORMANCE
 
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_dpop_replay_proofs_tenant_rls"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_signing_keys_tenant_rls"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_consent_audits_user_rls"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_revocation_events_tenant_rls"`);
@@ -228,6 +234,10 @@ export class AddRowLevelSecurityPolicies1727659500000
     `);
 
     // 3. DROP RLS POLICIES
+
+    await queryRunner.query(`DROP POLICY IF EXISTS "dpop_replay_proofs_tenant_isolation" ON "dpop_replay_proofs"`);
+    await queryRunner.query(`ALTER TABLE "dpop_replay_proofs" NO FORCE ROW LEVEL SECURITY`);
+    await queryRunner.query(`ALTER TABLE "dpop_replay_proofs" DISABLE ROW LEVEL SECURITY`);
 
     await queryRunner.query(`DROP POLICY IF EXISTS "signing_keys_tenant_isolation" ON "signing_keys"`);
     await queryRunner.query(`ALTER TABLE "signing_keys" NO FORCE ROW LEVEL SECURITY`);
@@ -259,7 +269,6 @@ export class AddRowLevelSecurityPolicies1727659500000
 
     // 4. DROP POLICY FUNCTIONS
 
-    await queryRunner.query(`DROP FUNCTION IF EXISTS check_user_access(UUID)`);
-    await queryRunner.query(`DROP FUNCTION IF EXISTS check_tenant_access(UUID)`);
+    await queryRunner.query(`DROP FUNCTION IF EXISTS app_current_tenant()`);
   }
 }

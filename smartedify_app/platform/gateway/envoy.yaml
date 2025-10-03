@@ -10,7 +10,6 @@ static_resources:
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_http
-<<<<<<< HEAD
                 use_remote_address: true
                 xff_num_trusted_hops: 1
                 common_http_protocol_options:
@@ -40,8 +39,6 @@ static_resources:
                         quality: 6
                         window_bits: 18
                         disable_literal_context_modeling: false
-=======
->>>>>>> origin/main
                 route_config:
                   name: local_route
                   virtual_hosts:
@@ -49,8 +46,7 @@ static_resources:
                       domains: ["*"]
                       routes:
                         - match: { prefix: "/api/v1/identity/" }
-<<<<<<< HEAD
-                          route: 
+                          route:
                             cluster: identity-service
                             timeout: 15s
                             retry_policy:
@@ -64,7 +60,7 @@ static_resources:
                                 - name: envoy.retry_host_predicates.previous_hosts
                               host_selection_retry_max_attempts: 3
                         - match: { prefix: "/api/v1/governance/" }
-                          route: 
+                          route:
                             cluster: governance-service
                             timeout: 15s
                             retry_policy:
@@ -77,11 +73,6 @@ static_resources:
                               retry_host_predicate:
                                 - name: envoy.retry_host_predicates.previous_hosts
                               host_selection_retry_max_attempts: 3
-=======
-                          route: { cluster: identity-service }
-                        - match: { prefix: "/api/v1/governance/" }
-                          route: { cluster: governance-service }
->>>>>>> origin/main
                         - match: { prefix: "/api/v1/streaming/" }
                           route: { cluster: streaming-service }
                         - match: { prefix: "/api/v1/documents/" }
@@ -102,7 +93,6 @@ static_resources:
                           route: { cluster: gateway-admin }
                         - match: { prefix: "/.well-known/egress-policy" }
                           route: { cluster: gateway-admin }
-<<<<<<< HEAD
                 request_headers_timeout: 5s
                 stream_idle_timeout: 60s
                 http_filters:
@@ -134,8 +124,7 @@ static_resources:
                           local method = request_handle:headers():get(":method")
                           local content_type = request_handle:headers():get("content-type")
                           local content_length = request_handle:headers():get("content-length")
-                          
-                          -- Bloquear métodos no permitidos
+
                           if method == "TRACE" or method == "TRACK" or method == "CONNECT" then
                             request_handle:respond(
                               {[":status"] = "405", ["content-type"] = "application/problem+json"},
@@ -143,8 +132,7 @@ static_resources:
                             )
                             return
                           end
-                          
-                          -- Validar Content-Length máximo (5MB)
+
                           if content_length and tonumber(content_length) > 5242880 then
                             request_handle:respond(
                               {[":status"] = "413", ["content-type"] = "application/problem+json"},
@@ -152,8 +140,7 @@ static_resources:
                             )
                             return
                           end
-                          
-                          -- Validar Content-Type allowlist
+
                           if method ~= "GET" and method ~= "DELETE" and content_type then
                             local allowed = false
                             local allowed_types = {
@@ -164,14 +151,14 @@ static_resources:
                               "text/css",
                               "text/javascript"
                             }
-                            
+
                             for _, allowed_type in ipairs(allowed_types) do
                               if string.find(content_type, allowed_type, 1, true) then
                                 allowed = true
                                 break
                               end
                             end
-                            
+
                             if not allowed then
                               request_handle:respond(
                                 {[":status"] = "415", ["content-type"] = "application/problem+json"},
@@ -180,16 +167,12 @@ static_resources:
                               return
                             end
                           end
-                          
-                          -- Limpiar hop-by-hop headers
+
                           local hop_by_hop = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailers", "transfer-encoding", "upgrade"}
                           for _, header in ipairs(hop_by_hop) do
                             request_handle:headers():remove(header)
                           end
                         end
-=======
-                http_filters:
->>>>>>> origin/main
                   - name: envoy.filters.http.jwt_authn
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
@@ -230,7 +213,6 @@ static_resources:
                           h:headers():add("Permissions-Policy","camera=(), microphone=()")
                         end
                   - name: envoy.filters.http.router
-<<<<<<< HEAD
                 stats_config:
                   stats_tags:
                     - tag_name: route
@@ -286,13 +268,6 @@ static_resources:
             max_pending_requests: 50
             max_requests: 200
             max_retries: 3
-=======
-  clusters:
-    - name: identity-service
-      connect_timeout: 1s
-      type: strict_dns
-      lb_policy: round_robin
->>>>>>> origin/main
       load_assignment:
         cluster_name: identity-service
         endpoints:
@@ -301,7 +276,6 @@ static_resources:
                   address:
                     socket_address: { address: identity-service, port_value: 3001 }
     - name: governance-service
-<<<<<<< HEAD
       connect_timeout: 2s
       type: strict_dns
       lb_policy: round_robin
@@ -347,11 +321,6 @@ static_resources:
             max_pending_requests: 50
             max_requests: 200
             max_retries: 3
-=======
-      connect_timeout: 1s
-      type: strict_dns
-      lb_policy: round_robin
->>>>>>> origin/main
       load_assignment:
         cluster_name: governance-service
         endpoints:
@@ -457,7 +426,6 @@ static_resources:
           - lb_endpoints:
               - endpoint:
                   address:
-<<<<<<< HEAD
                     socket_address: { address: rate-limit, port_value: 8081 }
     - name: spire_agent
       connect_timeout: 1s
@@ -542,9 +510,6 @@ access_log:
           "request_id": "%REQ(X-REQUEST-ID)%"
         }
 
-=======
-                    socket_address: { address: rate-limit, port_value: 6379 }
->>>>>>> origin/main
 admin:
   access_log_path: /tmp/admin_access.log
   address:

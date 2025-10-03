@@ -41,6 +41,7 @@ CREATE TABLE refresh_tokens (
     token_hash TEXT NOT NULL,
     user_id UUID NOT NULL REFERENCES users(id),
     jkt TEXT NOT NULL,
+    tenant_id UUID NOT NULL,
     family_id UUID NOT NULL,
     parent_id UUID REFERENCES refresh_tokens(id),
     replaced_by_id UUID REFERENCES refresh_tokens(id),
@@ -108,3 +109,52 @@ CREATE TABLE dpop_replay_proofs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(tenant_id, jkt, jti)
 );
+
+-- =============================================================
+-- Context function and Row Level Security configuration
+-- =============================================================
+
+CREATE OR REPLACE FUNCTION app_current_tenant()
+RETURNS UUID
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+  tenant_setting TEXT;
+BEGIN
+  tenant_setting := current_setting('app.tenant_id', true);
+  IF tenant_setting IS NULL OR tenant_setting = '' THEN
+    RETURN NULL;
+  END IF;
+  RETURN tenant_setting::uuid;
+END;
+$$;
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE refresh_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE webauthn_credentials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE revocation_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE consent_audits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dpop_replay_proofs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY users_tenant_isolation ON users
+  USING (tenant_id = app_current_tenant());
+
+CREATE POLICY sessions_tenant_isolation ON sessions
+  USING (tenant_id = app_current_tenant());
+
+CREATE POLICY refresh_tokens_tenant_isolation ON refresh_tokens
+  USING (tenant_id = app_current_tenant());
+
+CREATE POLICY webauthn_credentials_tenant_isolation ON webauthn_credentials
+  USING ((SELECT tenant_id FROM users WHERE id = user_id) = app_current_tenant());
+
+CREATE POLICY revocation_events_tenant_isolation ON revocation_events
+  USING (tenant_id = app_current_tenant());
+
+CREATE POLICY consent_audits_tenant_isolation ON consent_audits
+  USING ((SELECT tenant_id FROM users WHERE id = user_id) = app_current_tenant());
+
+CREATE POLICY dpop_replay_proofs_tenant_isolation ON dpop_replay_proofs
+  USING (tenant_id = app_current_tenant());

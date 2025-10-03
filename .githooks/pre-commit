@@ -1,0 +1,21 @@
+#!/bin/sh
+# Prevent commits when conflict markers are present
+conflict_files="$(
+  git diff --cached --name-only | while read -r file; do
+    [ -f "$file" ] || continue
+    if grep -qE '^\s*(<<<<<<<|=======|>>>>>>>)' "$file"; then
+      printf '%s\n' "$file"
+    fi
+  done
+)"
+
+if [ -n "$conflict_files" ]; then
+  cat >&2 <<MSG
+error: conflict markers detected in staged files:
+$conflict_files
+Please resolve conflicts before committing.
+MSG
+  exit 1
+fi
+
+exit 0
